@@ -7,15 +7,21 @@ import collections
 import json
 from discord.ext import tasks, commands
 
+# Listens for DMs to add to the story
 class dmlistener(commands.Cog):
     def __init__(self, file_manager, user_manager, bot):
         self.file_manager = file_manager
         self.user_manager = user_manager
+        
+        # Keeps track of the current user's id
         self.current_user = int(user_manager.get_current_user())
+        
         self.bot = bot
         self.messageNotSent = False
         self.timeout_checker.start()
         self.last_checked_user = self.current_user
+        
+        # The timestamp keeps track of when the last user was notified, so that even if the bot goes down, it still knows how much longer the current user has to continue the story
         try:
             timestamp_file = open("timestamp.txt", "r")
             self.timestamp = float(timestamp_file.read())
@@ -31,10 +37,11 @@ class dmlistener(commands.Cog):
         with open('timestamp.txt', 'w') as f:
             f.write(str(self.timestamp))
 
+    # Sends the given message to the current user
     async def dm_current_user(self, message, file = None):
         await (await self.bot.get_user(int(self.user_manager.get_current_user())).create_dm()).send(message, file = file)
 
-        
+    # Notifies the current user that it's their turn to add to the story
     async def notify_people(self):
         file = discord.File("story.txt", filename="story.txt")
         await self.dm_current_user("""Your turn.  Respond with a DM to continue the story!  Use a \ to create a line break.
@@ -47,10 +54,12 @@ class dmlistener(commands.Cog):
         
         # Send a message in the story chanel
         await self.bot.get_channel(611949797733302292).send("It's now {0}'s turn!".format(self.bot.get_user(int(self.user_manager.get_current_user())).name))
+        
         # DM me the new user
         #await (await self.bot.get_user(351804839820525570).create_dm()).send(self.bot.get_user(int(self.user_manager.get_current_user())).name + ", " + self.bot.get_user(int(self.user_manager.get_current_user())).mention)
 
-
+    # Returns the requested story
+    # If there is a number, the given story number will be returned
     @commands.command()
     async def story(self, ctx, *parameters):
         try:
@@ -65,6 +74,8 @@ class dmlistener(commands.Cog):
             file = discord.File("story.txt", filename="story.txt")
             await ctx.send("```"+self.lastChars(self.file_manager.getStory())+"```", file = file)
    
+    # Syncs the story with the old git repo
+    # Will need to be removed
     @commands.is_owner()
     @commands.command()
     async def push(self, ctx):
@@ -74,10 +85,12 @@ class dmlistener(commands.Cog):
         os.system("git push")
         await ctx.send("oki swine it done")
     
+    # Sends a message with the current user's name
     @commands.command()
     async def turn(self, ctx):
         await ctx.send("It is currently " + self.bot.get_user(int(self.user_manager.get_current_user())).display_name + "'s turn!")
 
+    # The help command
     @commands.command()
     async def help(self, ctx):
         await ctx.send(
@@ -87,6 +100,7 @@ class dmlistener(commands.Cog):
     `s.story` displays the story so far - put a number afterwards to see a past story
     `s.turn` displays whose turn it is""")
 
+    # Skips the current user
     @commands.command()
     async def skip(self, ctx):
         if str(ctx.author.id) != self.user_manager.get_current_user() and ctx.author.id != 351804839820525570:
@@ -97,15 +111,18 @@ class dmlistener(commands.Cog):
         await self.notify_people()
         await self.wait_and_check()
 
+    # The command to notify users that it's their turn
     @commands.command()
     async def notify(self, ctx):
         await self.notify_people()
 
+    # Lists the users working on the story
     @commands.is_owner()
     @commands.command()
     async def list_users(self, ctx):
         print(self.user_manager.get_list())
 
+    # Checks if the message is the story, and if it is, appends it
     @commands.Cog.listener()
     async def on_message(self, message):
         if self.messageNotSent:
@@ -125,6 +142,8 @@ class dmlistener(commands.Cog):
                 await self.notify_people()
                 await self.wait_and_check()
 
+    # The all-powerful pieMethod
+    # Splits the story into a list of strings if it is too long
     def pieMethod(self, story):
         if len(story) >= 1500:
             split = list()
@@ -137,10 +156,11 @@ class dmlistener(commands.Cog):
         else:
             return story
 
+    # Returns the last 1500 characters of the story
     def lastChars(self, story):
         return story[len(story) -1500:len(story) -1]
 
-
+    # Should wait for 24 hours, then skip the current user's turn
     async def wait_and_check(self):
         return
         def check(message):
@@ -151,6 +171,7 @@ class dmlistener(commands.Cog):
         except asyncio.TimeoutError:
             await timeout_happened()
 
+    # Skips the current user's turn if they don't respond in 24 hours
     async def timeout_happened(self):
         print('about to dm') 
         try:
@@ -170,6 +191,7 @@ class dmlistener(commands.Cog):
         with open('timestamp.txt', 'w') as f:
             f.write(str(self.timestamp))
 
+    # SHOULD skip the current user's turn if they don't respond in 24 hours
     @tasks.loop(seconds=60 * 60) # 60 minutes
     async def timeout_checker(self):
         if self.last_checked_user is self.current_user: #still the same person
@@ -194,17 +216,19 @@ class dmlistener(commands.Cog):
     def cog_unload(self):
         self.timeout_checker.cancel()
 
-
+    # Adds a user to the list of participants
     @commands.command()
     async def add(self, ctx):
         self.user_manager.add_user(ctx.author.id)
         await ctx.send("Done!")
 
+    # Removes a user from the list of participants
     @commands.command()
     async def remove(self, ctx):
         self.user_manager.remove_user(ctx.author.id)
         await ctx.send("Done!")
 
+    # Should be used at the end of a story to create a new story
     @commands.is_owner()
     @commands.command()
     async def newstory(self, ctx):
@@ -213,6 +237,7 @@ class dmlistener(commands.Cog):
         #self.file_manager.new_story()
         #await ctx.send("Done!")
 
+    # Gives the reputation of a current user
     @commands.is_owner()
     @commands.command(aliases = ['rep'])
     async def reputation(self, ctx, mentn : discord.Member = None):
@@ -225,6 +250,7 @@ class dmlistener(commands.Cog):
 
         await ctx.send(collections.Counter(self.user_manager.get_list())[ID])
 
+    # Lists all users' reputations along with their names
     @commands.is_owner()
     @commands.command(aliases = ['lsrep', 'listrep'])
     async def listreputation(self, ctx):
@@ -233,6 +259,7 @@ class dmlistener(commands.Cog):
             s += self.bot.get_user(item).name + ': ' + str(collections.Counter(self.user_manager.get_list())[item]) + '\n'
         await ctx.send(s)
         
+    # Boosts a user's reputation
     @commands.is_owner()
     @commands.command(aliases = [])
     async def boost(self, ctx, mentn : discord.Member = None):
@@ -246,6 +273,7 @@ class dmlistener(commands.Cog):
             
         await ctx.send(f"Boosted <@!{ID}>!")
         
+    # Unboosts a user's reputation
     @commands.is_owner()
     @commands.command(aliases = [])
     async def unboost(self, ctx, mentn : discord.Member = None):

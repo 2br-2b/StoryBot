@@ -11,6 +11,7 @@ class user_manager():
         self.maximum_times_in_the_list = 22
         self.listOfUsers = userIDs.userIDs
         
+        # Create the initial list of users
         try:
             with open('weighted list of users.json', 'rt') as f:
                 self.weighted_list_of_users = json.load(f)
@@ -23,6 +24,8 @@ class user_manager():
                 self.add_user(item)
                     
 
+    # Chooses a random user
+    # Doesn't care about reputation
     def get_random_user(self):
         file = open("user.txt", "r")
         userID = file.read()
@@ -43,6 +46,7 @@ class user_manager():
 
         return new_user
     
+    # Returns the current user
     def get_current_user(self):
         file = open("user.txt", "r")
         userID = file.read()
@@ -50,31 +54,34 @@ class user_manager():
         print ("`"+userID+"`")
         return userID
 
-
+    # Adds the given user to the list of users
     def add_user(self, id):
         if id not in self.get_list():
             for i in range(0, self.default_count):
                 self.weighted_list_of_users.append(id)
         self.serialize()
 
+    # Removes the given user from the list of users
     def remove_user(self, id):
         for i in range(0, collections.Counter(self.weighted_list_of_users)[id]):
             self.weighted_list_of_users.remove(id)
         self.serialize()
 
+    # Boosts the given user's reputation
     def boost_user(self, id):
         if(collections.Counter(self.weighted_list_of_users)[id] < self.maximum_times_in_the_list):
             self.weighted_list_of_users.append(id)
         self.serialize()
         print('boosted: {0}'.format(id))
 
+    # Reduces the given user's reputation
     def unboost_user(self, id):
         if(collections.Counter(self.weighted_list_of_users)[id] > 1):
             self.weighted_list_of_users.remove(id)
         self.serialize()
         print('unboosted: {0}'.format(id))
 
-
+    # Gets a random user from the list based on their reputation
     def get_random_weighted_user(self):
         userID = self.get_current_user()
         
