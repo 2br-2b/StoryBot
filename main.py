@@ -24,4 +24,7 @@ async def on_ready():
     print("Started!")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=" for `s.help`"))
 
+if(config.TOKEN == 'xxxxxxxxxxxxx'):
+    raise RuntimeError("Please update config.py with your bot's token!")
+
 bot.run(config.TOKEN)
