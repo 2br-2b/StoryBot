@@ -1,3 +1,6 @@
+import pkg_resources
+pkg_resources.require("discord.py==1.7.3")
+
 import discord
 import config
 import dmlistener
