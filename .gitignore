@@ -1,0 +1,8 @@
+__pycache__/
+token_manager.py
+.vscode/
+user.txt
+story*
+timestamp.txt
+userIDs.py
+weighted\ list\ of\ users.json
