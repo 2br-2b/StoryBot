@@ -1,8 +1,11 @@
 __pycache__/
 token_manager.py
 .vscode/
-user.txt
+
+config.py
+
 story*
+
+user.txt
 timestamp.txt
-userIDs.py
 weighted\ list\ of\ users.json

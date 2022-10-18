@@ -1,0 +1,8 @@
+
+# The bot's default Discord token
+TOKEN = 'xxxxxxxxxxxxx'
+
+# The userIDs to include in the list on the first run
+defaultUserIDs = [
+    
+]

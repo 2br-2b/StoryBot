@@ -1,7 +1,6 @@
 import discord
-import token_manager
+import config
 import dmlistener
-import userIDs
 from user_manager import user_manager
 from file_manager import file_manager
 from discord.ext import commands
@@ -22,4 +21,4 @@ async def on_ready():
     print("Started!")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=" for `s.help`"))
 
-bot.run(token_manager.TOKEN)
+bot.run(config.TOKEN)

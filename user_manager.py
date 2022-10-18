@@ -1,7 +1,7 @@
 #import userIDs
 import random
 import os
-import userIDs
+import config
 import collections
 import json
 
@@ -9,7 +9,7 @@ class user_manager():
     def __init__(self):
         self.default_count = 20
         self.maximum_times_in_the_list = 22
-        self.listOfUsers = userIDs.userIDs
+        self.listOfUsers = config.defaultUserIDs
         
         # Create the initial list of users
         try:
@@ -30,7 +30,7 @@ class user_manager():
         file = open("user.txt", "r")
         userID = file.read()
         file.close()
-        self.listOfUsers = userIDs.userIDs
+        self.listOfUsers = config.defaultUserIDs
 
         new_user = random.choice(self.listOfUsers)
         while str(new_user) == userID:
