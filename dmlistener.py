@@ -40,7 +40,7 @@ class dmlistener(commands.Cog):
     # Sends the given message to the current user
     async def dm_current_user(self, message, file = None):
         print('about to dm the current user, '+str(self.current_user) + ' with message: '+message)
-        await (await self.bot.get_user(int(self.user_manager.get_current_user())).create_dm()).send(message, file = file)
+        await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user()))).create_dm()).send(message, file = file)
 
     # Notifies the current user that it's their turn to add to the story
     async def notify_people(self):
@@ -54,10 +54,11 @@ class dmlistener(commands.Cog):
             , file = file)
         
         # Send a message in the story chanel
-        await self.bot.get_channel(611949797733302292).send("It's now {0}'s turn!".format(self.bot.get_user(int(self.user_manager.get_current_user())).name))
+        await self.bot.get_channel(611949797733302292).send("It's now {0}'s turn!".format((await self.bot.fetch_user(int(self.user_manager.get_current_user()))).name))
         
         # DM me the new user
-        #await (await self.bot.get_user(351804839820525570).create_dm()).send(self.bot.get_user(int(self.user_manager.get_current_user())).name + ", " + self.bot.get_user(int(self.user_manager.get_current_user())).mention)
+        # Await the fetches
+        #await (await self.bot.fetch_user(351804839820525570).create_dm()).send(self.bot.fetch_user(int(self.user_manager.get_current_user())).name + ", " + self.bot.fetch_user(int(self.user_manager.get_current_user())).mention)
 
     # Returns the requested story
     # If there is a number, the given story number will be returned
@@ -90,7 +91,7 @@ class dmlistener(commands.Cog):
     # Sends a message with the current user's name
     @commands.command()
     async def turn(self, ctx):
-        await ctx.send("It is currently " + self.bot.get_user(int(self.user_manager.get_current_user())).display_name + "'s turn!")
+        await ctx.send("It is currently " + (await self.bot.fetch_user(int(self.user_manager.get_current_user()))).display_name + "'s turn!")
 
     # The help command
     @commands.command()
@@ -138,7 +139,7 @@ class dmlistener(commands.Cog):
                     return
                 self.file_manager.addLine(message.content)
                 self.user_manager.boost_user(self.current_user)
-                self.current_user = self.user_manager.get_random_user()
+                self.current_user = self.user_manager.get_random_weighted_user()
                 await message.channel.send("Got it!  Thanks!")
 
                 await self.notify_people()
@@ -258,7 +259,7 @@ class dmlistener(commands.Cog):
     async def listreputation(self, ctx):
         s = ''
         for item in collections.Counter(self.user_manager.get_list()).keys():
-            s += self.bot.get_user(item).name + ': ' + str(collections.Counter(self.user_manager.get_list())[item]) + '\n'
+            s += (await self.bot.fetch_user(item)).name + ': ' + str(collections.Counter(self.user_manager.get_list())[item]) + '\n'
         await ctx.send(s)
         
     # Boosts a user's reputation
