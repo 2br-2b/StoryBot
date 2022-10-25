@@ -33,8 +33,8 @@ class user_manager():
         self.listOfUsers = config.defaultUserIDs
 
         new_user = random.choice(self.listOfUsers)
-        while str(new_user) == userID:
-            new_user = random.choice(self.listOfUsers)
+        #while str(new_user) == userID:
+        #    new_user = random.choice(self.listOfUsers)
         
         os.remove("user.txt")
         with open('user.txt', 'w') as f:
