@@ -39,6 +39,7 @@ class dmlistener(commands.Cog):
 
     # Sends the given message to the current user
     async def dm_current_user(self, message, file = None):
+        print('about to dm the current user, '+str(self.current_user) + ' with message: '+message)
         await (await self.bot.get_user(int(self.user_manager.get_current_user())).create_dm()).send(message, file = file)
 
     # Notifies the current user that it's their turn to add to the story
@@ -79,6 +80,7 @@ class dmlistener(commands.Cog):
     @commands.is_owner()
     @commands.command()
     async def push(self, ctx):
+        return
         import os, time
         os.system("git commit -am \"{0}\"".format(time.time()))
         os.system("git pull")
@@ -182,7 +184,7 @@ class dmlistener(commands.Cog):
         self.user_manager.unboost_user(self.current_user)
         print('unboosted '+str(self.current_user)+'.  About to change current user......') 
         self.current_user = self.user_manager.get_random_weighted_user()
-        print('done unboosting '+str(self.current_user)+'!')
+        print('done changing user to '+str(self.current_user)+'. About to notify people...')
         await self.notify_people()
 
         self.last_checked_user = self.current_user
