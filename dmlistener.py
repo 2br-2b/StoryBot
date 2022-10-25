@@ -64,11 +64,11 @@ class dmlistener(commands.Cog):
     async def story(self, ctx, *parameters):
         try:
             if parameters[-1].isdigit():
-                print('Digit found!')
+                print('Story requested. Correct digit found!')
                 file = discord.File("story {0}.txt".format(int(parameters[-1])), filename="story {0}.txt".format(int(parameters[-1])))
                 await ctx.send('Here is story {0}:'.format(int(parameters[-1])), file = file)
             else:
-                print('No digit found!')
+                print('Story requested. No digit found!')
                 raise Exception('')
         except:
             file = discord.File("story.txt", filename="story.txt")
@@ -120,7 +120,7 @@ class dmlistener(commands.Cog):
     @commands.is_owner()
     @commands.command()
     async def list_users(self, ctx):
-        print(self.user_manager.get_list())
+        print("\nList of users:\n" + self.user_manager.get_list())
 
     # Checks if the message is the story, and if it is, appends it
     @commands.Cog.listener()
@@ -173,16 +173,16 @@ class dmlistener(commands.Cog):
 
     # Skips the current user's turn if they don't respond in 24 hours
     async def timeout_happened(self):
-        print('about to dm') 
+        print('about to dm '+str(self.current_user) + ' that they have been skipped due to taking too long') 
         try:
             await self.dm_current_user('You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
-            print('dmed.  About to unboost...')
+            print('skip dm to '+str(self.current_user)+' successful.  About to unboost...')
         except:
-            print('failed to DM.  Moving on...')
+            print('failed to DM '+str(self.current_user)+'.  Moving on...')
         self.user_manager.unboost_user(self.current_user)
-        print('unboosted.  About to change current user......') 
+        print('unboosted '+str(self.current_user)+'.  About to change current user......') 
         self.current_user = self.user_manager.get_random_weighted_user()
-        print('done!')
+        print('done unboosting '+str(self.current_user)+'!')
         await self.notify_people()
 
         self.last_checked_user = self.current_user
@@ -196,9 +196,9 @@ class dmlistener(commands.Cog):
     async def timeout_checker(self):
         if self.last_checked_user is self.current_user: #still the same person
             if time.time() - self.timestamp >= 60 * 60 * 24: # if the time is over 24 hours
-                print('about to timeout')
+                print('about to timeout for '+str(self.current_user))
                 await self.timeout_happened()
-                print('timeout happened')
+                print('timeout happened. New user is '+str(self.current_user))
 
         else: #new person
             self.last_checked_user = self.current_user
@@ -246,7 +246,7 @@ class dmlistener(commands.Cog):
         else:
             ID = int(mentn.id)
 
-        print(collections.Counter(self.user_manager.get_list()))
+        print('listing reputations:\n'+collections.Counter(self.user_manager.get_list()))
 
         await ctx.send(collections.Counter(self.user_manager.get_list())[ID])
 

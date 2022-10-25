@@ -51,7 +51,7 @@ class user_manager():
         file = open("user.txt", "r")
         userID = file.read()
         file.close()
-        print ("`"+userID+"`")
+        print ("Current user retrieved: `"+userID+"`")
         return userID
 
     # Adds the given user to the list of users
@@ -72,14 +72,14 @@ class user_manager():
         if(collections.Counter(self.weighted_list_of_users)[id] < self.maximum_times_in_the_list):
             self.weighted_list_of_users.append(id)
         self.serialize()
-        print('boosted: {0}'.format(id))
+        print('boosted {0} finished'.format(id))
 
     # Reduces the given user's reputation
     def unboost_user(self, id):
         if(collections.Counter(self.weighted_list_of_users)[id] > 1):
             self.weighted_list_of_users.remove(id)
         self.serialize()
-        print('unboosted: {0}'.format(id))
+        print('unboosted {0} successful'.format(id))
 
     # Gets a random user from the list based on their reputation
     def get_random_weighted_user(self):
