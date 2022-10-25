@@ -7,6 +7,8 @@ import collections
 import json
 from discord.ext import tasks, commands
 
+import config
+
 # Listens for DMs to add to the story
 class dmlistener(commands.Cog):
     def __init__(self, file_manager, user_manager, bot):
@@ -163,18 +165,18 @@ class dmlistener(commands.Cog):
     def lastChars(self, story):
         return story[len(story) -1500:len(story) -1]
 
-    # Should wait for 24 hours, then skip the current user's turn
+    # Should wait for the specified amount of days, then skip the current user's turn
     async def wait_and_check(self):
         return
         def check(message):
             return str(message.author.id) == self.user_manager.get_current_user()
 
         try:
-            message2, user = await self.bot.wait_for('on_message', timeout = 60*60*24, check = check)
+            message2, user = await self.bot.wait_for('on_message', timeout = 60*60*24*config.TIMEOUT_DAYS, check = check)
         except asyncio.TimeoutError:
             await timeout_happened()
 
-    # Skips the current user's turn if they don't respond in 24 hours
+    # Skips the current user's turn if they don't respond in the specified amount of time
     async def timeout_happened(self):
         print('about to dm '+str(self.current_user) + ' that they have been skipped due to taking too long') 
         try:
@@ -194,11 +196,11 @@ class dmlistener(commands.Cog):
         with open('timestamp.txt', 'w') as f:
             f.write(str(self.timestamp))
 
-    # SHOULD skip the current user's turn if they don't respond in 24 hours
-    @tasks.loop(seconds=60 * 60) # 60 minutes
+    # SHOULD skip the current user's turn if they don't respond in the specified amount of time
+    @tasks.loop(seconds=60 * 60) # Check back every hour
     async def timeout_checker(self):
         if self.last_checked_user is self.current_user: #still the same person
-            if time.time() - self.timestamp >= 60 * 60 * 24: # if the time is over 24 hours
+            if time.time() - self.timestamp >= 60 * 60 * 24 * config.TIMEOUT_DAYS: # if the time is over the allotted time
                 print('about to timeout for '+str(self.current_user))
                 await self.timeout_happened()
                 print('timeout happened. New user is '+str(self.current_user))

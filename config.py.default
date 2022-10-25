@@ -2,6 +2,9 @@
 # The bot's default Discord token
 TOKEN = 'xxxxxxxxxxxxx'
 
+# How many days each user has to add to the story
+TIMEOUT_DAYS = 1
+
 # The userIDs to include in the list on the first run
 defaultUserIDs = [
     
