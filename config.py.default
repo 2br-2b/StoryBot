@@ -5,6 +5,19 @@ TOKEN = 'xxxxxxxxxxxxx'
 # How many days each user has to add to the story before they're skipped
 TIMEOUT_DAYS = 1
 
+# The ID(s) of the channels you want the bot to notify when it's a new player's turn
+# I only use one channel myself, but if you want to use more or split one story across multiple servers, feel free to!
+STORY_CHANNELS = [
+    
+]
+
+# The ID(s) of the bot's admin(s)
+ADMIN_IDS = [
+    
+]
+
+
+
 # The userIDs to include in the list on the first run
 defaultUserIDs = [
     

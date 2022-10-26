@@ -56,11 +56,8 @@ class dmlistener(commands.Cog):
             , file = file)
         
         # Send a message in the story chanel
-        await self.bot.get_channel(611949797733302292).send("It's now {0}'s turn!".format((await self.bot.fetch_user(int(self.user_manager.get_current_user()))).name))
-        
-        # DM me the new user
-        # Await the fetches
-        #await (await self.bot.fetch_user(351804839820525570).create_dm()).send(self.bot.fetch_user(int(self.user_manager.get_current_user())).name + ", " + self.bot.fetch_user(int(self.user_manager.get_current_user())).mention)
+        for channel in config.STORY_CHANNELS:
+            await self.bot.get_channel(channel).send("It's now {0}'s turn!".format((await self.bot.fetch_user(int(self.user_manager.get_current_user()))).name))
 
     # Returns the requested story
     # If there is a number, the given story number will be returned
@@ -108,7 +105,7 @@ class dmlistener(commands.Cog):
     # Skips the current user
     @commands.command()
     async def skip(self, ctx):
-        if str(ctx.author.id) != self.user_manager.get_current_user() and ctx.author.id != 351804839820525570:
+        if str(ctx.author.id) != self.user_manager.get_current_user() and not ctx.author.id in config.ADMIN_IDS:
             return await ctx.send("It's not your turn!")
         await ctx.send("Skipping :(")
         self.current_user = self.user_manager.get_random_weighted_user()
