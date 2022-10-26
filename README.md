@@ -26,7 +26,6 @@ Reputation can be lost in the following ways:
 
 ## Some of my design considerations (from like three years ago)
 - I kept everything in plaintext so that it'd be easy for me to go through and edit whatever values I needed to on the fly. In addition, I usually have the bot check values in the file system so that if I change the current user, I don't have to restart the bot.
-- Some hardcoded values need to be removed
 - [dmlistener.py](dmlistener.py) is in charge of interfacing the bot with Discord and is responsible for most of the logic that goes on
 - [file_manager.py](file_manager.py) is in charge of saving and modifying the story
 - [user_manager.py](user_manager.py) is in charge of keeping track of who's playing and choosing random users based on reputation
