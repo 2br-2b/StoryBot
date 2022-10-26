@@ -6,7 +6,7 @@ import discord
 
 try:
     import config
-except ImportError:
+except ModuleNotFoundError:
     # Check if the file exists
     # If it doesn't, copy the example file
     from os.path import exists
@@ -16,7 +16,7 @@ except ImportError:
         print("Please edit your config file (config.py) and then restart the bot.")
         exit()
     else:
-        print("Something went wrong importing the config file. Check your config file for any errors.")
+        print("Something went wrong importing the config file. Check your config file for any errors, then restart the bot.")
         exit()
 
 
