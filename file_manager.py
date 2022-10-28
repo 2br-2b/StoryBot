@@ -1,4 +1,5 @@
 import os
+import config
 
 class file_manager():
     def __init__(self, bot):
@@ -30,7 +31,7 @@ class file_manager():
 
         line = line.replace("\\","\n")
 
-        if not line.lower() is 's.skip':
+        if not line.startswith(config.PREFIX):
            self.story += line
         file.write(line)
         file.close()

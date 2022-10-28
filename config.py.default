@@ -2,6 +2,10 @@
 # The bot's Discord token
 TOKEN = 'xxxxxxxxxxxxx'
 
+# The bot's command prefix
+# Will be phased out eventually in favor of slash commands
+PREFIX = "s."
+
 # How many days each user has to add to the story before they're skipped
 TIMEOUT_DAYS = 1
 

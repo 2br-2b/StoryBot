@@ -98,9 +98,9 @@ class dmlistener(commands.Cog):
         await ctx.send(
             """This bot is a story bot.  One user will write a part of the story (anywhere from a sentence or two to a couple of paragraphs - your choice!), then another, and so on until the story is complete!
             
-    `s.add` adds you to the authors, while `s.remove` removes you
-    `s.story` displays the story so far - put a number afterwards to see a past story
-    `s.turn` displays whose turn it is""")
+    `""" + config.PREFIX + "add` adds you to the authors, while `"+config.PREFIX + """remove` removes you
+    `""" + config.PREFIX + """story` displays the story so far - put a number afterwards to see a past story
+    `""" + config.PREFIX + "turn` displays whose turn it is")
 
     # Skips the current user
     @commands.command()
@@ -134,7 +134,7 @@ class dmlistener(commands.Cog):
 
         if message.guild is None:
             if self.user_manager.get_current_user() == str(message.author.id):
-                if "s.skip" in message.content:
+                if config.PREFIX + "skip" in message.content:
                     return
                 self.file_manager.addLine(message.content)
                 self.user_manager.boost_user(self.current_user)

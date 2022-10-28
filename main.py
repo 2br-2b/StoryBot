@@ -32,7 +32,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 
-bot = commands.Bot("s.", help_command = None, intents=intents)
+bot = commands.Bot(config.PREFIX, help_command = None, intents=intents)
 
 fmgr = file_manager(bot)
 umgr = user_manager(bot)
@@ -45,7 +45,7 @@ bot.user_manager = umgr
 @bot.event
 async def on_ready():
     print("Bot started!")
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=" for `s.help`"))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=" for `"+config.PREFIX+"help`"))
     try:
         await bot.load_extension("dmlistener")
     except commands.errors.ExtensionNotFound:
