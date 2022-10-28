@@ -1,5 +1,5 @@
-import pkg_resources
-pkg_resources.require("discord.py==1.7.3")
+#import pkg_resources
+#pkg_resources.require("discord.py==1.7.3")
 
 import discord
 
@@ -20,6 +20,7 @@ except ModuleNotFoundError:
         exit()
 
 
+
 import dmlistener
 from user_manager import user_manager
 from file_manager import file_manager
@@ -27,22 +28,32 @@ from discord.ext import commands
 from threading import Thread
 import time
 
+intents = discord.Intents.default()
+intents.message_content = True
 
 
+bot = commands.Bot("s.", help_command = None, intents=intents)
 
+fmgr = file_manager(bot)
+umgr = user_manager(bot)
 
-bot = commands.Bot("s.", help_command = None)
+dml = dmlistener.dmlistener(fmgr, umgr, bot)
+bot.file_manager = fmgr
+bot.user_manager = umgr
 
-f = file_manager()
-u = user_manager()
-
-dml = dmlistener.dmlistener(f, u, bot)
-bot.add_cog(dml)
 
 @bot.event
 async def on_ready():
     print("Bot started!")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=" for `s.help`"))
+    try:
+        await bot.load_extension("dmlistener")
+    except commands.errors.ExtensionNotFound:
+        print("Failed to load dmlistener!")
+    except commands.errors.ExtensionAlreadyLoaded:
+        pass
+    except commands.errors.NoEntryPointError:
+        print("Put the setup() function back fool.")
 
 if(config.TOKEN == 'xxxxxxxxxxxxx'):
     raise RuntimeError("Please update config.py with your bot's token!")

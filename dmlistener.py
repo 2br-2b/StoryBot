@@ -20,7 +20,7 @@ class dmlistener(commands.Cog):
         
         self.bot = bot
         self.messageNotSent = False
-        self.timeout_checker.start()
+        # self.timeout_checker.start()
         self.last_checked_user = self.current_user
         
         # The timestamp keeps track of when the last user was notified, so that even if the bot goes down, it still knows how much longer the current user has to continue the story
@@ -208,12 +208,14 @@ class dmlistener(commands.Cog):
             os.remove('timestamp.txt')
             with open('timestamp.txt', 'w') as f:
                 f.write(str(self.timestamp))
-
-
         
         print('checked: {0} seconds at {1}'.format(time.time() - self.timestamp, time.time()))
 
-        #time.time() returns an double of seconds
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        if not self.timeout_checker.running:
+            self.timeout_checker.start()
 
     def cog_unload(self):
         self.timeout_checker.cancel()
@@ -289,7 +291,8 @@ class dmlistener(commands.Cog):
             
         await ctx.send(f"Unboosted <@!{ID}>!")
 
-    
+async def setup(bot):
+    await bot.add_cog(dmlistener(bot.file_manager, bot.user_manager, bot))
 
 if __name__ == '__main__':
     import main

@@ -1,10 +1,11 @@
 import os
 
 class file_manager():
-    def __init__(self):
+    def __init__(self, bot):
         file = open("story.txt", "r", encoding="utf8")
         self.story = file.read()
         file.close()
+        self.bot = bot
         
     
     def getStory(self):

@@ -6,9 +6,14 @@ import collections
 import json
 
 class user_manager():
-    def __init__(self):
-        self.default_count = 20
-        self.maximum_times_in_the_list = 22
+    def __init__(self, bot):
+        self.bot = bot
+        
+        self.default_count = config.DEFAULT_REPUTATION
+        self.maximum_times_in_the_list = config.MAX_REPUTATION
+        
+        
+        
         self.listOfUsers = config.defaultUserIDs
         
         # Create the initial list of users

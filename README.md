@@ -1,5 +1,6 @@
 # StoryBot
 
+<<<<<<< HEAD
 
 ## Setting up the bot
 1. Clone or [download](https://github.com/2br-2b/StoryBot/archive/refs/heads/master.zip) the repository
@@ -29,3 +30,7 @@ Reputation can be lost in the following ways:
 - [dmlistener.py](dmlistener.py) is in charge of interfacing the bot with Discord and is responsible for most of the logic that goes on
 - [file_manager.py](file_manager.py) is in charge of saving and modifying the story
 - [user_manager.py](user_manager.py) is in charge of keeping track of who's playing and choosing random users based on reputation
+=======
+- I kept everything in plaintext so that it'd be easy for me to go through and edit whatever values I needed to on the fly
+- Some hardcoded values need to be removed
+>>>>>>> 7ed9bd1 (updated discord.py version)
