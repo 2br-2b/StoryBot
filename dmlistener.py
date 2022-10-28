@@ -41,7 +41,7 @@ class dmlistener(commands.Cog):
 
     # Sends the given message to the current user
     async def dm_current_user(self, message, file = None):
-        print('about to dm the current user, '+str(self.current_user) + ' with message: '+message)
+        print('about to dm the current user, '+str(self.current_user))
         await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user()))).create_dm()).send(message, file = file)
 
     # Notifies the current user that it's their turn to add to the story
