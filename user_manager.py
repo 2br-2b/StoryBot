@@ -32,10 +32,7 @@ class user_manager():
     # Chooses a random user
     # Doesn't care about reputation
     def get_random_user(self):
-        file = open("user.txt", "r")
-        userID = file.read()
-        file.close()
-        #self.listOfUsers = config.defaultUserIDs
+        userID = self.get_current_user()
 
         new_user = random.choice(self.listOfUsers)
         while str(new_user) == userID:
@@ -44,10 +41,6 @@ class user_manager():
         os.remove("user.txt")
         with open('user.txt', 'w') as f:
             f.write(str(new_user))
-
-        file = open("story.txt", "r")
-        userID = file.read()
-        file.close()
 
         return new_user
     
@@ -97,10 +90,6 @@ class user_manager():
         os.remove("user.txt")
         with open('user.txt', 'w') as f:
             f.write(str(new_user))
-
-        file = open("story.txt", "r")
-        userID = file.read()
-        file.close()
 
         return new_user
     
