@@ -19,9 +19,10 @@ class file_manager():
         # Makes sure the user isn't sending a command before writing the story
         # Since this is already checked in dmlistener, this throws an error when it starts with a command
         if line.startswith(config.PREFIX):
-            raise RuntimeWarning("I was just told to add this to the story, but this is clearly a command:"+line)
+            raise RuntimeWarning("I was just told to add this to the story, but this is clearly a command:\n"+line)
         
         with open("story.txt", "a", encoding="utf8") as append_to:
+            self.story += line
             append_to.write(line)
 
     # A work in progress
@@ -40,20 +41,6 @@ class file_manager():
 
         with open('story.txt', 'w+') as f:
             f.write('')
-
-    # Sometimes, people entering submissions don't include periods at the end of their submission.
-    # In order to fix that, this method automatically ends a given string with a period if the text does not already have some character indicating the end of a sentence.
-    @staticmethod
-    def fix_line_ending(line: str) -> str:
-        good_endings = (
-            ".", "?", "!", '"', "\'", "-", "\\"
-        )
-        stripped_line = line.strip()
-        has_good_ending = any(stripped_line.endswith(p) for p in good_endings)
-
-        if not has_good_ending:
-            return stripped_line + ". "
-        return stripped_line + " "
 
     # This method finds the next available name for a story file and returns it
     @staticmethod

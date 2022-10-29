@@ -12,7 +12,7 @@ class user_manager():
         self.default_count = config.DEFAULT_REPUTATION
         self.maximum_times_in_the_list = config.MAX_REPUTATION
         
-        self.defaultListOfUsers = config.defaultUserIDs
+        self.defaultListOfUsers = config.DEFAULT_USER_IDS
         
         # Create the initial list of users
         try:
