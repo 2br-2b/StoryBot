@@ -27,6 +27,7 @@ class file_manager():
         with open("story.txt", "r", encodig="utf8") as f:
             self.story = f.read()
 
+    @staticmethod
     def new_story(self):
         with open("story.txt", "r", encoding="utf8") as f:
             old_story = f.read()

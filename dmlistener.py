@@ -9,6 +9,7 @@ import json
 from discord.ext import tasks, commands
 
 import config
+import file_manager
 
 # Listens for DMs to add to the story
 class dmlistener(commands.Cog):
@@ -226,7 +227,7 @@ class dmlistener(commands.Cog):
     async def newstory(self, ctx):
         #TODO: finish it
         await ctx.send("This command isn't ready yet!")
-        #self.file_manager.new_story()
+        #file_manager.new_story()
         #await ctx.send("Done!")
 
     # Gives the reputation of a current user
