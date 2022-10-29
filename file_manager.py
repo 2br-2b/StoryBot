@@ -3,11 +3,10 @@ import time
 import config
 
 class file_manager():
-    def __init__(self, bot):
+    def __init__(self):
         file = open("story.txt", "r", encoding="utf8")
         self.story = file.read()
         file.close()
-        self.bot = bot
         
     
     def getStory(self):
