@@ -75,7 +75,7 @@ class user_manager():
 
     # Reduces the given user's reputation
     def unboost_user(self, id):
-        if(collections.Counter(self.weighted_list_of_users)[id] > 1):
+        if(collections.Counter(self.weighted_list_of_users)[id] > 2):
             self.weighted_list_of_users.remove(id)
         self.serialize()
         print('unboosted {0} successful'.format(id))
