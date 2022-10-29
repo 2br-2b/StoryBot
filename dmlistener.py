@@ -27,11 +27,23 @@ class dmlistener(commands.Cog):
 
         # The timestamp keeps track of when the last user was notified, so that even if the bot goes down, it still knows how much longer the current user has to continue the story
         self.timestamp = dmlistener.load_timestamp("timestamp.txt")
+        self._notif_line_cont = False
 
     # Sends the given message to the current user
     async def dm_current_user(self, message, file = None):
         print('about to dm the current user, '+str(self.current_user))
         await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user()))).create_dm()).send(message, file = file)
+        if self._notif_line_cont:
+            await (
+                await (
+                    await self.bot.fetch_user(
+                        int(self.user_manager.get_current_user())
+                    )
+                ).create_dm()
+            ).send("Please pick up the writing in "
+                 + "the middle of the last sentence.",
+                   file = file)
+            self._notif_line_cont = False
 
     # Notifies the current user that it's their turn to add to the story
     async def notify_people(self):
@@ -302,7 +314,17 @@ class dmlistener(commands.Cog):
             f.write(str(now))
         return now
 
-    def add_period_if_missing(self, line: str) -> str:
+    def fix_line_ending(self, line: str) -> str:
+        if line.endswith("..."):
+            self._notif_line_cont = True
+            return trim_ellipses(line)
+        else:
+            return add_period_if_missing(line)
+
+def trim_ellipses(line: str) -> str:
+    return line[:-3]
+
+def add_period_if_missing(line: str) -> str:
         """End a string with a period if other punctuation is missing."""
         good_endings = (
             ".", "?", "!", '"', "\'", "-", "\\"
