@@ -1,9 +1,7 @@
-#import pkg_resources
-#pkg_resources.require("discord.py==1.7.3")
-
 import discord
+from pathlib import Path
 
-
+# create the necessary files if they don't exist
 try:
     import config
 except ModuleNotFoundError:
@@ -20,7 +18,15 @@ except ModuleNotFoundError:
         exit()
 
 
+if not Path("story.txt").is_file():
+    print("Created story.txt")
+    open("story.txt", "x").close()
 
+if not Path("user.txt").is_file():
+    print("Created user.txt")
+    with open("user.txt", "w") as f:
+        f.write(str(config.defaultUserIDs[0]))
+        
 import dmlistener
 from user_manager import user_manager
 from file_manager import file_manager
