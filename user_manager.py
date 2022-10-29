@@ -32,7 +32,7 @@ class user_manager():
     # Chooses a random user
     # Doesn't care about reputation
     def get_random_user(self):
-        userID = self.get_current_user()
+        userID = user_manager.get_current_user()
 
         new_user = random.choice(self.listOfUsers)
         while str(new_user) == userID:
@@ -45,7 +45,8 @@ class user_manager():
         return new_user
     
     # Returns the current user
-    def get_current_user(self):
+    @staticmethod
+    def get_current_user():
         file = open("user.txt", "r")
         userID = file.read()
         file.close()
@@ -81,7 +82,7 @@ class user_manager():
 
     # Gets a random user from the list based on their reputation
     def get_random_weighted_user(self):
-        userID = self.get_current_user()
+        userID = user_manager.get_current_user()
         
         new_user = random.choice(self.weighted_list_of_users)
         while str(new_user) == userID:
