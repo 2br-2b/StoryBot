@@ -1,6 +1,7 @@
 import discord
 import math
 import asyncio
+import pathlib
 import time
 import os
 import collections
@@ -22,22 +23,9 @@ class dmlistener(commands.Cog):
         self.messageNotSent = False
         # self.timeout_checker.start()
         self.last_checked_user = self.current_user
-        
-        # The timestamp keeps track of when the last user was notified, so that even if the bot goes down, it still knows how much longer the current user has to continue the story
-        try:
-            timestamp_file = open("timestamp.txt", "r")
-            self.timestamp = float(timestamp_file.read())
-            timestamp_file.close()
-        except:
-            self.timestamp = time.time()
 
-        try:
-            os.remove('timestamp.txt')
-        except:
-            1
-        
-        with open('timestamp.txt', 'w') as f:
-            f.write(str(self.timestamp))
+        # The timestamp keeps track of when the last user was notified, so that even if the bot goes down, it still knows how much longer the current user has to continue the story
+        self.timestamp = dmlistener.load_timestamp("timestamp.txt")
 
     # Sends the given message to the current user
     async def dm_current_user(self, message, file = None):
@@ -290,6 +278,27 @@ class dmlistener(commands.Cog):
         self.user_manager.boost_user(id)
             
         await ctx.send(f"Unboosted <@!{ID}>!")
+
+    @staticmethod
+    def load_timestamp(filename: str) -> float:
+        full_path = pathlib.Path(__file__).parent / filename
+        if not os.path.exists(full_path):
+            return dmlistener.reset_timestamp(full_path)
+
+        with open(full_path, "r") as f:
+            try:
+                return float(f.read())
+            except ValueError:
+                print("ERR: resetting corrupted timestamp!")
+                return dmlistener.reset_timestamp(full_path)
+
+    @staticmethod
+    def reset_timestamp(path: pathlib.Path) -> float:
+        now = time.time()
+        with open(path, "w") as f:
+            f.write(str(now))
+        return now
+
 
 async def setup(bot):
     await bot.add_cog(dmlistener(bot.file_manager, bot.user_manager, bot))
