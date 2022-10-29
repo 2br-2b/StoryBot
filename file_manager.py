@@ -1,4 +1,5 @@
 import os
+import time
 import config
 
 class file_manager():
@@ -30,20 +31,11 @@ class file_manager():
         with open("story.txt", "r", encoding="utf8") as f:
             old_story = f.read()
 
-        import time
         time.sleep(0.01)
 
-        os.remove("story.txt")
+        backup_filename = file_manager.find_next_available_filename()
 
-        i = 1
-        while True:
-            try:
-                file = open(f"story {i}.txt", "r", encoding="utf8")
-                file.close()
-            except Exception:
-                break
-
-        with open(f'story {i}.txt', 'w') as f:
+        with open(backup_filename, 'w') as f:
             f.write(str(old_story))
 
         with open('story.txt', 'w+') as f:
@@ -60,3 +52,11 @@ class file_manager():
         if not has_good_ending:
             return stripped_line + "."
         return stripped_line + " "
+
+    @staticmethod
+    def find_next_available_filename() -> str:
+        i = 1
+        while os.file.exists(f"story {i}.txt"):
+            i += 1
+
+        return f"story {i}.txt"
