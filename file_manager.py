@@ -16,30 +16,15 @@ class file_manager():
         return self.story
 
     def addLine(self, line):
-        file = open("story.txt", "a", encoding="utf8")
-        listOfEndings = {
-            ".", "?", "!", '"', '\n', '\'', '-', '\\'
-        }
-        goodEnding = False
-        for l in listOfEndings:
-           if(line.strip().endswith(l)):
-               goodEnding = True
+        with open("story.txt", "a", encoding="utf8") as append_to:
+            line = file_manager.fix_line_ending(line).replace("\\","\n")
 
-        if not goodEnding:
-            line = line.strip() + "."
-        line = line.strip() + " "
+            if not line.startswith(config.PREFIX):
+                self.story += line
+            append_to.write(line)
 
-        line = line.replace("\\","\n")
-
-        if not line.startswith(config.PREFIX):
-           self.story += line
-        file.write(line)
-        file.close()
-
-        file = open("story.txt", "r", encoding="utf8")
-        self.story = file.read()
-        file.close()
-
+        with open("story.txt", "r", encodig="utf8") as f:
+            self.story = f.read()
 
     def new_story(self):
         with open("story.txt", "r", encoding="utf8") as f:
@@ -63,3 +48,15 @@ class file_manager():
 
         with open('story.txt', 'w+') as f:
             f.write('')
+
+    @staticmethod
+    def fix_line_ending(line: str) -> str:
+        good_endings = (
+            ".", "?", "!", '"', "\'", "-", "\\"
+        )
+        stripped_line = line.strip()
+        has_good_ending = any(stripped_line.endswith(p) for p in good_endings)
+
+        if not has_good_ending:
+            return stripped_line + "."
+        return stripped_line + " "
