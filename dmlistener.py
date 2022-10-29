@@ -52,6 +52,8 @@ class dmlistener(commands.Cog):
     # If there is a number, the given story number will be returned
     @commands.command()
     async def story(self, ctx, *parameters):
+        # TODO: use file_manager.py here
+        
         try:
             if parameters[-1].isdigit():
                 print('Story requested. Correct digit found!')
