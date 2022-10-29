@@ -18,7 +18,7 @@ class file_manager():
     # Appends the given line to the story and writes it to the file
     def addLine(self, line):
         with open("story.txt", "a", encoding="utf8") as append_to:
-            line = file_manager.fix_line_ending(line).replace("\\","\n")
+            line = line.replace("\\","\n")
 
             if not line.startswith(config.PREFIX):
                 self.story += line
@@ -43,20 +43,6 @@ class file_manager():
 
         with open('story.txt', 'w+') as f:
             f.write('')
-
-    # Sometimes, people entering submissions don't include periods at the end of their submission.
-    # In order to fix that, this method automatically ends a given string with a period if the text does not already have some character indicating the end of a sentence.
-    @staticmethod
-    def fix_line_ending(line: str) -> str:
-        good_endings = (
-            ".", "?", "!", '"', "\'", "-", "\\"
-        )
-        stripped_line = line.strip()
-        has_good_ending = any(stripped_line.endswith(p) for p in good_endings)
-
-        if not has_good_ending:
-            return stripped_line + ". "
-        return stripped_line + " "
 
     # This method finds the next available name for a story file and returns it
     @staticmethod

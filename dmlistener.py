@@ -127,7 +127,7 @@ class dmlistener(commands.Cog):
             if self.user_manager.get_current_user() == str(message.author.id):
                 if config.PREFIX + "skip" in message.content:
                     return
-                self.file_manager.addLine(message.content)
+                self.file_manager.addLine(self.fix_line_ending(message.content))
                 self.user_manager.boost_user(self.current_user)
                 self.current_user = self.user_manager.get_random_weighted_user()
                 await message.channel.send("Got it!  Thanks!")
@@ -302,6 +302,17 @@ class dmlistener(commands.Cog):
             f.write(str(now))
         return now
 
+    def add_period_if_missing(self, line: str) -> str:
+        """End a string with a period if other punctuation is missing."""
+        good_endings = (
+            ".", "?", "!", '"', "\'", "-", "\\"
+        )
+        stripped_line = line.strip()
+        has_good_ending = any(stripped_line.endswith(p) for p in good_endings)
+
+        if not has_good_ending:
+            return stripped_line + "."
+        return stripped_line + " "
 
 async def setup(bot):
     await bot.add_cog(dmlistener(bot.file_manager, bot.user_manager, bot))
