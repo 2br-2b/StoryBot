@@ -26,8 +26,10 @@ class file_manager():
             raise RuntimeWarning("I was just told to add this to the story, but this is clearly a command:\n"+line)
         
         with open("story.txt", "a", encoding="utf8") as append_to:
-            self.story += line
             append_to.write(line)
+
+        with open("story.txt", "r", encoding="utf8") as f:
+            self.story = f.read()
 
     # A work in progress
     # Should save the old story and restart the current story from scratch
