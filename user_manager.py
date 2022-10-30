@@ -65,7 +65,6 @@ class user_manager():
         file = open("user.txt", "r")
         currentUserID = file.read()
         file.close()
-        print ("Current user retrieved: `"+currentUserID+"`")
         return currentUserID
 
     # Adds the given user to the list of users
