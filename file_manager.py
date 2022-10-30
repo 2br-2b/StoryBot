@@ -24,7 +24,7 @@ class file_manager():
                 self.story += line
             append_to.write(line)
 
-        with open("story.txt", "r", encodig="utf8") as f:
+        with open("story.txt", "r", encoding="utf8") as f:
             self.story = f.read()
 
     # A work in progress

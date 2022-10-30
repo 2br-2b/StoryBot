@@ -31,7 +31,6 @@ class dmlistener(commands.Cog):
 
     # Sends the given message to the current user
     async def dm_current_user(self, message, file = None):
-        print('about to dm the current user, '+str(self.current_user))
         await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user()))).create_dm()).send(message, file = file)
         if self._notif_line_cont:
             await (
@@ -40,9 +39,8 @@ class dmlistener(commands.Cog):
                         int(self.user_manager.get_current_user())
                     )
                 ).create_dm()
-            ).send("Please pick up the writing in "
-                 + "the middle of the last sentence.",
-                   file = file)
+            ).send("**Please pick up the writing in "
+                 + "the middle of the last sentence.**")
             self._notif_line_cont = False
 
     # Notifies the current user that it's their turn to add to the story
@@ -163,7 +161,10 @@ class dmlistener(commands.Cog):
 
     # Returns the last 1500 characters of the story
     def lastChars(self, story):
-        return story[len(story) -1500:len(story) -1]
+        if(len(story) > 1500):
+            return story[len(story) -1500:len(story) -1]
+        else:
+            return story
 
     # Should wait for the specified amount of days, then skip the current user's turn
     async def wait_and_check(self):
@@ -315,14 +316,44 @@ class dmlistener(commands.Cog):
         return now
 
     def fix_line_ending(self, line: str) -> str:
-        if line.endswith("..."):
+        if ends_with_continuation_string(line):
             self._notif_line_cont = True
             return trim_ellipses(line)
         else:
             return add_period_if_missing(line)
 
+
+
+continuation_strings = ["...", "…"]
+
 def trim_ellipses(line: str) -> str:
-    return line[:-3]
+    
+    while(ends_with_continuation_string(line)):
+        for item in continuation_strings:
+            if line.endswith(item):
+                line = line[:-len(item)]
+            
+            # In case the user entered more than 3 `.`s, this'll trim it down
+            while(line.endswith("....")):
+                line = line[:-1]
+    
+    return line.rstrip() + " "
+
+def ends_with_continuation_string(text: str) -> bool:
+    for item in continuation_strings:
+        if text.endswith(item):
+            return True
+    return False
+
+
+
+
+
+
+
+
+
+
 
 def add_period_if_missing(line: str) -> str:
         """End a string with a period if other punctuation is missing."""
