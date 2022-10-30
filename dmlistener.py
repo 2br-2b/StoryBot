@@ -99,7 +99,7 @@ class dmlistener(commands.Cog):
         if str(ctx.author.id) != self.user_manager.get_current_user() and not ctx.author.id in config.ADMIN_IDS:
             return await ctx.send("It's not your turn!")
         await ctx.send("Skipping :(")
-        self.current_user = self.user_manager.get_random_weighted_user()
+        self.current_user = self.user_manager.set_random_weighted_user()
 
         await self.notify_people()
         await self.wait_and_check()
@@ -113,7 +113,7 @@ class dmlistener(commands.Cog):
     @commands.is_owner()
     @commands.command()
     async def list_users(self, ctx):
-        print("\nList of users:\n" + self.user_manager.get_list())
+        print("\nList of users:\n" + self.user_manager.get_weighted_list())
 
     # Checks if the message is the story, and if it is, appends it
     @commands.Cog.listener()
@@ -129,7 +129,7 @@ class dmlistener(commands.Cog):
                     return
                 self.file_manager.addLine(message.content)
                 self.user_manager.boost_user(self.current_user)
-                self.current_user = self.user_manager.get_random_weighted_user()
+                self.current_user = self.user_manager.set_random_weighted_user()
                 await message.channel.send("Got it!  Thanks!")
 
                 await self.notify_people()
@@ -174,7 +174,7 @@ class dmlistener(commands.Cog):
             print('failed to DM '+str(self.current_user)+'.  Moving on...')
         self.user_manager.unboost_user(self.current_user)
         print('unboosted '+str(self.current_user)+'.  About to change current user......') 
-        self.current_user = self.user_manager.get_random_weighted_user()
+        self.current_user = self.user_manager.set_random_weighted_user()
         print('done changing user to '+str(self.current_user)+'. About to notify people...')
         await self.notify_people()
 
@@ -241,17 +241,17 @@ class dmlistener(commands.Cog):
         else:
             ID = int(mentn.id)
 
-        print('listing reputations:\n'+collections.Counter(self.user_manager.get_list()))
+        print('listing reputations:\n'+collections.Counter(self.user_manager.get_weighted_list()))
 
-        await ctx.send(collections.Counter(self.user_manager.get_list())[ID])
+        await ctx.send(collections.Counter(self.user_manager.get_weighted_list())[ID])
 
     # Lists all users' reputations along with their names
     @commands.is_owner()
     @commands.command(aliases = ['lsrep', 'listrep'])
     async def listreputation(self, ctx):
         s = ''
-        for item in collections.Counter(self.user_manager.get_list()).keys():
-            s += (await self.bot.fetch_user(item)).name + ': ' + str(collections.Counter(self.user_manager.get_list())[item]) + '\n'
+        for item in collections.Counter(self.user_manager.get_weighted_list()).keys():
+            s += (await self.bot.fetch_user(item)).name + ': ' + str(collections.Counter(self.user_manager.get_weighted_list())[item]) + '\n'
         await ctx.send(s)
         
     # Boosts a user's reputation
