@@ -35,6 +35,8 @@ class user_manager():
         userID = user_manager.get_current_user()
 
         new_user = random.choice(self.listOfUsers)
+        
+        # Makes sure the same user doesn't go twice in a row
         while str(new_user) == userID:
             new_user = random.choice(self.listOfUsers)
         
