@@ -125,7 +125,7 @@ class dmlistener(commands.Cog):
 
         if message.guild is None:
             if self.user_manager.get_current_user() == str(message.author.id):
-                if config.PREFIX + "skip" in message.content:
+                if message.content.startswith(config.PREFIX):
                     return
                 self.file_manager.addLine(message.content)
                 self.user_manager.boost_user(self.current_user)
