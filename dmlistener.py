@@ -329,12 +329,13 @@ def trim_ellipses(line: str) -> str:
     
     while(ends_with_continuation_string(line)):
         for item in continuation_strings:
-            if line.endswith(item):
-                line = line[:-len(item)]
-            
             # In case the user entered more than 3 `.`s, this'll trim it down
             while(line.endswith("....")):
                 line = line[:-1]
+                
+            if line.endswith(item):
+                line = line[:-len(item)]
+            
     
     return line.rstrip() + " "
 
@@ -356,15 +357,23 @@ def ends_with_continuation_string(text: str) -> bool:
 
 def add_period_if_missing(line: str) -> str:
         """End a string with a period if other punctuation is missing."""
+        
         good_endings = (
-            ".", "?", "!", '"', "\'", "-", "\\"
+            ".", "?", "!", '"', "\'", "-", "\\", ",", ";", ":", "\n"
         )
-        stripped_line = line.strip()
+        good_endings_no_space = ("\n", "\\")
+        
+        stripped_line = line.rstrip()
         has_good_ending = any(stripped_line.endswith(p) for p in good_endings)
 
-        if not has_good_ending:
-            return stripped_line + "."
-        return stripped_line + " "
+        # Adds a period to the end of the sentence if one is needed
+        if not has_good_ending :
+            stripped_line = stripped_line + ". "
+        elif not any(stripped_line.endswith(p) for p in good_endings_no_space):
+            # The line ends with a punctuation mark. This makes sure that spaces aren't added after a \n, leading to awkward indents
+            stripped_line += " "
+        
+        return stripped_line
 
 async def setup(bot):
     await bot.add_cog(dmlistener(bot.file_manager, bot.user_manager, bot))
