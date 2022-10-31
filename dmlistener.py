@@ -5,7 +5,6 @@ import pathlib
 import time
 import os
 import collections
-import json
 from discord.ext import tasks, commands
 
 import config

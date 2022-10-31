@@ -1,4 +1,3 @@
-#import userIDs
 import random
 import os
 import config
