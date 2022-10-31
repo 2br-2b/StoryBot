@@ -15,7 +15,7 @@ class file_manager():
 
     # Appends the given line to the story and writes it to the file
     def addLine(self, line):
-        line = self.dmlistener.fix_line_ending(line).replace("\\","\n")
+        line = line.replace("\\","\n")
 
         # Replaces all extra spaces after line breaks
         line = re.sub(r"\n *", "\n", line) 
@@ -56,6 +56,3 @@ class file_manager():
             i += 1
 
         return f"story {i}.txt"
-    
-    def set_dmlistener(self, dmlistener) -> None:
-        self.dmlistener = dmlistener
