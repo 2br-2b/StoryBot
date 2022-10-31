@@ -25,6 +25,8 @@ class user_manager():
             self.weighted_list_of_users = []
             for item in self.defaultListOfUsers:
                 self.add_user(item)
+        
+        random.seed()
       
       
     
