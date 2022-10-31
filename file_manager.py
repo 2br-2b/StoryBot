@@ -1,6 +1,7 @@
 import os
 import time
 import config
+import re
 
 class file_manager():
     def __init__(self):
@@ -15,6 +16,9 @@ class file_manager():
     # Appends the given line to the story and writes it to the file
     def addLine(self, line):
         line = file_manager.fix_line_ending(line).replace("\\","\n")
+
+        # Replaces all extra spaces after line breaks
+        line = re.sub(r"\n *", "\n", line) 
 
         # Makes sure the user isn't sending a command before writing the story
         # Since this is already checked in dmlistener, this throws an error when it starts with a command
