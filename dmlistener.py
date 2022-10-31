@@ -6,6 +6,7 @@ import time
 import os
 import collections
 from discord.ext import tasks, commands
+import re
 
 import config
 import file_manager
@@ -326,20 +327,18 @@ class dmlistener(commands.Cog):
 continuation_strings = ["...", "…"]
 
 def trim_ellipses(line: str) -> str:
+    # This will remove:
+    # - Any count of three or more `.`s at the end of a line (to fix anyone adding lots of extra dots)
+    # - Any number of `…`s (to account for mobile users)
+    # - Any whitespace at the end or in between these
+    # - Any combination of the above
+    # It will then add a single space at the end of the line.
+    line = re.sub(r"(\.{3,}|…|\s)*$", "", line)
     
-    while(ends_with_continuation_string(line)):
-        for item in continuation_strings:
-            # In case the user entered more than 3 `.`s, this'll trim it down
-            while(line.endswith("....")):
-                line = line[:-1]
-                
-            if line.endswith(item):
-                line = line[:-len(item)]
-            
-    
-    return line.rstrip() + " "
+    return line + " "
 
 def ends_with_continuation_string(text: str) -> bool:
+    text = text.rstrip()
     for item in continuation_strings:
         if text.endswith(item):
             return True
