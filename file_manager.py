@@ -7,14 +7,14 @@ class file_manager():
     def __init__(self):
         file = open("story.txt", "r", encoding="utf8")
         file.close()
-        
-    # Returns the story in the story.txt file
+
     def getStory(self):
+        """Returns the story in the story.txt file"""
         with open("story.txt", "r", encoding="utf8") as file:
             return file.read()
 
-    # Appends the given line to the story and writes it to the file
     def addLine(self, line):
+        """Appends the given line to the story and writes it to the file"""
         line = line.replace("\\","\n")
 
         # Replaces all extra spaces after line breaks
@@ -31,10 +31,12 @@ class file_manager():
         with open("story.txt", "r", encoding="utf8") as f:
             self.story = f.read()
 
-    # A work in progress
-    # Should save the old story and restart the current story from scratch
     @staticmethod
     def new_story(self):
+        """A work in progress
+        Should save the old story and restart the current story from scratch"""
+        raise NotImplementedError("The `file_manager.new_story()` command is not finished yet.")
+        
         with open("story.txt", "r", encoding="utf8") as f:
             old_story = f.read()
 
@@ -48,9 +50,9 @@ class file_manager():
         with open('story.txt', 'w+') as f:
             f.write('')
 
-    # This method finds the next available name for a story file and returns it
     @staticmethod
     def find_next_available_filename() -> str:
+        """This method finds the next available name for a story file and returns it"""
         i = 1
         while os.file.exists(f"story {i}.txt"):
             i += 1

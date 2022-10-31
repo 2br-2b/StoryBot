@@ -29,8 +29,9 @@ class dmlistener(commands.Cog):
         self.timestamp = dmlistener.load_timestamp("timestamp.txt")
         self._notif_line_cont = False
 
-    # Sends the given message to the current user
     async def dm_current_user(self, message, file = None):
+        """Sends the given message to the current user"""
+        
         await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user()))).create_dm()).send(message, file = file)
         if self._notif_line_cont:
             await (
@@ -43,8 +44,9 @@ class dmlistener(commands.Cog):
                  + "the middle of the last sentence.**")
             self._notif_line_cont = False
 
-    # Notifies the current user that it's their turn to add to the story
     async def notify_people(self):
+        """Notifies the current user that it's their turn to add to the story"""
+        
         file = discord.File("story.txt", filename="story.txt")
         await self.dm_current_user("""Your turn.  Respond with a DM to continue the story!  Use a \ to create a line break.
             
@@ -58,10 +60,11 @@ class dmlistener(commands.Cog):
         for channel in config.STORY_CHANNELS:
             await self.bot.get_channel(channel).send("It's now {0}'s turn!".format((await self.bot.fetch_user(int(self.user_manager.get_current_user()))).name))
 
-    # Returns the requested story
-    # If there is a number, the given story number will be returned
     @commands.command()
     async def story(self, ctx, *parameters):
+        """Sends a reply with the requested story
+        If there is a number, the given story number will be returned"""
+        
         # TODO: use file_manager.py here
         
         try:
@@ -75,27 +78,30 @@ class dmlistener(commands.Cog):
         except:
             file = discord.File("story.txt", filename="story.txt")
             await ctx.send("```"+self.lastChars(self.file_manager.getStory())+"```", file = file)
-   
-    # Syncs the story with the old git repo
-    # Will need to be removed
+
     @commands.is_owner()
     @commands.command()
     async def push(self, ctx):
+        """Syncs the story with the old git repo
+        Will need to be removed"""
+        
         return
         import os, time
         os.system("git commit -am \"{0}\"".format(time.time()))
         os.system("git pull")
         os.system("git push")
         await ctx.send("oki swine it done")
-    
-    # Sends a message with the current user's name
+
     @commands.command()
     async def turn(self, ctx):
+        """Sends a message with the current user's name"""
+        
         await ctx.send("It is currently " + (await self.bot.fetch_user(int(self.user_manager.get_current_user()))).display_name + "'s turn!")
 
-    # The help command
     @commands.command()
     async def help(self, ctx):
+        """The help command"""
+        
         await ctx.send(
             """This bot is a story bot.  One user will write a part of the story (anywhere from a sentence or two to a couple of paragraphs - your choice!), then another, and so on until the story is complete!
             
@@ -103,9 +109,10 @@ class dmlistener(commands.Cog):
     `""" + config.PREFIX + """story` displays the story so far - put a number afterwards to see a past story
     `""" + config.PREFIX + "turn` displays whose turn it is")
 
-    # Skips the current user
     @commands.command()
     async def skip(self, ctx):
+        """Skips the current user"""
+        
         if str(ctx.author.id) != self.user_manager.get_current_user() and not ctx.author.id in config.ADMIN_IDS:
             return await ctx.send("It's not your turn!")
         await ctx.send("Skipping :(")
@@ -114,20 +121,23 @@ class dmlistener(commands.Cog):
         await self.notify_people()
         await self.wait_and_check()
 
-    # The command to notify users that it's their turn
     @commands.command()
     async def notify(self, ctx):
+        """The command to notify users that it's their turn"""
+        
         await self.notify_people()
 
-    # Lists the users working on the story
     @commands.is_owner()
     @commands.command()
     async def list_users(self, ctx):
+        """Lists the users working on the story"""
+        
         print("\nList of users:\n" + self.user_manager.get_weighted_list())
 
-    # Checks if the message is the story, and if it is, appends it
     @commands.Cog.listener()
     async def on_message(self, message):
+        """Checks if the message should be added the story, and if it is, appends it"""
+        
         if self.messageNotSent:
             file = discord.File("story.txt", filename="story.txt")
             await self.notify_people()
@@ -145,9 +155,10 @@ class dmlistener(commands.Cog):
                 await self.notify_people()
                 await self.wait_and_check()
 
-    # The all-powerful pieMethod
-    # Splits the story into a list of strings if it is too long
     def pieMethod(self, story):
+        """The all-powerful pieMethod
+        Splits the story into a list of strings if it is too long"""
+        
         if len(story) >= 1500:
             split = list()
             for i in range(math.ceil(len(story) / 1500)):
@@ -157,17 +168,19 @@ class dmlistener(commands.Cog):
                     split.append(story[i:i+1500])
             return split
         else:
-            return story
+            return [story]
 
-    # Returns the last 1500 characters of the story
     def lastChars(self, story):
+        """Returns the last 1500 characters of the story"""
+        
         if(len(story) > 1500):
             return story[len(story) -1500:len(story) -1]
         else:
             return story
 
-    # Should wait for the specified amount of days, then skip the current user's turn
     async def wait_and_check(self):
+        """Should wait for the specified amount of days, then skip the current user's turn"""
+        
         return
         def check(message):
             return str(message.author.id) == self.user_manager.get_current_user()
@@ -177,8 +190,9 @@ class dmlistener(commands.Cog):
         except asyncio.TimeoutError:
             await timeout_happened()
 
-    # Skips the current user's turn if they don't respond in the specified amount of time
     async def timeout_happened(self):
+        """Skips the current user's turn if they don't respond in the specified amount of time"""
+        
         print('about to dm '+str(self.current_user) + ' that they have been skipped due to taking too long') 
         try:
             await self.dm_current_user('You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
@@ -197,9 +211,10 @@ class dmlistener(commands.Cog):
         with open('timestamp.txt', 'w') as f:
             f.write(str(self.timestamp))
 
-    # SHOULD skip the current user's turn if they don't respond in the specified amount of time
     @tasks.loop(seconds=60 * 60) # Check back every hour
     async def timeout_checker(self):
+        """SHOULD skip the current user's turn if they don't respond in the specified amount of time"""
+        
         if self.last_checked_user is self.current_user: #still the same person
             if time.time() - self.timestamp >= 60 * 60 * 24 * config.TIMEOUT_DAYS: # if the time is over the allotted time
                 print('about to timeout for '+str(self.current_user))
@@ -224,31 +239,35 @@ class dmlistener(commands.Cog):
     def cog_unload(self):
         self.timeout_checker.cancel()
 
-    # Adds a user to the list of participants
     @commands.command()
     async def add(self, ctx):
+        """Adds a user to the list of participants"""
+        
         self.user_manager.add_user(ctx.author.id)
         await ctx.send("Done!")
 
-    # Removes a user from the list of participants
     @commands.command()
     async def remove(self, ctx):
+        """Removes a user from the list of participants"""
+        
         self.user_manager.remove_user(ctx.author.id)
         await ctx.send("Done!")
 
-    # Should be used at the end of a story to create a new story
     @commands.is_owner()
     @commands.command()
     async def newstory(self, ctx):
+        """Should be used at the end of a story to create a new story"""
+        
         #TODO: finish it
         await ctx.send("This command isn't ready yet!")
         #file_manager.new_story()
         #await ctx.send("Done!")
 
-    # Gives the reputation of a current user
     @commands.is_owner()
     @commands.command(aliases = ['rep'])
     async def reputation(self, ctx, mentn : discord.Member = None):
+        """Gives the reputation of a current user"""
+        
         if mentn == None:
             ID = int(ctx.author.id)
         else:
@@ -258,19 +277,19 @@ class dmlistener(commands.Cog):
 
         await ctx.send(collections.Counter(self.user_manager.get_weighted_list())[ID])
 
-    # Lists all users' reputations along with their names
     @commands.is_owner()
     @commands.command(aliases = ['lsrep', 'listrep'])
     async def listreputation(self, ctx):
+        """Lists all users' reputations along with their names"""
         s = ''
         for item in collections.Counter(self.user_manager.get_weighted_list()).keys():
             s += (await self.bot.fetch_user(item)).name + ': ' + str(collections.Counter(self.user_manager.get_weighted_list())[item]) + '\n'
         await ctx.send(s)
-        
-    # Boosts a user's reputation
+
     @commands.is_owner()
     @commands.command(aliases = [])
     async def boost(self, ctx, mentn : discord.Member = None):
+        """Boosts a user's reputation"""
         return
         if mentn == None:
             ID = int(ctx.author.id)
@@ -280,11 +299,11 @@ class dmlistener(commands.Cog):
         self.user_manager.boost_user(id)
             
         await ctx.send(f"Boosted <@!{ID}>!")
-        
-    # Unboosts a user's reputation
+
     @commands.is_owner()
     @commands.command(aliases = [])
     async def unboost(self, ctx, mentn : discord.Member = None):
+        """Unboosts a user's reputation"""
         return
         if mentn == None:
             ID = int(ctx.author.id)
@@ -297,6 +316,7 @@ class dmlistener(commands.Cog):
 
     @staticmethod
     def load_timestamp(filename: str) -> float:
+        """Returns the timestamp if it exists. If it doesn't, it'll reset the timestamp and return the new one."""
         full_path = pathlib.Path(__file__).parent / filename
         if not os.path.exists(full_path):
             return dmlistener.reset_timestamp(full_path)
@@ -305,17 +325,24 @@ class dmlistener(commands.Cog):
             try:
                 return float(f.read())
             except ValueError:
-                print("ERR: resetting corrupted timestamp!")
-                return dmlistener.reset_timestamp(full_path)
+                dmlistener.reset_timestamp(full_path)
+                raise RuntimeWarning("Timestamp has been corrupted. I have reset the timestamp, but if this keeps happening, something's wrong.")
 
     @staticmethod
     def reset_timestamp(path: pathlib.Path) -> float:
+        """Resets the timestamp to the current time"""
         now = time.time()
         with open(path, "w") as f:
             f.write(str(now))
         return now
 
     def fix_line_ending(self, line: str) -> str:
+        """Determines if a line ends with an ellipses and either:
+        - removes the ellipses if it exists or
+        - adds a period if it doesn't have an ellipses and if a period is needed
+        
+        It also strips any extra spaces at the end of a line and replaces them with a single space"""
+        
         if ends_with_continuation_string(line):
             self._notif_line_cont = True
             return trim_ellipses(line)
@@ -327,17 +354,22 @@ class dmlistener(commands.Cog):
 continuation_strings = ["...", "…"]
 
 def trim_ellipses(line: str) -> str:
-    # This will remove:
-    # - Any count of three or more `.`s at the end of a line (to fix anyone adding lots of extra dots)
-    # - Any number of `…`s (to account for mobile users)
-    # - Any whitespace at the end or in between these
-    # - Any combination of the above
-    # It will then add a single space at the end of the line.
+    """This will remove from the end of the line:
+    - Any count of three or more `.`s (to fix anyone adding lots of extra dots)
+    - Any number of `…`s (to account for mobile users)
+    - Any whitespace (to account for someone typing spaces before or after an ellipses)
+    - Any combination of the above
+    
+    It will then add a single space at the end of the line."""
+
+    # Does the regex checking
     line = re.sub(r"(\.{3,}|…|\s)*$", "", line)
     
     return line + " "
 
 def ends_with_continuation_string(text: str) -> bool:
+    """Determines if a trimmed line ends with an ellipses"""
+    
     text = text.rstrip()
     for item in continuation_strings:
         if text.endswith(item):
