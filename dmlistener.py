@@ -29,21 +29,17 @@ class dmlistener(commands.Cog):
         # The timestamp keeps track of when the last user was notified, so that even if the bot goes down, it still knows how much longer the current user has to continue the story
         self.timestamp = dmlistener.load_timestamp("timestamp.txt")
         self._notif_line_cont = False
+        
+        self.CHARACTERS_TO_SHOW = 4096
 
-    async def dm_current_user(self, message, file = None):
+    async def dm_current_user(self, message, file = None, embed = None):
         """Sends the given message to the current user"""
         
-        await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user()))).create_dm()).send(message, file = file)
+        await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user()))).create_dm()).send(message, embed=embed, file = file)
         if self._notif_line_cont:
-            await (
-                await (
-                    await self.bot.fetch_user(
-                        int(self.user_manager.get_current_user())
-                    )
-                ).create_dm()
-            ).send("**Please pick up the writing in "
-                 + "the middle of the last sentence.**")
             self._notif_line_cont = False
+            await self.dm_current_user("**Please pick up the writing in the middle of the last sentence.**")
+            
 
     async def notify_people(self):
         """Notifies the current user that it's their turn to add to the story"""
@@ -53,8 +49,9 @@ class dmlistener(commands.Cog):
             
             **MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.
             
-            Here is the story so far:""", file = file)
-        await self.dm_current_user("""```{0}```""".format(self.lastChars(self.file_manager.getStory())))
+            Here is the story so far:""", file = file, embed = create_embed(content=self.lastChars(self.file_manager.getStory()), author_name=None, author_icon_url=None))
+        
+        
         
         # Send a message in the story chanel
         for channel in config.STORY_CHANNELS:
@@ -162,22 +159,22 @@ class dmlistener(commands.Cog):
         """The all-powerful pieMethod
         Splits the story into a list of strings if it is too long"""
         
-        if len(story) >= config.CHARACTERS_TO_SHOW:
+        if len(story) >= self.CHARACTERS_TO_SHOW:
             split = list()
-            for i in range(math.ceil(len(story) / config.CHARACTERS_TO_SHOW)):
-                if i == math.ceil(len(story) / config.CHARACTERS_TO_SHOW):
+            for i in range(math.ceil(len(story) / self.CHARACTERS_TO_SHOW)):
+                if i == math.ceil(len(story) / self.CHARACTERS_TO_SHOW):
                     split.append(story[i:len(story) -1])
                 else:
-                    split.append(story[i:i+config.CHARACTERS_TO_SHOW])
+                    split.append(story[i:i+self.CHARACTERS_TO_SHOW])
             return split
         else:
             return [story]
 
     def lastChars(self, story):
-        """Returns the last CHARACTERS_TO_SHOW characters of the story"""
+        """Returns the last self.CHARACTERS_TO_SHOW characters of the story"""
         
-        if(len(story) > config.CHARACTERS_TO_SHOW):
-            return story[len(story) - config.CHARACTERS_TO_SHOW:len(story) -1]
+        if(len(story) > self.CHARACTERS_TO_SHOW):
+            return story[len(story) - self.CHARACTERS_TO_SHOW:len(story) -1]
         else:
             return story
 
@@ -366,12 +363,14 @@ class dmlistener(commands.Cog):
         if author is None:
             author = message.author
         
-        emb = discord.Embed(description=content, color=config.EMBED_COLOR, title=title)
-        emb.set_author(name=author.name, icon_url=author.display_avatar.url)
         
-        await message.reply(embed = emb, file = file, mention_author = False)
+        
+        await message.reply(embed = create_embed(description=content, title=title, author_name=author.name, author_icon_url=author.display_avatar.url), file = file, mention_author = False)
 
 
+def create_embed(content=None, color=config.EMBED_COLOR, title=None, author_name=None, author_icon_url=None) -> discord.Embed:
+    emb = discord.Embed(description=content, color=color, title=title)
+    emb.set_author(name=author_name, icon_url=author_icon_url)
 
 continuation_strings = ["...", "…"]
 
