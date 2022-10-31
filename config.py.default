@@ -1,3 +1,5 @@
+from discord import Color
+
 # The bot's Discord token
 TOKEN = 'xxxxxxxxxxxxx'
 
@@ -27,3 +29,5 @@ ADMIN_IDS = [
 DEFAULT_USER_IDS = [
     
 ]
+
+EMBED_COLOR = Color.from_str("0x00ff00")
