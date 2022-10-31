@@ -354,7 +354,7 @@ class dmlistener(commands.Cog):
 continuation_strings = ["...", "…"]
 
 def trim_ellipses(line: str) -> str:
-    """This will remove from the end of the line:
+    """This will remove from the beginning and end of the line:
     - Any count of three or more `.`s (to fix anyone adding lots of extra dots)
     - Any number of `…`s (to account for mobile users)
     - Any whitespace (to account for someone typing spaces before or after an ellipses)
@@ -363,7 +363,8 @@ def trim_ellipses(line: str) -> str:
     It will then add a single space at the end of the line."""
 
     # Does the regex checking
-    line = re.sub(r"(\.{3,}|…|\s)*$", "", line)
+    line = re.sub(r"(\.{3,}|…|\s)+$", "", line)
+    line = re.sub(r"^(\.{3,}|…|\s)+", "", line)
     
     return line + " "
 
