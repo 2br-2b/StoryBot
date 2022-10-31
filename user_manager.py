@@ -23,7 +23,7 @@ class user_manager():
         random.seed()
     
     def set_random_weighted_user(self) -> int:
-        """Sets a random user as the current userbased on their reputation"""
+        """Sets a random user as the current user based on their reputation"""
         return self.__set_new_random_user(self.get_weighted_list())
 
     def set_random_unweighted_user(self) -> int:

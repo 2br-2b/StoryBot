@@ -30,6 +30,7 @@ DEFAULT_USER_IDS = [
     
 ]
 
+# The color to show next to messages the bot sends
 EMBED_COLOR = Color.from_str("0x00ff00")
 
 # How many characters to show when running the story command
