@@ -20,8 +20,8 @@ class file_manager():
         # Replaces all extra spaces after line breaks
         line = re.sub(r"\n *", "\n", line) 
 
-        # Makes sure the user isn't sending a command before writing the story
-        # Since this is already checked in dmlistener, this throws an error when it starts with a command
+        # Makes sure the bot isn't trying to append a command onto the story
+        # Since this is already checked in dmlistener, this throws an error when it detects a command
         if line.startswith(config.PREFIX):
             raise RuntimeWarning("I was just told to add this to the story, but this is clearly a command:\n"+line)
         
