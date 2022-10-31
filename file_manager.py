@@ -14,7 +14,7 @@ class file_manager():
 
     # Appends the given line to the story and writes it to the file
     def addLine(self, line):
-        line = file_manager.fix_line_ending(line).replace("\\","\n")
+        line = self.dmlistener.fix_line_ending(line).replace("\\","\n")
 
         # Makes sure the bot isn't trying to append a command onto the story
         # Since this is already checked in dmlistener, this throws an error when it detects a command
@@ -52,3 +52,6 @@ class file_manager():
             i += 1
 
         return f"story {i}.txt"
+    
+    def set_dmlistener(self, dmlistener) -> None:
+        self.dmlistener = dmlistener
