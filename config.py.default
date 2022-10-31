@@ -27,6 +27,6 @@ ADMIN_IDS = [
 
 
 # The userIDs to include in the list on the first run
-defaultUserIDs = [
+DEFAULT_USER_IDS = [
     
 ]

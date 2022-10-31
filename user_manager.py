@@ -8,21 +8,16 @@ class user_manager():
     def __init__(self, bot):
         self.bot = bot
         
-        self.default_count = config.DEFAULT_REPUTATION
-        self.maximum_times_in_the_list = config.MAX_REPUTATION
-        
-        self.defaultListOfUsers = config.defaultUserIDs
-        
         # Create the initial list of users
         try:
             with open('weighted list of users.json', 'rt') as f:
                 self.weighted_list_of_users = json.load(f)
             for id in self.weighted_list_of_users:
-                if(collections.Counter(self.weighted_list_of_users)[id] > self.maximum_times_in_the_list):
+                while(collections.Counter(self.weighted_list_of_users)[id] > config.MAX_REPUTATION):
                     self.unboost_user(id)
         except:
             self.weighted_list_of_users = []
-            for item in self.defaultListOfUsers:
+            for item in config.DEFAULT_USER_IDS:
                 self.add_user(item)
         
         random.seed()
@@ -71,7 +66,7 @@ class user_manager():
     # Adds the given user to the list of users
     def add_user(self, id):
         if id not in self.get_weighted_list():
-            for i in range(0, self.default_count):
+            for i in range(0, config.DEFAULT_REPUTATION):
                 self.weighted_list_of_users.append(id)
         self.serialize()
 
@@ -83,7 +78,7 @@ class user_manager():
 
     # Boosts the given user's reputation
     def boost_user(self, id):
-        if(collections.Counter(self.weighted_list_of_users)[id] < self.maximum_times_in_the_list):
+        if(collections.Counter(self.weighted_list_of_users)[id] < config.MAX_REPUTATION):
             self.weighted_list_of_users.append(id)
         self.serialize()
         print('boosted {0} finished'.format(id))

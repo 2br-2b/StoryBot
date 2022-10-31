@@ -25,7 +25,7 @@ if not Path("story.txt").is_file():
 if not Path("user.txt").is_file():
     print("Created user.txt")
     with open("user.txt", "w") as f:
-        f.write(str(config.defaultUserIDs[0]))
+        f.write(str(config.DEFAULT_USER_IDS[0]))
         
 import dmlistener
 from user_manager import user_manager
