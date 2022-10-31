@@ -42,8 +42,8 @@ bot = commands.Bot(config.PREFIX, help_command = None, intents=intents)
 
 fmgr = file_manager()
 umgr = user_manager(bot)
-
 dml = dmlistener.dmlistener(fmgr, umgr, bot)
+
 bot.file_manager = fmgr
 bot.user_manager = umgr
 

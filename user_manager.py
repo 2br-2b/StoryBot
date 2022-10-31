@@ -21,20 +21,26 @@ class user_manager():
                 self.add_user(item)
         
         random.seed()
-      
-      
     
-    # Gets a random user from the list based on their reputation
     def set_random_weighted_user(self) -> int:
+        """Sets a random user as the current userbased on their reputation"""
         return self.__set_new_random_user(self.get_weighted_list())
-    
-    # Chooses a random user
-    # Doesn't care about reputation
+
     def set_random_unweighted_user(self) -> int:
+        """Sets a random user as the current user. Doesn't care about reputation."""
         return self.__set_new_random_user(self.get_unweighted_list())
     
     
-    def __set_new_random_user(self, listToChooseFrom) -> int:
+    def __set_new_random_user(self, listToChooseFrom:list) -> int:
+        """Sets a random user from the list as the current user
+
+        Args:
+            listToChooseFrom (list): the list to choose a random user from
+
+        Returns:
+            int: the random user now set as the current user
+        """
+        
         lastUserID = user_manager.get_current_user()
 
         new_user = random.choice(listToChooseFrom)
@@ -51,40 +57,39 @@ class user_manager():
             f.write(str(new_user))
         
         return new_user
-    
-    
-    
-    
-    # Returns the current user
+
+
+
     @staticmethod
     def get_current_user():
+        """Returns the current user"""
         file = open("user.txt", "r")
         currentUserID = file.read()
         file.close()
         return currentUserID
 
-    # Adds the given user to the list of users
     def add_user(self, id):
+        """Adds the given user to the list of users"""
         if id not in self.get_weighted_list():
             for i in range(0, config.DEFAULT_REPUTATION):
                 self.weighted_list_of_users.append(id)
         self.serialize()
 
-    # Removes the given user from the list of users
     def remove_user(self, id):
+        """Removes the given user from the list of users"""
         for i in range(0, collections.Counter(self.weighted_list_of_users)[id]):
             self.weighted_list_of_users.remove(id)
         self.serialize()
 
-    # Boosts the given user's reputation
     def boost_user(self, id):
+        """Boosts the given user's reputation"""
         if(collections.Counter(self.weighted_list_of_users)[id] < config.MAX_REPUTATION):
             self.weighted_list_of_users.append(id)
         self.serialize()
         print('boosted {0} finished'.format(id))
 
-    # Reduces the given user's reputation
     def unboost_user(self, id):
+        """Reduces the given user's reputation"""
         if(collections.Counter(self.weighted_list_of_users)[id] > 2):
             self.weighted_list_of_users.remove(id)
         self.serialize()
