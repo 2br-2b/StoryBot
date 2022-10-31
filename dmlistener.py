@@ -53,9 +53,8 @@ class dmlistener(commands.Cog):
             
             **MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.
             
-            Here is the story so far:
-            ```{0}```""".format(self.lastChars(self.file_manager.getStory()))
-            , file = file)
+            Here is the story so far:""", file = file)
+        await self.dm_current_user("""```{0}```""".format(self.lastChars(self.file_manager.getStory())))
         
         # Send a message in the story chanel
         for channel in config.STORY_CHANNELS:
@@ -163,22 +162,22 @@ class dmlistener(commands.Cog):
         """The all-powerful pieMethod
         Splits the story into a list of strings if it is too long"""
         
-        if len(story) >= 1500:
+        if len(story) >= config.CHARACTERS_TO_SHOW:
             split = list()
-            for i in range(math.ceil(len(story) / 1500)):
-                if i == math.ceil(len(story) / 1500):
+            for i in range(math.ceil(len(story) / config.CHARACTERS_TO_SHOW)):
+                if i == math.ceil(len(story) / config.CHARACTERS_TO_SHOW):
                     split.append(story[i:len(story) -1])
                 else:
-                    split.append(story[i:i+1500])
+                    split.append(story[i:i+config.CHARACTERS_TO_SHOW])
             return split
         else:
             return [story]
 
     def lastChars(self, story):
-        """Returns the last 1500 characters of the story"""
+        """Returns the last CHARACTERS_TO_SHOW characters of the story"""
         
-        if(len(story) > 1500):
-            return story[len(story) -1500:len(story) -1]
+        if(len(story) > config.CHARACTERS_TO_SHOW):
+            return story[len(story) - config.CHARACTERS_TO_SHOW:len(story) -1]
         else:
             return story
 

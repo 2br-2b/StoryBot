@@ -31,3 +31,7 @@ DEFAULT_USER_IDS = [
 ]
 
 EMBED_COLOR = Color.from_str("0x00ff00")
+
+# How many characters to show when running the story command
+# Discord blocks messages longer than 2000 characters
+CHARACTERS_TO_SHOW = 1900
