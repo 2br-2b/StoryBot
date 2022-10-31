@@ -365,12 +365,15 @@ class dmlistener(commands.Cog):
         
         
         
-        await message.reply(embed = create_embed(description=content, title=title, author_name=author.name, author_icon_url=author.display_avatar.url), file = file, mention_author = False)
+        await message.reply(embed = create_embed(content=content, title=title, author_name=author.name, author_icon_url=author.display_avatar.url), file = file, mention_author = False)
 
 
 def create_embed(content=None, color=config.EMBED_COLOR, title=None, author_name=None, author_icon_url=None) -> discord.Embed:
+    """Creates an embed with the given parameters. All values have defaults if not given."""
     emb = discord.Embed(description=content, color=color, title=title)
     emb.set_author(name=author_name, icon_url=author_icon_url)
+    
+    return emb
 
 continuation_strings = ["...", "…"]
 
