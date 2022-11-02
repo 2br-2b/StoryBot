@@ -147,7 +147,14 @@ class dmlistener(commands.Cog):
             if self.user_manager.get_current_user() == str(message.author.id):
                 if message.content.startswith(config.PREFIX):
                     return
-                self.file_manager.addLine(self.fix_line_ending(message.content))
+                
+                # Add the given line to the story file
+                self.file_manager.addLine(self.format_story_addition(message.content))
+                
+                # Mirror the messages to a Discord channel
+                for channel in config.STORY_OUTPUT_CHANNELS:
+                    await self.bot.get_channel(channel).send(self.format_story_addition(message.content))
+                
                 self.user_manager.boost_user(self.current_user)
                 self.current_user = self.user_manager.set_random_weighted_user()
                 await self.reply_to_message(message, "Got it!  Thanks!")
@@ -335,6 +342,20 @@ class dmlistener(commands.Cog):
         with open(path, "w") as f:
             f.write(str(now))
         return now
+
+    def format_story_addition(self, line:str) -> str:
+        if(line.startswith(config.PREFIX)):
+            return None
+        
+        line = self.fix_line_ending(line)
+        
+        line = line.replace("\\","\n")
+
+        # Replaces all extra spaces after line breaks
+        line = re.sub(r"\n *", "\n", line) 
+        
+        return line
+
 
     def fix_line_ending(self, line: str) -> str:
         """Determines if a line ends with an ellipses and either:

@@ -15,11 +15,7 @@ class file_manager():
 
     def addLine(self, line):
         """Appends the given line to the story and writes it to the file"""
-        line = line.replace("\\","\n")
-
-        # Replaces all extra spaces after line breaks
-        line = re.sub(r"\n *", "\n", line) 
-
+        
         # Makes sure the bot isn't trying to append a command onto the story
         # Since this is already checked in dmlistener, this throws an error when it detects a command
         if line.startswith(config.PREFIX):

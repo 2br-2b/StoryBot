@@ -20,6 +20,11 @@ STORY_CHANNELS = [
     
 ]
 
+# The channels to mirror the story to. Whenever an addition is made to the story, the same text will be mirrored into this channel for easier viewing.
+STORY_OUTPUT_CHANNELS=[
+    
+]
+
 # The ID(s) of the bot's admin(s)
 ADMIN_IDS = [
     
