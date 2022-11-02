@@ -135,8 +135,8 @@ class dmlistener(commands.Cog):
     @commands.command()
     async def list_users(self, ctx):
         """Lists the users working on the story"""
-        
-        print("\nList of users:\n" + self.user_manager.get_weighted_list())
+        # TODO: make this command better
+        await self.reply_to_message(message=ctx.message, content="List of users:\n" + str(self.user_manager.get_unweighted_list()))
 
     @commands.Cog.listener()
     async def on_message(self, message):
