@@ -33,6 +33,7 @@ from file_manager import file_manager
 from discord.ext import commands
 from threading import Thread
 import time
+import asyncio
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -52,16 +53,18 @@ bot.user_manager = umgr
 async def on_ready():
     print("Bot started!")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=" for `"+config.PREFIX+"help`"))
-    try:
-        await bot.load_extension("dmlistener")
-    except commands.errors.ExtensionNotFound:
-        print("Failed to load dmlistener!")
-    except commands.errors.ExtensionAlreadyLoaded:
-        pass
-    except commands.errors.NoEntryPointError:
-        print("Put the setup() function back fool.")
 
 if(config.TOKEN == 'xxxxxxxxxxxxx'):
     raise RuntimeError("Please update config.py with your bot's token!")
+
+
+try:
+    asyncio.run(bot.load_extension("dmlistener"))
+except commands.errors.ExtensionNotFound:
+    print("Failed to load dmlistener!")
+except commands.errors.ExtensionAlreadyLoaded:
+    pass
+except commands.errors.NoEntryPointError:
+    print("Put the setup() function back fool.")
 
 bot.run(config.TOKEN)

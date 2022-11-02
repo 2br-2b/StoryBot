@@ -27,7 +27,6 @@ class dmlistener(commands.Cog):
         self.last_checked_user = self.current_user
 
         # The timestamp keeps track of when the last user was notified, so that even if the bot goes down, it still knows how much longer the current user has to continue the story
-        self.timestamp = dmlistener.load_timestamp("timestamp.txt")
         self._notif_line_cont = False
         
         self.CHARACTERS_TO_SHOW = 4096
@@ -117,6 +116,7 @@ class dmlistener(commands.Cog):
             return
         await self.reply_to_message(ctx.message, "Skipping :(")
         self.current_user = self.user_manager.set_random_weighted_user()
+        self.reset_timestamp()
 
         await self.notify_people()
         await self.wait_and_check()
@@ -172,9 +172,11 @@ class dmlistener(commands.Cog):
                 for channel in config.STORY_OUTPUT_CHANNELS:
                     await self.bot.get_channel(channel).send(content_to_send, embed = emb)
                 
+                await self.reply_to_message(message, "Got it!  Thanks!")
+                
                 self.user_manager.boost_user(self.current_user)
                 self.current_user = self.user_manager.set_random_weighted_user()
-                await self.reply_to_message(message, "Got it!  Thanks!")
+                self.reset_timestamp()
 
                 await self.notify_people()
                 await self.wait_and_check()
@@ -230,35 +232,28 @@ class dmlistener(commands.Cog):
         await self.notify_people()
 
         self.last_checked_user = self.current_user
-        self.timestamp = time.time()
-        os.remove('timestamp.txt')
-        with open('timestamp.txt', 'w') as f:
-            f.write(str(self.timestamp))
+        
+        self.reset_timestamp()
 
     @tasks.loop(seconds=60 * 60) # Check back every hour
     async def timeout_checker(self):
-        """SHOULD skip the current user's turn if they don't respond in the specified amount of time"""
-        
+        """Will skip the current user's turn if they don't respond in the specified amount of time"""
         if self.last_checked_user is self.current_user: #still the same person
-            if time.time() - self.timestamp >= 60 * 60 * 24 * config.TIMEOUT_DAYS: # if the time is over the allotted time
+            if time.time() - self.load_timestamp() >= 60 * 60 * 24 * config.TIMEOUT_DAYS: # if the time is over the allotted time
                 print('about to timeout for '+str(self.current_user))
                 await self.timeout_happened()
                 print('timeout happened. New user is '+str(self.current_user))
 
         else: #new person
             self.last_checked_user = self.current_user
-            self.timestamp = time.time()
-            os.remove('timestamp.txt')
-            with open('timestamp.txt', 'w') as f:
-                f.write(str(self.timestamp))
+            self.reset_timestamp()
         
-        print('checked: {0} seconds at {1}'.format(time.time() - self.timestamp, time.time()))
+        print('checked: {0} seconds at {1}'.format(time.time() - self.load_timestamp(), time.time()))
 
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if not self.timeout_checker.running:
-            self.timeout_checker.start()
+        self.timeout_checker.start()
 
     def cog_unload(self):
         self.timeout_checker.cancel()
@@ -339,7 +334,7 @@ class dmlistener(commands.Cog):
         await self.reply_to_message(ctx.message, f"Unboosted <@!{ID}>!")
 
     @staticmethod
-    def load_timestamp(filename: str) -> float:
+    def load_timestamp(filename: str = "timestamp.txt") -> float:
         """Returns the timestamp if it exists. If it doesn't, it'll reset the timestamp and return the new one."""
         full_path = pathlib.Path(__file__).parent / filename
         if not os.path.exists(full_path):
@@ -353,10 +348,10 @@ class dmlistener(commands.Cog):
                 raise RuntimeWarning("Timestamp has been corrupted. I have reset the timestamp, but if this keeps happening, something's wrong.")
 
     @staticmethod
-    def reset_timestamp(path: pathlib.Path) -> float:
+    def reset_timestamp(filename:str = "timestamp.txt") -> float:
         """Resets the timestamp to the current time"""
         now = time.time()
-        with open(path, "w") as f:
+        with open(filename, "w") as f:
             f.write(str(now))
         return now
 
