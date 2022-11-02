@@ -125,14 +125,18 @@ class dmlistener(commands.Cog):
     async def notify(self, ctx):
         """The command to notify users that it's their turn"""
         
+        if not ctx.author.id in config.ADMIN_IDS:
+            await self.reply_to_message(ctx.message, "Only admins can use this command.")
+            return
+        
         await self.notify_people()
 
     @commands.is_owner()
     @commands.command()
     async def list_users(self, ctx):
         """Lists the users working on the story"""
-        
-        print("\nList of users:\n" + self.user_manager.get_weighted_list())
+        # TODO: make this command better
+        await self.reply_to_message(message=ctx.message, content="List of users:\n" + str(self.user_manager.get_unweighted_list()))
 
     @commands.Cog.listener()
     async def on_message(self, message):
