@@ -125,6 +125,10 @@ class dmlistener(commands.Cog):
     async def notify(self, ctx):
         """The command to notify users that it's their turn"""
         
+        if not ctx.author.id in config.ADMIN_IDS:
+            await self.reply_to_message(ctx.message, "Only admins can use this command.")
+            return
+        
         await self.notify_people()
 
     @commands.is_owner()
