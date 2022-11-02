@@ -25,6 +25,9 @@ STORY_OUTPUT_CHANNELS=[
     
 ]
 
+# Whether the story, when sent in STORY_OUTPUT_CHANNELS, should be sent as an embed. If it is sent as an embed, the authors' names will be listed alongside their contributions
+SEND_STORY_AS_EMBED_IN_CHANNEL = False
+
 # The ID(s) of the bot's admin(s)
 ADMIN_IDS = [
     

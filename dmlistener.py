@@ -151,9 +151,22 @@ class dmlistener(commands.Cog):
                 # Add the given line to the story file
                 self.file_manager.addLine(self.format_story_addition(message.content))
                 
+                current = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
+                
+                if config.SEND_STORY_AS_EMBED_IN_CHANNEL:
+                    content_to_send = None
+                    emb = create_embed(
+                        author_name=current.name,
+                        author_icon_url=current.display_avatar.url,
+                        content=self.format_story_addition(message.content)
+                    )
+                else:
+                    content_to_send = self.format_story_addition(message.content)
+                    emb = None
+                
                 # Mirror the messages to a Discord channel
                 for channel in config.STORY_OUTPUT_CHANNELS:
-                    await self.bot.get_channel(channel).send(self.format_story_addition(message.content))
+                    await self.bot.get_channel(channel).send(content_to_send, embed = emb)
                 
                 self.user_manager.boost_user(self.current_user)
                 self.current_user = self.user_manager.set_random_weighted_user()
