@@ -1,4 +1,4 @@
-import random
+import secrets
 import os
 import config
 import collections
@@ -20,7 +20,6 @@ class user_manager():
             for item in config.DEFAULT_USER_IDS:
                 self.add_user(item)
         
-        random.seed()
     
     def set_random_weighted_user(self) -> int:
         """Sets a random user as the current user based on their reputation"""
@@ -43,13 +42,13 @@ class user_manager():
         
         lastUserID = user_manager.get_current_user()
 
-        new_user = random.choice(listToChooseFrom)
+        new_user = secrets.choice(listToChooseFrom)
         
         # Makes sure the same user doesn't go twice in a row
         # Won't check if there's only one user to avoid infinite loops
         if(len(set(listToChooseFrom)) > 1):
             while str(new_user) == lastUserID:
-                new_user = random.choice(listToChooseFrom)
+                new_user = secrets.choice(listToChooseFrom)
                 print("same user, trying again")
         
         os.remove("user.txt")
