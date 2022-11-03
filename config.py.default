@@ -40,3 +40,6 @@ DEFAULT_USER_IDS = [
 
 # The color to show next to messages the bot sends
 EMBED_COLOR = Color.from_str("0x00ff00")
+
+# The guild the bot will be run in. Will be phased out in the future once multi-server support is added
+GUILD_ID = 0

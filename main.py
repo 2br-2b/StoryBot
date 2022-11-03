@@ -38,8 +38,14 @@ import asyncio
 intents = discord.Intents.default()
 intents.message_content = True
 
+class StoryBot(commands.Bot):
+    async def setup_hook(self):
+        await load_cogs(self, ["dmlistener"])
+        bot.tree.copy_global_to(guild=discord.Object(id=config.GUILD_ID))
+        await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
 
-bot = commands.Bot(config.PREFIX, help_command = None, intents=intents)
+
+bot = StoryBot(config.PREFIX, help_command = None, intents=intents)
 
 fmgr = file_manager()
 umgr = user_manager(bot)
@@ -58,13 +64,17 @@ if(config.TOKEN == 'xxxxxxxxxxxxx'):
     raise RuntimeError("Please update config.py with your bot's token!")
 
 
-try:
-    asyncio.run(bot.load_extension("dmlistener"))
-except commands.errors.ExtensionNotFound:
-    print("Failed to load dmlistener!")
-except commands.errors.ExtensionAlreadyLoaded:
-    pass
-except commands.errors.NoEntryPointError:
-    print("Put the setup() function back fool.")
+async def load_cogs(bot: commands.Bot, cog_list: list):
+    for cog_name in cog_list:
+        try:
+            await bot.load_extension(cog_name)
+        except commands.errors.ExtensionNotFound:
+            print("Failed to load dmlistener for " + cog_name)
+        except commands.errors.ExtensionAlreadyLoaded:
+            pass
+        except commands.errors.NoEntryPointError:
+            print("Put the setup() function back in " + cog_name + " fool.")
+
 
 bot.run(config.TOKEN)
+
