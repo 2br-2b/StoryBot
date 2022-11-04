@@ -94,7 +94,7 @@ class dm_listener(commands.Cog):
             
     `""" + config.PREFIX + "add` adds you to the authors, while `"+config.PREFIX + """remove` removes you
     `""" + config.PREFIX + """story` displays the story so far - put a number afterwards to see a past story
-    `""" + config.PREFIX + "turn` displays whose turn it is")
+    `""" + config.PREFIX + "turn` displays whose turn it is\n\nSlash commands now work in servers; however, only prefixed commands work in DMs")
 
     @commands.hybrid_command(name="skip")
     async def skip(self, ctx):
@@ -111,6 +111,7 @@ class dm_listener(commands.Cog):
         await self.wait_and_check()
 
     @commands.hybrid_command(name="notify")
+    @commands.is_owner()
     async def notify(self, ctx):
         """The command to notify users that it's their turn"""
         
