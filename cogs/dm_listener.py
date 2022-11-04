@@ -55,26 +55,28 @@ class dm_listener(commands.Cog):
         # Send a message in the story chanel
         for channel in config.STORY_CHANNELS:
             await self.bot.get_channel(channel).send("It's now {0}'s turn!".format((await self.bot.fetch_user(int(self.user_manager.get_current_user()))).name))
-
-    @commands.command()
-    async def story(self, ctx, *parameters):
+    
+    @commands.hybrid_command(name="story")
+    #@commands.command()
+    async def story(self, ctx: commands.Context, archived_story_number:int = 0):
         """Sends a reply with the requested story
         If there is a number, the given story number will be returned"""
         
         # TODO: use file_manager.py here
         
-        try:
-            if parameters[-1].isdigit():
-                print('Story requested. Correct digit found!')
-                file = discord.File("story {0}.txt".format(int(parameters[-1])), filename="story {0}.txt".format(int(parameters[-1])))
-                await self.reply_to_message(ctx.message, 'Here is story {0}:'.format(int(parameters[-1])), file = file)
-            else:
-                print('Story requested. No digit found!')
-                raise Exception('')
-        except:
+        if archived_story_number != 0:
+            try:
+                file = discord.File("story {0}.txt".format(archived_story_number), filename="story {0}.txt".format(archived_story_number))
+                title = "Story " + str(archived_story_number)
+            except FileNotFoundError:
+                await ctx.send('That story number couldn\'t be found!')
+                return
+        else:
             file = discord.File("story.txt", filename="story.txt")
-            await self.reply_to_message(ctx.message, ""+self.lastChars(self.file_manager.getStory())+"", file = file)
-
+            title="The Current Story"
+            
+        await ctx.send(embed=create_embed(content=self.lastChars(self.file_manager.getStory(archived_story_number)), title=title), file = file)
+        
     @commands.is_owner()
     @commands.command()
     async def push(self, ctx):
@@ -404,7 +406,8 @@ class dm_listener(commands.Cog):
 def create_embed(content=None, color=config.EMBED_COLOR, title=None, author_name=None, author_icon_url=None) -> discord.Embed:
     """Creates an embed with the given parameters. All values have defaults if not given."""
     emb = discord.Embed(description=content, color=color, title=title)
-    emb.set_author(name=author_name, icon_url=author_icon_url)
+    if author_name != None:
+        emb.set_author(name=author_name, icon_url=author_icon_url)
     
     return emb
 
