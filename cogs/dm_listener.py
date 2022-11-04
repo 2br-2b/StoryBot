@@ -101,7 +101,7 @@ class dm_listener(commands.Cog):
         """Skips the current user"""
         
         if str(ctx.author.id) != self.user_manager.get_current_user() and not ctx.author.id in config.ADMIN_IDS:
-            await self.reply_to_message(ctx.message, "It's not your turn!")
+            await self.reply_to_message(context=ctx, content="It's not your turn!")
             return
         await self.reply_to_message(context=ctx, content="Skipping :(")
         self.current_user = self.user_manager.set_random_weighted_user()
