@@ -27,7 +27,7 @@ if not Path("user.txt").is_file():
     with open("user.txt", "w") as f:
         f.write(str(config.DEFAULT_USER_IDS[0]))
         
-import dmlistener
+import cogs.dm_listener as dm_listener
 from user_manager import user_manager
 from file_manager import file_manager
 from discord.ext import commands
@@ -40,7 +40,7 @@ intents.message_content = True
 
 class StoryBot(commands.Bot):
     async def setup_hook(self):
-        await load_cogs(self, ["dmlistener"])
+        await load_cogs(self, ["cogs.dm_listener"])
         bot.tree.copy_global_to(guild=discord.Object(id=config.GUILD_ID))
         await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
 
@@ -49,7 +49,7 @@ bot = StoryBot(config.PREFIX, help_command = None, intents=intents)
 
 fmgr = file_manager()
 umgr = user_manager(bot)
-dml = dmlistener.dmlistener(fmgr, umgr, bot)
+dml = dm_listener.dm_listener(fmgr, umgr, bot)
 
 bot.file_manager = fmgr
 bot.user_manager = umgr
@@ -69,7 +69,7 @@ async def load_cogs(bot: commands.Bot, cog_list: list):
         try:
             await bot.load_extension(cog_name)
         except commands.errors.ExtensionNotFound:
-            print("Failed to load dmlistener for " + cog_name)
+            print("Failed to load dm_listener for " + cog_name)
         except commands.errors.ExtensionAlreadyLoaded:
             pass
         except commands.errors.NoEntryPointError:

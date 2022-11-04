@@ -17,7 +17,7 @@ class file_manager():
         """Appends the given line to the story and writes it to the file"""
         
         # Makes sure the bot isn't trying to append a command onto the story
-        # Since this is already checked in dmlistener, this throws an error when it detects a command
+        # Since this is already checked in dm_listener, this throws an error when it detects a command
         if line.startswith(config.PREFIX):
             raise RuntimeWarning("I was just told to add this to the story, but this is clearly a command:\n"+line)
         

@@ -13,7 +13,7 @@ import config
 import file_manager
 
 # Listens for DMs to add to the story
-class dmlistener(commands.Cog):
+class dm_listener(commands.Cog):
     def __init__(self, file_manager, user_manager, bot):
         self.file_manager = file_manager
         self.user_manager = user_manager
@@ -338,13 +338,13 @@ class dmlistener(commands.Cog):
         """Returns the timestamp if it exists. If it doesn't, it'll reset the timestamp and return the new one."""
         full_path = pathlib.Path(__file__).parent / filename
         if not os.path.exists(full_path):
-            return dmlistener.reset_timestamp(full_path)
+            return dm_listener.reset_timestamp(full_path)
 
         with open(full_path, "r") as f:
             try:
                 return float(f.read())
             except ValueError:
-                dmlistener.reset_timestamp(full_path)
+                dm_listener.reset_timestamp(full_path)
                 raise RuntimeWarning("Timestamp has been corrupted. I have reset the timestamp, but if this keeps happening, something's wrong.")
 
     @staticmethod
@@ -465,7 +465,7 @@ def add_period_if_missing(line: str) -> str:
         return stripped_line
 
 async def setup(bot):
-    await bot.add_cog(dmlistener(bot.file_manager, bot.user_manager, bot))
+    await bot.add_cog(dm_listener(bot.file_manager, bot.user_manager, bot))
 
 if __name__ == '__main__':
     import main
