@@ -44,5 +44,5 @@ EMBED_COLOR = Color.from_str("0x00ff00")
 # The guild the bot will be run in. Will be phased out in the future once multi-server support is added
 GUILD_ID = 0
 
-# The last N people won't be chosen to add to the story again. Regardless of this value, the same person won't be chosen twice in a row.
+# The last N people won't be chosen to add to the story again
 LAST_N_PLAYERS_NO_REPEAT = 1
