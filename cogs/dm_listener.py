@@ -76,19 +76,6 @@ class dm_listener(commands.Cog):
             title="The Current Story"
             
         await ctx.send(embed=create_embed(content=self.lastChars(self.file_manager.getStory(archived_story_number)), title=title), file = file)
-        
-    @commands.is_owner()
-    @commands.command()
-    async def push(self, ctx):
-        """Syncs the story with the old git repo
-        Will need to be removed"""
-        
-        return
-        import os, time
-        os.system("git commit -am \"{0}\"".format(time.time()))
-        os.system("git pull")
-        os.system("git push")
-        await self.reply_to_message(ctx.message, "oki swine it done")
 
     @commands.hybrid_command(name="turn")
     async def turn(self, ctx: commands.Context):
