@@ -90,13 +90,13 @@ class dm_listener(commands.Cog):
         os.system("git push")
         await self.reply_to_message(ctx.message, "oki swine it done")
 
-    @commands.command()
-    async def turn(self, ctx):
+    @commands.hybrid_command(name="turn")
+    async def turn(self, ctx: commands.Context):
         """Sends a message with the current user's name"""
         current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
         
         #ctx.message.guild.get_member(int(self.user_manager.get_current_user()))
-        await self.reply_to_message(ctx.message, content="", author=current_user)
+        await ctx.send(embed=create_embed(author_name=current_user.name, author_icon_url=current_user.display_avatar.url))
 
     @commands.command()
     async def help(self, ctx):
