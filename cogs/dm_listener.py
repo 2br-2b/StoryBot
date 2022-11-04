@@ -383,7 +383,7 @@ class dm_listener(commands.Cog):
             return add_period_if_missing(line)
         
         
-    async def reply_to_message(self, message: discord.Message, content: str, file: discord.File = None, author: discord.User = None, title: str = None):
+    async def reply_to_message(self, message: discord.Message = None, content: str = "", file: discord.File = None, author: discord.User = None, title: str = None):
         """Replies the given message
 
         Args:
