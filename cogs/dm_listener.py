@@ -57,7 +57,6 @@ class dm_listener(commands.Cog):
             await self.bot.get_channel(channel).send("It's now {0}'s turn!".format((await self.bot.fetch_user(int(self.user_manager.get_current_user()))).name))
     
     @commands.hybrid_command(name="story")
-    #@commands.command()
     async def story(self, ctx: commands.Context, archived_story_number:int = 0):
         """Sends a reply with the requested story
         If there is a number, the given story number will be returned"""
@@ -69,13 +68,13 @@ class dm_listener(commands.Cog):
                 file = discord.File("story {0}.txt".format(archived_story_number), filename="story {0}.txt".format(archived_story_number))
                 title = "Story " + str(archived_story_number)
             except FileNotFoundError:
-                await ctx.send('That story number couldn\'t be found!')
+                await self.reply_to_message(content='That story number couldn\'t be found!', context=ctx)
                 return
         else:
             file = discord.File("story.txt", filename="story.txt")
             title="The Current Story"
             
-        await ctx.send(embed=create_embed(content=self.lastChars(self.file_manager.getStory(archived_story_number)), title=title), file = file)
+        await self.reply_to_message(content=self.lastChars(self.file_manager.getStory(archived_story_number)), title=title, file = file, context=ctx)
 
     @commands.hybrid_command(name="turn")
     async def turn(self, ctx: commands.Context):
@@ -83,49 +82,43 @@ class dm_listener(commands.Cog):
         current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
         
         #ctx.message.guild.get_member(int(self.user_manager.get_current_user()))
-        await ctx.send(embed=create_embed(author_name=current_user.name, author_icon_url=current_user.display_avatar.url))
+        
+        await self.reply_to_message(author=current_user, context=ctx)
 
-    @commands.command()
+    @commands.hybrid_command(name="help")
     async def help(self, ctx):
         """The help command"""
         
-        await self.reply_to_message(ctx.message, 
-            """This bot is a story bot.  One user will write a part of the story (anywhere from a sentence or two to a couple of paragraphs - your choice!), then another, and so on until the story is complete!
+        await self.reply_to_message(context=ctx, 
+            content="""This bot is a story bot.  One user will write a part of the story (anywhere from a sentence or two to a couple of paragraphs - your choice!), then another, and so on until the story is complete!
             
     `""" + config.PREFIX + "add` adds you to the authors, while `"+config.PREFIX + """remove` removes you
     `""" + config.PREFIX + """story` displays the story so far - put a number afterwards to see a past story
     `""" + config.PREFIX + "turn` displays whose turn it is")
 
-    @commands.command()
+    @commands.hybrid_command(name="skip")
     async def skip(self, ctx):
         """Skips the current user"""
         
         if str(ctx.author.id) != self.user_manager.get_current_user() and not ctx.author.id in config.ADMIN_IDS:
             await self.reply_to_message(ctx.message, "It's not your turn!")
             return
-        await self.reply_to_message(ctx.message, "Skipping :(")
+        await self.reply_to_message(context=ctx, content="Skipping :(")
         self.current_user = self.user_manager.set_random_weighted_user()
         self.reset_timestamp()
 
         await self.notify_people()
         await self.wait_and_check()
 
-    @commands.command()
+    @commands.hybrid_command(name="notify")
     async def notify(self, ctx):
         """The command to notify users that it's their turn"""
         
         if not ctx.author.id in config.ADMIN_IDS:
-            await self.reply_to_message(ctx.message, "Only admins can use this command.")
+            await self.reply_to_message(context=ctx, content="Only admins can use this command.")
             return
         
         await self.notify_people()
-
-    @commands.is_owner()
-    @commands.command()
-    async def list_users(self, ctx):
-        """Lists the users working on the story"""
-        # TODO: make this command better
-        await self.reply_to_message(message=ctx.message, content="List of users:\n" + str(self.user_manager.get_unweighted_list()))
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -247,80 +240,19 @@ class dm_listener(commands.Cog):
     def cog_unload(self):
         self.timeout_checker.cancel()
 
-    @commands.command()
+    @commands.hybrid_command(name="add")
     async def add(self, ctx):
         """Adds a user to the list of participants"""
         
         self.user_manager.add_user(ctx.author.id)
-        await self.reply_to_message(ctx.message, "Done!")
+        await self.reply_to_message(context=ctx, content="Done!")
 
-    @commands.command()
+    @commands.hybrid_command(name="remove")
     async def remove(self, ctx):
         """Removes a user from the list of participants"""
         
         self.user_manager.remove_user(ctx.author.id)
-        await self.reply_to_message(ctx.message, "Done!")
-
-    @commands.is_owner()
-    @commands.command()
-    async def newstory(self, ctx):
-        """Should be used at the end of a story to create a new story"""
-        
-        #TODO: finish it
-        await self.reply_to_message(ctx.message, "This command isn't ready yet!")
-        #file_manager.new_story()
-        #await self.reply_to_message(ctx.message, "Done!")
-
-    @commands.is_owner()
-    @commands.command(aliases = ['rep'])
-    async def reputation(self, ctx, mentn : discord.Member = None):
-        """Gives the reputation of a current user"""
-        
-        if mentn == None:
-            ID = int(ctx.author.id)
-        else:
-            ID = int(mentn.id)
-
-        print('listing reputations:\n'+collections.Counter(self.user_manager.get_weighted_list()))
-
-        await self.reply_to_message(ctx.message, collections.Counter(self.user_manager.get_weighted_list())[ID])
-
-    @commands.is_owner()
-    @commands.command(aliases = ['lsrep', 'listrep'])
-    async def listreputation(self, ctx):
-        """Lists all users' reputations along with their names"""
-        s = ''
-        for item in collections.Counter(self.user_manager.get_weighted_list()).keys():
-            s += (await self.bot.fetch_user(item)).name + ': ' + str(collections.Counter(self.user_manager.get_weighted_list())[item]) + '\n'
-        await self.reply_to_message(ctx.message, s)
-
-    @commands.is_owner()
-    @commands.command(aliases = [])
-    async def boost(self, ctx, mentn : discord.Member = None):
-        """Boosts a user's reputation"""
-        return
-        if mentn == None:
-            ID = int(ctx.author.id)
-        else:
-            ID = int(mentn.id)
-
-        self.user_manager.boost_user(id)
-            
-        await self.reply_to_message(ctx.message, f"Boosted <@!{ID}>!")
-
-    @commands.is_owner()
-    @commands.command(aliases = [])
-    async def unboost(self, ctx, mentn : discord.Member = None):
-        """Unboosts a user's reputation"""
-        return
-        if mentn == None:
-            ID = int(ctx.author.id)
-        else:
-            ID = int(mentn.id)
-
-        self.user_manager.boost_user(id)
-            
-        await self.reply_to_message(ctx.message, f"Unboosted <@!{ID}>!")
+        await self.reply_to_message(context=ctx, content="Done!")
 
     @staticmethod
     def load_timestamp(filename: str = "timestamp.txt") -> float:
@@ -372,7 +304,7 @@ class dm_listener(commands.Cog):
             return add_period_if_missing(line)
         
         
-    async def reply_to_message(self, message: discord.Message = None, content: str = "", file: discord.File = None, author: discord.User = None, title: str = None):
+    async def reply_to_message(self, message: discord.Message = None, content: str = "", context: commands.Context = None, file: discord.File = None, author: discord.User = None, title: str = None):
         """Replies the given message
 
         Args:
@@ -382,12 +314,24 @@ class dm_listener(commands.Cog):
             author (str): the user to display on the embed
         """
         
-        if author is None:
+        if type(message) is "str":
+            raise TypeError("`message` should be of type message, not a string! Maybe you meant to set `content`?")
+        
+        embed = create_embed(content=content, title=title)
+        
+        if author is None and not message is None:
             author = message.author
+        if not author is None:
+            embed.set_author(name=author.name, icon_url=author.display_avatar.url)
+            
+        if not context is None:
+            await context.send(embed = embed, file = file, mention_author = False)
+        elif not message is None:
+            await message.reply(embed = embed, file = file, mention_author = False)
+        else:
+            raise ValueError("Both ctx and message passed to reply_to_message are None")
+            
         
-        
-        
-        await message.reply(embed = create_embed(content=content, title=title, author_name=author.name, author_icon_url=author.display_avatar.url), file = file, mention_author = False)
 
 
 def create_embed(content=None, color=config.EMBED_COLOR, title=None, author_name=None, author_icon_url=None) -> discord.Embed:
@@ -423,13 +367,6 @@ def ends_with_continuation_string(text: str) -> bool:
         if text.endswith(item):
             return True
     return False
-
-
-
-
-
-
-
 
 
 
