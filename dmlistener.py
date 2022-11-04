@@ -175,7 +175,7 @@ class dmlistener(commands.Cog):
                 await self.reply_to_message(message, "Got it!  Thanks!")
                 
                 self.user_manager.boost_user(self.current_user)
-                self.current_user = self.user_manager.set_random_weighted_user()
+                self.current_user = self.user_manager.set_random_weighted_user(add_last_user_to_queue = True)
                 self.reset_timestamp()
 
                 await self.notify_people()
@@ -227,7 +227,7 @@ class dmlistener(commands.Cog):
             print('failed to DM '+str(self.current_user)+'.  Moving on...')
         self.user_manager.unboost_user(self.current_user)
         print('unboosted '+str(self.current_user)+'.  About to change current user......') 
-        self.current_user = self.user_manager.set_random_weighted_user()
+        self.current_user = self.user_manager.set_random_weighted_user(add_last_user_to_queue = True)
         print('done changing user to '+str(self.current_user)+'. About to notify people...')
         await self.notify_people()
 
