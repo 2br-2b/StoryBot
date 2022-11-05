@@ -221,14 +221,10 @@ class dm_listener(commands.Cog):
     @tasks.loop(seconds=60 * 60) # Check back every hour
     async def timeout_checker(self):
         """Will skip the current user's turn if they don't respond in the specified amount of time"""
-        if self.last_checked_user is self.current_user: #still the same person
-            if time.time() - self.load_timestamp() >= 60 * 60 * 24 * config.TIMEOUT_DAYS: # if the time is over the allotted time
-                print('about to timeout for '+str(self.current_user))
-                await self.timeout_happened()
-                print('timeout happened. New user is '+str(self.current_user))
-
-        else: #new person
-            self.last_checked_user = self.current_user
+        if time.time() - self.load_timestamp() >= 60 * 60 * 24 * config.TIMEOUT_DAYS: # if the time is over the allotted time
+            print('about to timeout for '+str(self.current_user))
+            await self.timeout_happened()
+            print('timeout happened. New user is '+str(self.current_user))
             self.reset_timestamp()
         
         print('checked: {0} seconds at {1}'.format(time.time() - self.load_timestamp(), time.time()))
