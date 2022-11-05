@@ -68,13 +68,13 @@ class dm_listener(commands.Cog):
                 file = discord.File("story {0}.txt".format(archived_story_number), filename="story {0}.txt".format(archived_story_number))
                 title = "Story " + str(archived_story_number)
             except FileNotFoundError:
-                await self.reply_to_message(content='That story number couldn\'t be found!', context=ctx)
+                await self.reply_to_message(content='That story number couldn\'t be found!', context=ctx, single_user=True)
                 return
         else:
             file = discord.File("story.txt", filename="story.txt")
             title="The Current Story"
             
-        await self.reply_to_message(content=self.lastChars(self.file_manager.getStory(archived_story_number)), title=title, file = file, context=ctx)
+        await self.reply_to_message(content=self.lastChars(self.file_manager.getStory(archived_story_number)), title=title, file = file, context=ctx, single_user=True)
 
     @commands.hybrid_command(name="turn")
     async def turn(self, ctx: commands.Context):
@@ -83,7 +83,7 @@ class dm_listener(commands.Cog):
         
         #ctx.message.guild.get_member(int(self.user_manager.get_current_user()))
         
-        await self.reply_to_message(author=current_user, context=ctx)
+        await self.reply_to_message(author=current_user, context=ctx, single_user=True)
 
     @commands.hybrid_command(name="help")
     async def help(self, ctx):
@@ -94,7 +94,7 @@ class dm_listener(commands.Cog):
             
     `""" + config.PREFIX + "add` adds you to the authors, while `"+config.PREFIX + """remove` removes you
     `""" + config.PREFIX + """story` displays the story so far - put a number afterwards to see a past story
-    `""" + config.PREFIX + "turn` displays whose turn it is\n\nSlash commands now work in servers; however, only prefixed commands work in DMs")
+    `""" + config.PREFIX + "turn` displays whose turn it is\n\nSlash commands now work in servers; however, only prefixed commands work in DMs", single_user=True)
 
     @commands.hybrid_command(name="skip")
     async def skip(self, ctx):
@@ -116,7 +116,7 @@ class dm_listener(commands.Cog):
         """The command to notify users that it's their turn"""
         
         if not ctx.author.id in config.ADMIN_IDS:
-            await self.reply_to_message(context=ctx, content="Only admins can use this command.")
+            await self.reply_to_message(context=ctx, content="Only admins can use this command.", single_user=True)
             return
         
         await self.notify_people()
@@ -301,7 +301,7 @@ class dm_listener(commands.Cog):
             return add_period_if_missing(line)
         
         
-    async def reply_to_message(self, message: discord.Message = None, content: str = "", context: commands.Context = None, file: discord.File = None, author: discord.User = None, title: str = None):
+    async def reply_to_message(self, message: discord.Message = None, content: str = "", context: commands.Context = None, file: discord.File = None, author: discord.User = None, title: str = None, single_user = False):
         """Replies the given message
 
         Args:
@@ -322,7 +322,7 @@ class dm_listener(commands.Cog):
             embed.set_author(name=author.name, icon_url=author.display_avatar.url)
             
         if not context is None:
-            await context.send(embed = embed, file = file, mention_author = False)
+            await context.send(embed = embed, file = file, mention_author = False, ephemeral=single_user)
         elif not message is None:
             await message.reply(embed = embed, file = file, mention_author = False)
         else:
