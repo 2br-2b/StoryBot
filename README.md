@@ -1,5 +1,7 @@
 # StoryBot
 
+# NOTICE: BREAKING CHANGES ARE HAPPENING QUITE OFTEN
+I just resumed work on this after a few years, and I'm working on making it better in many ways. The latest release works fine, and cloning from the repo at any given time should still work, but lots of major changes are still happening on the backend!
 
 ## Setting up the bot
 1. Clone the repository (unstable) or [download the latest release (stable)](https://github.com/2br-2b/StoryBot/releases)
