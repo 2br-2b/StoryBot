@@ -120,6 +120,50 @@ class dm_listener(commands.Cog):
             return
         
         await self.notify_people()
+        
+    @commands.hybrid_command(name="time_left")
+    async def time_left_command(self, ctx):
+        """Says how much time the current user has remaining"""
+        seconds_per_turn = config.TIMEOUT_DAYS * 24 * 60 * 60
+        timeout_timestamp = int(self.load_timestamp())
+        current_time = int(time.time())
+        seconds_since_timestamp = current_time - timeout_timestamp
+        seconds_remaining = seconds_per_turn - seconds_since_timestamp
+        
+        await self.reply_to_message(context=ctx, content="Time used: " + dm_listener.print_time(seconds=seconds_since_timestamp)+"\nTime remaining: " + dm_listener.print_time(seconds=seconds_remaining + 60), single_user=True)
+        
+        
+    @staticmethod
+    def print_time(seconds:int, include_seconds: bool = False) -> str:
+        """Generates a printable string based on a given number of seconds. `timedelta` has a built-in method for this, but it kept saying `Python int too large to convert to C int`
+
+        Args:
+            seconds (int): the amount of seconds to print
+
+        Returns:
+            str: the printable string. If the amount of seconds is negative, this will return "Should time out soon..."
+        """
+        
+        if include_seconds:
+            print_seconds = seconds % 60
+        print_minutes = int((seconds/60) % 60)
+        print_hours = int((seconds/3600) % 24)
+        print_days = int(seconds/(60 * 60 * 24))
+        
+        if(print_days < 0):
+            return "Should time out soon..."
+        elif(print_days > 0):
+            s = f"{print_days} d, "
+        else:
+            s = ""
+        
+        s += f"{print_hours} h, {print_minutes} m"
+        
+        if include_seconds:
+            s += f", {print_seconds} s"
+        
+        return s
+        
 
     @commands.Cog.listener()
     async def on_message(self, message):
