@@ -254,16 +254,17 @@ class dm_listener(commands.Cog):
     @staticmethod
     def load_timestamp(filename: str = "timestamp.txt") -> float:
         """Returns the timestamp if it exists. If it doesn't, it'll reset the timestamp and return the new one."""
-        full_path = pathlib.Path(__file__).parent / filename
-        if not os.path.exists(full_path):
-            return dm_listener.reset_timestamp(full_path)
 
-        with open(full_path, "r") as f:
-            try:
+        try:
+            with open(filename, "r") as f:
                 return float(f.read())
-            except ValueError:
-                dm_listener.reset_timestamp(full_path)
-                raise RuntimeWarning("Timestamp has been corrupted. I have reset the timestamp, but if this keeps happening, something's wrong.")
+        except FileNotFoundError:
+            print("Timestamp not found. Resetting timestamp...")
+            dm_listener.reset_timestamp()
+            return dm_listener.load_timestamp()
+        except ValueError:
+            dm_listener.reset_timestamp()
+            raise RuntimeWarning("Timestamp has been corrupted. I have reset the timestamp, but if this keeps happening, something's wrong.")
 
     @staticmethod
     def reset_timestamp(filename:str = "timestamp.txt") -> float:
