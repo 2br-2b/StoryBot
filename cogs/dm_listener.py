@@ -92,9 +92,11 @@ class dm_listener(commands.Cog):
         await self.reply_to_message(context=ctx, 
             content="""This bot is a story bot.  One user will write a part of the story (anywhere from a sentence or two to a couple of paragraphs - your choice!), then another, and so on until the story is complete!
             
-    `""" + config.PREFIX + "add` adds you to the authors, while `"+config.PREFIX + """remove` removes you
-    `""" + config.PREFIX + """story` displays the story so far - put a number afterwards to see a past story
-    `""" + config.PREFIX + "turn` displays whose turn it is\n\nSlash commands now work in servers; however, only prefixed commands work in DMs", single_user=True)
+    `/add` adds you to the authors, while `/remove` removes you
+    `/story` displays the story so far - put a number afterwards to see a past story
+    `/turn` displays whose turn it is
+    
+    Slash commands now work in servers; however, for now, only prefixed commands with the prefix `""" + config.PREFIX + """` work in DMs""", single_user=True)
 
     @commands.hybrid_command(name="skip")
     async def skip(self, ctx):
