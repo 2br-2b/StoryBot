@@ -8,10 +8,14 @@ class file_manager():
         file = open("story.txt", "r", encoding="utf8")
         file.close()
 
-    def getStory(self):
+    def getStory(self, story_number = 0):
         """Returns the story in the story.txt file"""
-        with open("story.txt", "r", encoding="utf8") as file:
-            return file.read()
+        if story_number == 0:
+            with open("story.txt", "r", encoding="utf8") as file:
+                return file.read()
+        else:
+            with open("story " + str(story_number) + ".txt", "r", encoding="utf8") as file:
+                return file.read()
 
     def addLine(self, line):
         """Appends the given line to the story and writes it to the file"""

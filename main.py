@@ -58,7 +58,7 @@ bot.user_manager = umgr
 @bot.event
 async def on_ready():
     print("Bot started!")
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=" for `"+config.PREFIX+"help`"))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=" for `/help`"))
 
 if(config.TOKEN == 'xxxxxxxxxxxxx'):
     raise RuntimeError("Please update config.py with your bot's token!")
