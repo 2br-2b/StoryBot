@@ -132,8 +132,9 @@ class dm_listener(commands.Cog):
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
         
-        await self.reply_to_message(context=ctx, content="Time used: " + dm_listener.print_time(seconds=seconds_since_timestamp)+"\nTime remaining: " + dm_listener.print_time(seconds=seconds_remaining + 60), single_user=True)
+        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
         
+        await self.reply_to_message(context=ctx, content="Time remaining: " + dm_listener.print_time(seconds=seconds_remaining + 60) +"\nTime used: " + dm_listener.print_time(seconds=seconds_since_timestamp)+"", single_user=True, author=current_user)
         
     @staticmethod
     def print_time(seconds:int, include_seconds: bool = False) -> str:
