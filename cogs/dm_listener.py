@@ -50,11 +50,16 @@ class dm_listener(commands.Cog):
             
             Here is the story so far:""", file = file, embed = create_embed(content=self.lastChars(self.file_manager.getStory()), author_name=None, author_icon_url=None))
         
+        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
         
+        emb = create_embed(
+            author_icon_url=current_user.display_avatar.url,
+            author_name=f"It's now {current_user.name}'s turn!"
+            )
         
         # Send a message in the story chanel
         for channel in config.STORY_CHANNELS:
-            await self.bot.get_channel(channel).send("It's now {0}'s turn!".format((await self.bot.fetch_user(int(self.user_manager.get_current_user()))).name))
+            await self.bot.get_channel(channel).send(embed = emb)
     
     @commands.hybrid_command(name="story")
     async def story(self, ctx: commands.Context, archived_story_number:int = 0):
@@ -382,7 +387,7 @@ class dm_listener(commands.Cog):
 def create_embed(content=None, color=config.EMBED_COLOR, title=None, author_name=None, author_icon_url=None) -> discord.Embed:
     """Creates an embed with the given parameters. All values have defaults if not given."""
     emb = discord.Embed(description=content, color=color, title=title)
-    if author_name != None:
+    if author_name != None or author_icon_url != None:
         emb.set_author(name=author_name, icon_url=author_icon_url)
     
     return emb
