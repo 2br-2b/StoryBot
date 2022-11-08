@@ -111,11 +111,8 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(context=ctx, content="It's not your turn!")
             return
         await self.reply_to_message(context=ctx, content="Skipping :(")
-        self.current_user = self.user_manager.set_random_weighted_user()
-        self.reset_timestamp()
-
-        await self.notify_people()
-        await self.wait_and_check()
+        
+        await self.new_user()
 
     @commands.hybrid_command(name="notify")
     @commands.is_owner()
@@ -210,11 +207,7 @@ class dm_listener(commands.Cog):
                 await self.reply_to_message(message, "Got it!  Thanks!")
                 
                 self.user_manager.boost_user(self.current_user)
-                self.current_user = self.user_manager.set_random_weighted_user(add_last_user_to_queue = True)
-                self.reset_timestamp()
-
-                await self.notify_people()
-                await self.wait_and_check()
+                await self.new_user()
 
     def pieMethod(self, story):
         """The all-powerful pieMethod
@@ -262,9 +255,8 @@ class dm_listener(commands.Cog):
             print('failed to DM '+str(self.current_user)+'.  Moving on...')
         self.user_manager.unboost_user(self.current_user)
         print('unboosted '+str(self.current_user)+'.  About to change current user......') 
-        self.current_user = self.user_manager.set_random_weighted_user(add_last_user_to_queue = True)
-        print('done changing user to '+str(self.current_user)+'. About to notify people...')
-        await self.notify_people()
+        
+        await self.new_user()
 
         self.last_checked_user = self.current_user
         
@@ -380,8 +372,17 @@ class dm_listener(commands.Cog):
             await message.reply(embed = embed, file = file, mention_author = False)
         else:
             raise ValueError("Both ctx and message passed to reply_to_message are None")
-            
+          
+          
+    async def new_user(self):
+        """Chooses a new random user and notifies all relevant parties"""
         
+        self.current_user = self.user_manager.set_random_weighted_user(add_last_user_to_queue = True)
+        print("New current user: " + self.current_user)
+        self.reset_timestamp()
+        await self.notify_people()
+        await self.wait_and_check()
+
 
 
 def create_embed(content=None, color=config.EMBED_COLOR, title=None, author_name=None, author_icon_url=None) -> discord.Embed:
