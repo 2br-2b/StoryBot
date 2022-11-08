@@ -54,9 +54,15 @@ class user_manager():
         Args:
             listToChooseFrom (list): the list to choose a random user from
 
+        Raises:
+            ValueError: the list passed to the function doesn't have any members
+        
         Returns:
             int: the random user now set as the current user
         """
+        
+        if len(listToChooseFrom) == 0:
+            raise ValueError("No users passed to `__set_new_random_user`")
         
         internalListToChooseFrom = listToChooseFrom
 
