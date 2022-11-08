@@ -1,7 +1,6 @@
 import os
 import time
 import config
-import re
 
 class file_manager():
     def __init__(self):

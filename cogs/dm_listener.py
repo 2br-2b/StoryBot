@@ -1,16 +1,10 @@
 import discord
 import math
-import asyncio
-import pathlib
 import time
-import os
-import collections
 from discord.ext import tasks, commands
 import re
-from discord import Embed
 
 import config
-import file_manager
 
 # Listens for DMs to add to the story
 class dm_listener(commands.Cog):
@@ -18,13 +12,8 @@ class dm_listener(commands.Cog):
         self.file_manager = file_manager
         self.user_manager = user_manager
         
-        # Keeps track of the current user's id
-        self.current_user = int(user_manager.get_current_user())
-        
         self.bot = bot
         self.messageNotSent = False
-        # self.timeout_checker.start()
-        self.last_checked_user = self.current_user
 
         # The timestamp keeps track of when the last user was notified, so that even if the bot goes down, it still knows how much longer the current user has to continue the story
         self._notif_line_cont = False
@@ -206,7 +195,7 @@ class dm_listener(commands.Cog):
                 
                 await self.reply_to_message(message, "Got it!  Thanks!")
                 
-                self.user_manager.boost_user(self.current_user)
+                self.user_manager.boost_user(int(self.user_manager.get_current_user()))
                 await self.new_user()
 
     def pieMethod(self, story):
@@ -232,44 +221,21 @@ class dm_listener(commands.Cog):
         else:
             return story
 
-    async def wait_and_check(self):
-        """Should wait for the specified amount of days, then skip the current user's turn"""
-        
-        return
-        def check(message):
-            return str(message.author.id) == self.user_manager.get_current_user()
-
-        try:
-            message2, user = await self.bot.wait_for('on_message', timeout = 60*60*24*config.TIMEOUT_DAYS, check = check)
-        except asyncio.TimeoutError:
-            await timeout_happened()
-
     async def timeout_happened(self):
         """Skips the current user's turn if they don't respond in the specified amount of time"""
         
-        print('about to dm '+str(self.current_user) + ' that they have been skipped due to taking too long') 
-        try:
-            await self.dm_current_user('You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
-            print('skip dm to '+str(self.current_user)+' successful.  About to unboost...')
-        except:
-            print('failed to DM '+str(self.current_user)+'.  Moving on...')
-        self.user_manager.unboost_user(self.current_user)
-        print('unboosted '+str(self.current_user)+'.  About to change current user......') 
-        
+        print('Timing out...') 
+        await self.dm_current_user('You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
+        self.user_manager.unboost_user(int(self.user_manager.get_current_user()))
         await self.new_user()
-
-        self.last_checked_user = self.current_user
-        
-        self.reset_timestamp()
 
     @tasks.loop(seconds=60 * 60) # Check back every hour
     async def timeout_checker(self):
         """Will skip the current user's turn if they don't respond in the specified amount of time"""
         if time.time() - self.load_timestamp() >= 60 * 60 * 24 * config.TIMEOUT_DAYS: # if the time is over the allotted time
-            print('about to timeout for '+str(self.current_user))
+            print('about to timeout for '+self.user_manager.get_current_user())
             await self.timeout_happened()
-            print('timeout happened. New user is '+str(self.current_user))
-            self.reset_timestamp()
+            print('timeout happened. New user is '+self.user_manager.get_current_user())
         
         print('checked: {0} seconds at {1}'.format(time.time() - self.load_timestamp(), time.time()))
 
@@ -376,12 +342,11 @@ class dm_listener(commands.Cog):
           
     async def new_user(self):
         """Chooses a new random user and notifies all relevant parties"""
+        self.user_manager.set_random_weighted_user(add_last_user_to_queue = True)
         
-        self.current_user = self.user_manager.set_random_weighted_user(add_last_user_to_queue = True)
-        print("New current user: " + self.current_user)
+        print("New current user: " + self.user_manager.get_current_user())
         self.reset_timestamp()
         await self.notify_people()
-        await self.wait_and_check()
 
 
 

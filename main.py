@@ -31,9 +31,6 @@ import cogs.dm_listener as dm_listener
 from user_manager import user_manager
 from file_manager import file_manager
 from discord.ext import commands
-from threading import Thread
-import time
-import asyncio
 
 intents = discord.Intents.default()
 intents.message_content = True
