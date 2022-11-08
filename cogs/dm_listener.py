@@ -99,9 +99,14 @@ class dm_listener(commands.Cog):
         if str(ctx.author.id) != self.user_manager.get_current_user() and not ctx.author.id in config.ADMIN_IDS:
             await self.reply_to_message(context=ctx, content="It's not your turn!")
             return
-        await self.reply_to_message(context=ctx, content="Skipping :(")
         
-        await self.new_user()
+        try:
+            await self.new_user()
+            await self.reply_to_message(context=ctx, content="Skipping :(")
+        except ValueError:
+            await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!")
+        
+        
 
     @commands.hybrid_command(name="notify")
     @commands.is_owner()
