@@ -247,7 +247,12 @@ class dm_listener(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.timeout_checker.start()
+        try:
+            self.timeout_checker.start()
+        except RuntimeError as e:
+            if not str(e) == "Task is already launched and is not completed.":
+                raise RuntimeError(str(e))
+
 
     def cog_unload(self):
         self.timeout_checker.cancel()
