@@ -37,9 +37,13 @@ intents.message_content = True
 
 class StoryBot(commands.Bot):
     async def setup_hook(self):
+        
+        ### Notice: if the commands are showing up two times in your server but only once in DMs, uncomment these two lines for your first run ###
+        #bot.tree.copy_global_to(guild=discord.Object(id=config.GUILD_ID))
+        #await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
+        
         await load_cogs(self, ["cogs.dm_listener"])
         await bot.tree.sync()
-        bot.tree.copy_global_to(guild=discord.Object(id=config.GUILD_ID))
 
 
 bot = StoryBot(config.PREFIX, help_command = None, intents=intents)
