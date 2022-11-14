@@ -38,8 +38,8 @@ intents.message_content = True
 class StoryBot(commands.Bot):
     async def setup_hook(self):
         await load_cogs(self, ["cogs.dm_listener"])
+        await bot.tree.sync()
         bot.tree.copy_global_to(guild=discord.Object(id=config.GUILD_ID))
-        await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
 
 
 bot = StoryBot(config.PREFIX, help_command = None, intents=intents)
