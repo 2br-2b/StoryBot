@@ -175,7 +175,7 @@ class dm_listener(commands.Cog):
 
         if message.guild is None:
             if self.user_manager.get_current_user() == str(message.author.id):
-                if message.content.startswith(config.PREFIX):
+                if message.content.startswith("/") or message.content.startswith(config.PREFIX):
                     return
                 
                 # Add the given line to the story file
