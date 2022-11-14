@@ -88,9 +88,7 @@ class dm_listener(commands.Cog):
             
     `/add` adds you to the authors, while `/remove` removes you
     `/story` displays the story so far - put a number afterwards to see a past story
-    `/turn` displays whose turn it is
-    
-    Slash commands now work in servers; however, for now, only prefixed commands with the prefix `""" + config.PREFIX + """` work in DMs""", single_user=True)
+    `/turn` displays whose turn it is""", single_user=True)
 
     @commands.hybrid_command(name="skip")
     async def skip(self, ctx):
