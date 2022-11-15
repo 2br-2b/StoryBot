@@ -20,6 +20,17 @@ class dm_listener(commands.Cog):
         
         self.CHARACTERS_TO_SHOW = 4096
 
+
+    async def check_for_prefix_command(self, ctx: commands.Context, remove = False):
+        if(ctx.prefix != "/"):
+            if(remove):
+                msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but if you choose to use this bot again in the future, you'll need to switch over to slash commands.\n\nTo rejoin, you'll have to run `/add` as opposed to `{config.PREFIX}add`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
+            else:
+                msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but you'll want to switch over to slash commands soon.\n\nIn the future, you'll need to run that command by typing `/{ctx.message.content[len(config.PREFIX):]}`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
+            
+            await (await ctx.author.create_dm()).send(msg)
+
+
     async def dm_current_user(self, message, file = None, embed = None):
         """Sends the given message to the current user"""
         
@@ -55,6 +66,8 @@ class dm_listener(commands.Cog):
         """Sends a reply with the requested story
         If there is a number, the given story number will be returned"""
         
+        await self.check_for_prefix_command(ctx)
+        
         # TODO: use file_manager.py here
         
         if archived_story_number != 0:
@@ -73,6 +86,9 @@ class dm_listener(commands.Cog):
     @commands.hybrid_command(name="turn")
     async def turn(self, ctx: commands.Context):
         """Sends a message with the current user's name"""
+        
+        await self.check_for_prefix_command(ctx)
+        
         current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
         
         #ctx.message.guild.get_member(int(self.user_manager.get_current_user()))
@@ -82,6 +98,8 @@ class dm_listener(commands.Cog):
     @commands.hybrid_command(name="help")
     async def help(self, ctx):
         """The help command"""
+        
+        await self.check_for_prefix_command(ctx)
         
         await self.reply_to_message(context=ctx, 
             content="""This bot is a story bot.  One user will write a part of the story (anywhere from a sentence or two to a couple of paragraphs - your choice!), then another, and so on until the story is complete!
@@ -93,6 +111,8 @@ class dm_listener(commands.Cog):
     @commands.hybrid_command(name="skip")
     async def skip(self, ctx):
         """Skips the current user"""
+        
+        await self.check_for_prefix_command(ctx)
         
         if str(ctx.author.id) != self.user_manager.get_current_user() and not ctx.author.id in config.ADMIN_IDS:
             await self.reply_to_message(context=ctx, content="It's not your turn!")
@@ -111,6 +131,8 @@ class dm_listener(commands.Cog):
     async def notify(self, ctx):
         """The command to notify users that it's their turn"""
         
+        await self.check_for_prefix_command(ctx)
+        
         if not ctx.author.id in config.ADMIN_IDS:
             await self.reply_to_message(context=ctx, content="Only admins can use this command.", single_user=True)
             return
@@ -120,6 +142,9 @@ class dm_listener(commands.Cog):
     @commands.hybrid_command(name="time_left")
     async def time_left_command(self, ctx):
         """Says how much time the current user has remaining"""
+        
+        await self.check_for_prefix_command(ctx)
+        
         seconds_per_turn = config.TIMEOUT_DAYS * 24 * 60 * 60
         timeout_timestamp = int(self.load_timestamp())
         current_time = int(time.time())
@@ -259,12 +284,16 @@ class dm_listener(commands.Cog):
     async def add(self, ctx):
         """Adds a user to the list of participants"""
         
+        await self.check_for_prefix_command(ctx)
+        
         self.user_manager.add_user(ctx.author.id)
         await self.reply_to_message(context=ctx, content="Done!")
 
     @commands.hybrid_command(name="remove")
     async def remove(self, ctx):
         """Removes a user from the list of participants"""
+        
+        await self.check_for_prefix_command(ctx, remove=True)
         
         self.user_manager.remove_user(ctx.author.id)
         await self.reply_to_message(context=ctx, content="Done!")
