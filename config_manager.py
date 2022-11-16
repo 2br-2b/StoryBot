@@ -34,10 +34,10 @@ def get_prefix() -> str:
     # TODO: phase out along while adding slash commands
     return config.PREFIX
 
-def get_story_announcement_channels(guild_id: int) -> list(int):
+def get_story_announcement_channels(guild_id: int) -> list[int]:
     return config.STORY_CHANNELS
 
-def get_story_output_channels(guild_id: int) -> list(int):
+def get_story_output_channels(guild_id: int) -> list[int]:
     return config.STORY_OUTPUT_CHANNELS
 
 def get_send_story_as_embed(guild_id: int) -> bool:
@@ -46,7 +46,7 @@ def get_send_story_as_embed(guild_id: int) -> bool:
 def is_admin(author_id: int, guild_id: int) -> bool:
     return author_id in config.ADMIN_IDS
 
-def get_default_user_ids() -> list(int):
+def get_default_user_ids() -> list[int]:
     # TODO: Phase out
     return config.DEFAULT_USER_IDS
 
