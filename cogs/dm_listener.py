@@ -359,7 +359,7 @@ class dm_listener(commands.Cog):
             author (str): the user to display on the embed
         """
         
-        if type(message) is "str":
+        if type(message) == "str":
             raise TypeError("`message` should be of type message, not a string! Maybe you meant to set `content`?")
         
         embed = create_embed(content=content, title=title)
