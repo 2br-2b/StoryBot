@@ -1,23 +1,23 @@
 import secrets
 import os
-import config
 import collections
 import json
+import config_manager
 
 class user_manager():
     def __init__(self, bot):
         self.bot = bot
         
-        # Create the initial list of users
+        # Create the initial list of users 
         try:
             with open('weighted list of users.json', 'rt') as f:
                 self.weighted_list_of_users = json.load(f)
             for id in self.weighted_list_of_users:
-                while(collections.Counter(self.weighted_list_of_users)[id] > config.MAX_REPUTATION):
+                while(collections.Counter(self.weighted_list_of_users)[id] > config_manager.get_max_reputation(None)):
                     self.unboost_user(id)
         except:
             self.weighted_list_of_users = []
-            for item in config.DEFAULT_USER_IDS:
+            for item in config_manager.get_default_user_ids():
                 self.add_user(item)
             self.serialize()
                 
@@ -26,7 +26,7 @@ class user_manager():
         try:
             with open('recent_users.json', 'rt') as f:
                 self.recent_users = json.load(f)
-            while len(self.recent_users) > config.LAST_N_PLAYERS_NO_REPEAT:
+            while len(self.recent_users) > config_manager.get_amount_to_not_repeat():
                 self.pop_from_recent_users_queue()
         except:
             self.recent_users = []
@@ -66,7 +66,7 @@ class user_manager():
         
         internalListToChooseFrom = listToChooseFrom
 
-        if config.LAST_N_PLAYERS_NO_REPEAT > 0:
+        if config_manager.get_amount_to_not_repeat() > 0:
             # Makes sure the same user isn't chosen more than once in a row, even if the most recent user wasn't added to the queue (like in a skip)
             internalListToChooseFrom = user_manager.remove_all_occurrences(internalListToChooseFrom, user_manager.get_current_user())
                 
@@ -101,7 +101,7 @@ class user_manager():
     def add_user(self, id):
         """Adds the given user to the list of users"""
         if id not in self.get_weighted_list():
-            for i in range(0, config.DEFAULT_REPUTATION):
+            for i in range(0, config_manager.get_default_reputation(None)):
                 self.weighted_list_of_users.append(id)
         self.serialize()
 
@@ -113,7 +113,7 @@ class user_manager():
 
     def boost_user(self, id):
         """Boosts the given user's reputation"""
-        if(collections.Counter(self.weighted_list_of_users)[id] < config.MAX_REPUTATION):
+        if(collections.Counter(self.weighted_list_of_users)[id] < config_manager.get_max_reputation(None)):
             self.weighted_list_of_users.append(id)
         self.serialize()
         print('boosted {0} finished'.format(id))
@@ -146,15 +146,15 @@ class user_manager():
         self.serialize_queue()
         
     def add_to_recent_users_queue(self, id: int) -> None:
-        """Adds a given user ID to the list of recent users. Pops the first user if the list's length is longer than `config.LAST_N_PLAYERS_NO_REPEAT`
+        """Adds a given user ID to the list of recent users. Pops the first user if the list's length is longer than `LAST_N_PLAYERS_NO_REPEAT`
 
         Args:
             id (int): the user ID to add to the recent user queue
         """
         self.recent_users.append(id)
         
-        if(self.recent_users_queue_size() > config.LAST_N_PLAYERS_NO_REPEAT):
-            while(self.recent_users_queue_size() > config.LAST_N_PLAYERS_NO_REPEAT):
+        if(self.recent_users_queue_size() > config_manager.get_amount_to_not_repeat()):
+            while(self.recent_users_queue_size() > config_manager.get_amount_to_not_repeat()):
                 self.pop_from_recent_users_queue()
         
             # There's no need to serialize here since pop_recent_queue() serializes automatically

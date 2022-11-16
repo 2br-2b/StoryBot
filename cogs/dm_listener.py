@@ -4,7 +4,7 @@ import time
 from discord.ext import tasks, commands
 import re
 
-import config
+import config_manager
 
 # Listens for DMs to add to the story
 class dm_listener(commands.Cog):
@@ -24,9 +24,9 @@ class dm_listener(commands.Cog):
     async def check_for_prefix_command(self, ctx: commands.Context, remove = False):
         if(ctx.prefix != "/"):
             if(remove):
-                msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but if you choose to use this bot again in the future, you'll need to switch over to slash commands.\n\nTo rejoin, you'll have to run `/add` as opposed to `{config.PREFIX}add`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
+                msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but if you choose to use this bot again in the future, you'll need to switch over to slash commands.\n\nTo rejoin, you'll have to run `/add` as opposed to `{config_manager.get_prefix()}add`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
             else:
-                msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but you'll want to switch over to slash commands soon.\n\nIn the future, you'll need to run that command by typing `/{ctx.message.content[len(config.PREFIX):]}`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
+                msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but you'll want to switch over to slash commands soon.\n\nIn the future, you'll need to run that command by typing `/{ctx.message.content[len(config_manager.get_prefix()):]}`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
             
             await (await ctx.author.create_dm()).send(msg)
 
@@ -58,7 +58,7 @@ class dm_listener(commands.Cog):
             )
         
         # Send a message in the story chanel
-        for channel in config.STORY_CHANNELS:
+        for channel in config_manager.get_story_announcement_channels(None):
             await self.bot.get_channel(channel).send(embed = emb)
     
     @commands.hybrid_command(name="story")
@@ -109,12 +109,12 @@ class dm_listener(commands.Cog):
     `/turn` displays whose turn it is""", single_user=True)
 
     @commands.hybrid_command(name="skip")
-    async def skip(self, ctx):
+    async def skip(self, ctx: commands.Context):
         """Skips the current user"""
         
         await self.check_for_prefix_command(ctx)
         
-        if str(ctx.author.id) != self.user_manager.get_current_user() and not ctx.author.id in config.ADMIN_IDS:
+        if str(ctx.author.id) != self.user_manager.get_current_user() and not config_manager.is_admin(ctx.author.id, ctx.guild.id):
             await self.reply_to_message(context=ctx, content="It's not your turn!")
             return
         
@@ -127,25 +127,24 @@ class dm_listener(commands.Cog):
         
 
     @commands.hybrid_command(name="notify")
-    @commands.is_owner()
     async def notify(self, ctx):
         """The command to notify users that it's their turn"""
         
         await self.check_for_prefix_command(ctx)
         
-        if not ctx.author.id in config.ADMIN_IDS:
+        if not config_manager.is_admin(ctx.author.id, ctx.guild.id):
             await self.reply_to_message(context=ctx, content="Only admins can use this command.", single_user=True)
             return
         
         await self.notify_people()
         
     @commands.hybrid_command(name="time_left")
-    async def time_left_command(self, ctx):
+    async def time_left_command(self, ctx: commands.Context):
         """Says how much time the current user has remaining"""
         
         await self.check_for_prefix_command(ctx)
         
-        seconds_per_turn = config.TIMEOUT_DAYS * 24 * 60 * 60
+        seconds_per_turn = config_manager.get_timeout_days(ctx.guild.id) * 24 * 60 * 60
         timeout_timestamp = int(self.load_timestamp())
         current_time = int(time.time())
         seconds_since_timestamp = current_time - timeout_timestamp
@@ -198,7 +197,7 @@ class dm_listener(commands.Cog):
 
         if message.guild is None:
             if self.user_manager.get_current_user() == str(message.author.id):
-                if message.content.startswith("/") or message.content.startswith(config.PREFIX):
+                if message.content.startswith("/") or message.content.startswith(config_manager.get_prefix()):
                     return
                 
                 # Add the given line to the story file
@@ -206,7 +205,7 @@ class dm_listener(commands.Cog):
                 
                 current = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
                 
-                if config.SEND_STORY_AS_EMBED_IN_CHANNEL:
+                if config_manager.get_send_story_as_embed(None):
                     content_to_send = None
                     emb = create_embed(
                         author_name=current.name,
@@ -218,7 +217,7 @@ class dm_listener(commands.Cog):
                     emb = None
                 
                 # Mirror the messages to a Discord channel
-                for channel in config.STORY_OUTPUT_CHANNELS:
+                for channel in config_manager.get_story_output_channels(None):
                     await self.bot.get_channel(channel).send(content_to_send, embed = emb)
                 
                 await self.reply_to_message(message, "Got it!  Thanks!")
@@ -260,7 +259,7 @@ class dm_listener(commands.Cog):
     @tasks.loop(seconds=60 * 60) # Check back every hour
     async def timeout_checker(self):
         """Will skip the current user's turn if they don't respond in the specified amount of time"""
-        if time.time() - self.load_timestamp() >= 60 * 60 * 24 * config.TIMEOUT_DAYS: # if the time is over the allotted time
+        if time.time() - self.load_timestamp() >= 60 * 60 * 24 * config_manager.get_timeout_days(None): # if the time is over the allotted time
             print('about to timeout for '+self.user_manager.get_current_user())
             await self.timeout_happened()
             print('timeout happened. New user is '+self.user_manager.get_current_user())
@@ -322,7 +321,7 @@ class dm_listener(commands.Cog):
         return now
 
     def format_story_addition(self, line:str) -> str:
-        if(line.startswith(config.PREFIX)):
+        if(line.startswith(config_manager.get_prefix())):
             return None
         
         line = self.fix_line_ending(line)
@@ -387,7 +386,7 @@ class dm_listener(commands.Cog):
 
 
 
-def create_embed(content=None, color=config.EMBED_COLOR, title=None, author_name=None, author_icon_url=None) -> discord.Embed:
+def create_embed(content=None, color=config_manager.get_embed_color(), title=None, author_name=None, author_icon_url=None) -> discord.Embed:
     """Creates an embed with the given parameters. All values have defaults if not given."""
     emb = discord.Embed(description=content, color=color, title=title)
     if author_name != None or author_icon_url != None:

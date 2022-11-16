@@ -2,20 +2,7 @@ import discord
 from pathlib import Path
 
 # create the necessary files if they don't exist
-try:
-    import config
-except ModuleNotFoundError:
-    # Check if the file exists
-    # If it doesn't, copy the example file
-    from os.path import exists
-    if not exists("config.py"):
-        import shutil
-        shutil.copyfile("config.py.default", "config.py")
-        print("Please edit your config file (config.py) and then restart the bot.")
-        exit()
-    else:
-        print("Something went wrong importing the config file. Check your config file for any errors, then restart the bot.")
-        exit()
+import config_manager
 
 
 if not Path("story.txt").is_file():
@@ -25,7 +12,7 @@ if not Path("story.txt").is_file():
 if not Path("user.txt").is_file():
     print("Created user.txt")
     with open("user.txt", "w") as f:
-        f.write(str(config.DEFAULT_USER_IDS[0]))
+        f.write(str(config_manager.get_default_user_ids()[0]))
         
 import cogs.dm_listener as dm_listener
 from user_manager import user_manager
@@ -38,7 +25,10 @@ intents.message_content = True
 class StoryBot(commands.Bot):
     async def setup_hook(self):
         
-        ### Notice: if the commands are showing up two times in your server but only once in DMs, uncomment these two lines for your first run ###
+        ### Notice: if the commands are showing up two times in your server but only once in DMs, uncomment these three lines for your first run ###
+        ### Then, comment them back out after this run ###
+        ### This is a fix for upgrading from v1.0.1 ###
+        #import config
         #bot.tree.copy_global_to(guild=discord.Object(id=config.GUILD_ID))
         #await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
         
@@ -46,7 +36,7 @@ class StoryBot(commands.Bot):
         await bot.tree.sync()
 
 
-bot = StoryBot(config.PREFIX, help_command = None, intents=intents)
+bot = StoryBot(config_manager.get_prefix(), help_command = None, intents=intents)
 
 fmgr = file_manager()
 umgr = user_manager(bot)
@@ -61,9 +51,6 @@ async def on_ready():
     print("Bot started!")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=" for `/help`"))
 
-if(config.TOKEN == 'xxxxxxxxxxxxx'):
-    raise RuntimeError("Please update config.py with your bot's token!")
-
 
 async def load_cogs(bot: commands.Bot, cog_list: list):
     for cog_name in cog_list:
@@ -77,5 +64,5 @@ async def load_cogs(bot: commands.Bot, cog_list: list):
             print("Put the setup() function back in " + cog_name + " fool.")
 
 
-bot.run(config.TOKEN)
+bot.run(config_manager.get_token())
 

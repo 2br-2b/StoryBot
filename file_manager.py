@@ -1,6 +1,6 @@
 import os
 import time
-import config
+import config_manager
 
 class file_manager():
     def __init__(self):
@@ -21,7 +21,7 @@ class file_manager():
         
         # Makes sure the bot isn't trying to append a command onto the story
         # Since this is already checked in dm_listener, this throws an error when it detects a command
-        if line.startswith(config.PREFIX):
+        if line.startswith(config_manager.get_prefix()):
             raise RuntimeWarning("I was just told to add this to the story, but this is clearly a command:\n"+line)
         
         with open("story.txt", "a", encoding="utf8") as append_to:
