@@ -5,10 +5,12 @@ from discord.ext import tasks, commands
 import re
 
 import config_manager
+import file_manager
+import user_manager
 
 # Listens for DMs to add to the story
 class dm_listener(commands.Cog):
-    def __init__(self, file_manager, user_manager, bot):
+    def __init__(self, file_manager: file_manager.file_manager, user_manager: user_manager.user_manager, bot):
         self.file_manager = file_manager
         self.user_manager = user_manager
         
@@ -21,9 +23,9 @@ class dm_listener(commands.Cog):
         self.CHARACTERS_TO_SHOW = 4096
 
 
-    async def check_for_prefix_command(self, ctx: commands.Context, remove = False):
+    async def check_for_prefix_command(self, ctx: commands.Context, just_removed = False):
         if(ctx.prefix != "/"):
-            if(remove):
+            if(just_removed):
                 msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but if you choose to use this bot again in the future, you'll need to switch over to slash commands.\n\nTo rejoin, you'll have to run `/add` as opposed to `{config_manager.get_prefix()}add`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
             else:
                 msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but you'll want to switch over to slash commands soon.\n\nIn the future, you'll need to run that command by typing `/{ctx.message.content[len(config_manager.get_prefix()):]}`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
@@ -31,24 +33,24 @@ class dm_listener(commands.Cog):
             await (await ctx.author.create_dm()).send(msg)
 
 
-    async def dm_current_user(self, message, file = None, embed = None):
+    async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
         """Sends the given message to the current user"""
         
         await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user()))).create_dm()).send(message, embed=embed, file = file)
         if self._notif_line_cont:
             self._notif_line_cont = False
-            await self.dm_current_user("**Please pick up the writing in the middle of the last sentence.**")
+            await self.dm_current_user(guild_id, "**Please pick up the writing in the middle of the last sentence.**")
             
 
-    async def notify_people(self):
+    async def notify_people(self, guild_id: int):
         """Notifies the current user that it's their turn to add to the story"""
         
         file = discord.File("story.txt", filename="story.txt")
-        await self.dm_current_user("""Your turn.  Respond with a DM to continue the story!  Use a \ to create a line break.
+        await self.dm_current_user(guild_id, """Your turn.  Respond with a DM to continue the story!  Use a \ to create a line break.
             
             **MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.
             
-            Here is the story so far:""", file = file, embed = create_embed(content=self.lastChars(self.file_manager.getStory()), author_name=None, author_icon_url=None))
+            Here is the story so far:""", file = file, embed = create_embed(content=self.lastChars(self.file_manager.getStory(guild_id=guild_id)), author_name=None, author_icon_url=None))
         
         current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
         
@@ -81,7 +83,9 @@ class dm_listener(commands.Cog):
             file = discord.File("story.txt", filename="story.txt")
             title="The Current Story"
             
-        await self.reply_to_message(content=self.lastChars(self.file_manager.getStory(archived_story_number)), title=title, file = file, context=ctx, single_user=True)
+        await self.reply_to_message(
+            content=self.lastChars(self.file_manager.getStory(guild_id = self.get_proper_guild_id(ctx), story_number = archived_story_number)),
+            title=title, file = file, context=ctx, single_user=True)
 
     @commands.hybrid_command(name="turn")
     async def turn(self, ctx: commands.Context):
@@ -119,7 +123,7 @@ class dm_listener(commands.Cog):
             return
         
         try:
-            await self.new_user()
+            await self.new_user(self.get_proper_guild_id(ctx))
             await self.reply_to_message(context=ctx, content="Skipping :(")
         except ValueError:
             await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!")
@@ -136,7 +140,7 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(context=ctx, content="Only admins can use this command.", single_user=True)
             return
         
-        await self.notify_people()
+        await self.notify_people(self.get_proper_guild_id(ctx))
         
     @commands.hybrid_command(name="time_left")
     async def time_left_command(self, ctx: commands.Context):
@@ -145,7 +149,7 @@ class dm_listener(commands.Cog):
         await self.check_for_prefix_command(ctx)
         
         seconds_per_turn = config_manager.get_timeout_days(ctx.guild.id) * 24 * 60 * 60
-        timeout_timestamp = int(self.load_timestamp())
+        timeout_timestamp = int(self.load_timestamp(self.get_proper_guild_id(ctx)))
         current_time = int(time.time())
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
@@ -187,12 +191,12 @@ class dm_listener(commands.Cog):
         
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         """Checks if the message should be added the story, and if it is, appends it"""
         
         if self.messageNotSent:
             file = discord.File("story.txt", filename="story.txt")
-            await self.notify_people()
+            await self.notify_people(self.get_proper_guild_id(message.channel))
             self.messageNotSent = False
 
         if message.guild is None:
@@ -201,7 +205,10 @@ class dm_listener(commands.Cog):
                     return
                 
                 # Add the given line to the story file
-                self.file_manager.addLine(self.format_story_addition(message.content))
+                self.file_manager.addLine(
+                    guild_id=self.get_proper_guild_id(message.channel),
+                    line=self.format_story_addition(message.content)
+                    )
                 
                 current = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
                 
@@ -223,7 +230,7 @@ class dm_listener(commands.Cog):
                 await self.reply_to_message(message, "Got it!  Thanks!")
                 
                 self.user_manager.boost_user(int(self.user_manager.get_current_user()))
-                await self.new_user()
+                await self.new_user(self.get_proper_guild_id(message.channel))
 
     def pieMethod(self, story):
         """The all-powerful pieMethod
@@ -248,23 +255,26 @@ class dm_listener(commands.Cog):
         else:
             return story
 
-    async def timeout_happened(self):
+    async def timeout_happened(self, guild_id: int):
         """Skips the current user's turn if they don't respond in the specified amount of time"""
         
         print('Timing out...') 
-        await self.dm_current_user('You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
+        await self.dm_current_user(guild_id, 'You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
         self.user_manager.unboost_user(int(self.user_manager.get_current_user()))
-        await self.new_user()
+        await self.new_user(guild_id)
 
     @tasks.loop(seconds=60 * 60) # Check back every hour
     async def timeout_checker(self):
         """Will skip the current user's turn if they don't respond in the specified amount of time"""
-        if time.time() - self.load_timestamp() >= 60 * 60 * 24 * config_manager.get_timeout_days(None): # if the time is over the allotted time
-            print('about to timeout for '+self.user_manager.get_current_user())
-            await self.timeout_happened()
-            print('timeout happened. New user is '+self.user_manager.get_current_user())
         
-        print('checked: {0} seconds at {1}'.format(time.time() - self.load_timestamp(), time.time()))
+        for guild_id in self.file_manager.get_all_guild_ids():
+            
+            if time.time() - self.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(None): # if the time is over the allotted time
+                print('about to timeout for '+self.user_manager.get_current_user())
+                await self.timeout_happened(guild_id)
+                print('timeout happened. New user is '+self.user_manager.get_current_user())
+            
+            print('checked: {0} seconds at {1}'.format(time.time() - self.load_timestamp(guild_id), time.time()))
 
 
     @commands.Cog.listener()
@@ -292,13 +302,13 @@ class dm_listener(commands.Cog):
     async def remove(self, ctx):
         """Removes a user from the list of participants"""
         
-        await self.check_for_prefix_command(ctx, remove=True)
+        await self.check_for_prefix_command(ctx, just_removed=True)
         
         self.user_manager.remove_user(ctx.author.id)
         await self.reply_to_message(context=ctx, content="Done!")
 
     @staticmethod
-    def load_timestamp(filename: str = "timestamp.txt") -> float:
+    def load_timestamp(guild_id: int, filename: str = "timestamp.txt") -> float:
         """Returns the timestamp if it exists. If it doesn't, it'll reset the timestamp and return the new one."""
 
         try:
@@ -306,14 +316,14 @@ class dm_listener(commands.Cog):
                 return float(f.read())
         except FileNotFoundError:
             print("Timestamp not found. Resetting timestamp...")
-            dm_listener.reset_timestamp()
-            return dm_listener.load_timestamp()
+            dm_listener.reset_timestamp(guild_id)
+            return dm_listener.load_timestamp(guild_id)
         except ValueError:
-            dm_listener.reset_timestamp()
+            dm_listener.reset_timestamp(guild_id)
             raise RuntimeWarning("Timestamp has been corrupted. I have reset the timestamp, but if this keeps happening, something's wrong.")
 
     @staticmethod
-    def reset_timestamp(filename:str = "timestamp.txt") -> float:
+    def reset_timestamp(guild_id: int, filename:str = "timestamp.txt") -> float:
         """Resets the timestamp to the current time"""
         now = time.time()
         with open(filename, "w") as f:
@@ -376,15 +386,24 @@ class dm_listener(commands.Cog):
             raise ValueError("Both ctx and message passed to reply_to_message are None")
           
           
-    async def new_user(self):
+    async def new_user(self, guild_id: int):
         """Chooses a new random user and notifies all relevant parties"""
         self.user_manager.set_random_weighted_user(add_last_user_to_queue = True)
         
         print("New current user: " + self.user_manager.get_current_user())
-        self.reset_timestamp()
-        await self.notify_people()
+        self.reset_timestamp(guild_id)
+        await self.notify_people(guild_id)
 
+    def get_proper_guild_id(self, channel: discord.abc.Messageable) -> int:
+        if channel.guild is None:
+            # TODO: figure out how to implement this
+            return None
+        
+        return channel.guild.id
+        
+        
 
+        
 
 def create_embed(content=None, color=config_manager.get_embed_color(), title=None, author_name=None, author_icon_url=None) -> discord.Embed:
     """Creates an embed with the given parameters. All values have defaults if not given."""
