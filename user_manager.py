@@ -98,7 +98,7 @@ class user_manager():
     def add_user(self, guild_id: int, user_id):
         """Adds the given user to the list of users"""
         if user_id not in self.get_weighted_list(guild_id):
-            for i in range(0, config_manager.get_default_reputation(None)):
+            for i in range(0, config_manager.get_default_reputation(guild_id)):
                 self.weighted_list_of_users.append(user_id)
         self.serialize()
 
@@ -110,7 +110,7 @@ class user_manager():
 
     def boost_user(self, guild_id: int, user_id):
         """Boosts the given user's reputation"""
-        if(collections.Counter(self.weighted_list_of_users)[user_id] < config_manager.get_max_reputation(None)):
+        if(collections.Counter(self.weighted_list_of_users)[user_id] < config_manager.get_max_reputation(user_id)):
             self.weighted_list_of_users.append(user_id)
         self.serialize()
         print('boosted {0} finished'.format(user_id))

@@ -62,7 +62,7 @@ class dm_listener(commands.Cog):
             )
         
         # Send a message in the story chanel
-        for channel in config_manager.get_story_announcement_channels(None):
+        for channel in config_manager.get_story_announcement_channels(guild_id):
             await self.bot.get_channel(channel).send(embed = emb)
     
     @commands.hybrid_command(name="story")
@@ -214,7 +214,7 @@ class dm_listener(commands.Cog):
                 
                 current = await self.bot.fetch_user(int(self.user_manager.get_current_user(self.get_proper_guild_id(message.channel))))
                 
-                if config_manager.get_send_story_as_embed(None):
+                if config_manager.get_send_story_as_embed(message.guild.id):
                     content_to_send = None
                     emb = create_embed(
                         author_name=current.name,
@@ -226,7 +226,7 @@ class dm_listener(commands.Cog):
                     emb = None
                 
                 # Mirror the messages to a Discord channel
-                for channel in config_manager.get_story_output_channels(None):
+                for channel in config_manager.get_story_output_channels(message.guild.id):
                     await self.bot.get_channel(channel).send(content_to_send, embed = emb)
                 
                 await self.reply_to_message(message, "Got it!  Thanks!")
@@ -272,7 +272,7 @@ class dm_listener(commands.Cog):
         
         for guild_id in self.file_manager.get_all_guild_ids():
             
-            if time.time() - self.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(None): # if the time is over the allotted time
+            if time.time() - self.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
                 print('about to timeout for '+self.user_manager.get_current_user(guild_id))
                 await self.timeout_happened(guild_id)
                 print('timeout happened. New user is '+self.user_manager.get_current_user(guild_id))
