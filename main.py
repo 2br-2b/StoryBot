@@ -1,3 +1,4 @@
+import asyncio
 import discord
 
 # create the necessary files if they don't exist
@@ -23,7 +24,8 @@ class StoryBot(commands.Bot):
         #await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
         
         await load_cogs(self, ["cogs.dm_listener"])
-        await bot.tree.sync()
+        # TODO: make this so it doesn't run every time (maybe make it a command)
+        asyncio.create_task(bot.tree.sync())
 
 
 bot = StoryBot(config_manager.get_prefix(), help_command = None, intents=intents)
