@@ -225,6 +225,8 @@ class dm_listener(commands.Cog):
                 
                 self.user_manager.boost_user(int(self.user_manager.get_current_user()))
                 await self.new_user()
+                
+                print("User added to story")
 
     def pieMethod(self, story):
         """The all-powerful pieMethod
@@ -252,7 +254,6 @@ class dm_listener(commands.Cog):
     async def timeout_happened(self):
         """Skips the current user's turn if they don't respond in the specified amount of time"""
         
-        print('Timing out...') 
         await self.dm_current_user('You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
         self.user_manager.unboost_user(int(self.user_manager.get_current_user()))
         await self.new_user()
@@ -261,11 +262,8 @@ class dm_listener(commands.Cog):
     async def timeout_checker(self):
         """Will skip the current user's turn if they don't respond in the specified amount of time"""
         if time.time() - self.load_timestamp() >= 60 * 60 * 24 * config.TIMEOUT_DAYS: # if the time is over the allotted time
-            print('about to timeout for '+self.user_manager.get_current_user())
             await self.timeout_happened()
-            print('timeout happened. New user is '+self.user_manager.get_current_user())
-        
-        print('checked: {0} seconds at {1}'.format(time.time() - self.load_timestamp(), time.time()))
+            print("User timed out")
 
 
     @commands.Cog.listener()
@@ -380,8 +378,6 @@ class dm_listener(commands.Cog):
     async def new_user(self):
         """Chooses a new random user and notifies all relevant parties"""
         self.user_manager.set_random_weighted_user(add_last_user_to_queue = True)
-        
-        print("New current user: " + self.user_manager.get_current_user())
         self.reset_timestamp()
         await self.notify_people()
 
