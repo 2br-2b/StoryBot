@@ -3,10 +3,16 @@ import os
 import collections
 import json
 import config_manager
+from pathlib import Path
 
 class user_manager():
     def __init__(self, bot):
         self.bot = bot
+        
+        if not Path("user.txt").is_file():
+            print("Created user.txt")
+            with open("user.txt", "w") as f:
+                f.write(str(config_manager.get_default_user_ids()[0]))
         
         # Create the initial list of users 
         try:

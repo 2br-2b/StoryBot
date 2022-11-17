@@ -1,18 +1,8 @@
 import discord
-from pathlib import Path
 
 # create the necessary files if they don't exist
 import config_manager
 
-
-if not Path("story.txt").is_file():
-    print("Created story.txt")
-    open("story.txt", "x").close()
-
-if not Path("user.txt").is_file():
-    print("Created user.txt")
-    with open("user.txt", "w") as f:
-        f.write(str(config_manager.get_default_user_ids()[0]))
         
 import cogs.dm_listener as dm_listener
 from user_manager import user_manager

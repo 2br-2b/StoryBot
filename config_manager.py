@@ -40,9 +40,6 @@ def get_story_announcement_channels(guild_id: int) -> list[int]:
 def get_story_output_channels(guild_id: int) -> list[int]:
     return config.STORY_OUTPUT_CHANNELS
 
-def get_send_story_as_embed(guild_id: int) -> bool:
-    return config.SEND_STORY_AS_EMBED_IN_CHANNEL
-
 def is_admin(author_id: int, guild_id: int) -> bool:
     return author_id in config.ADMIN_IDS
 

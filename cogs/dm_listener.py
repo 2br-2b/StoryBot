@@ -151,7 +151,7 @@ class dm_listener(commands.Cog):
         await self.check_for_prefix_command(ctx)
         
         seconds_per_turn = config_manager.get_timeout_days(ctx.guild.id) * 24 * 60 * 60
-        timeout_timestamp = int(self.load_timestamp(self.get_proper_guild_id(ctx)))
+        timeout_timestamp = int(file_manager.load_timestamp(self.get_proper_guild_id(ctx)))
         current_time = int(time.time())
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
@@ -206,28 +206,17 @@ class dm_listener(commands.Cog):
                 if message.content.startswith("/") or message.content.startswith(config_manager.get_prefix()):
                     return
                 
+                content_to_send = self.format_story_addition(message.content)
+                
                 # Add the given line to the story file
                 self.file_manager.addLine(
                     guild_id=self.get_proper_guild_id(message.channel),
-                    line=self.format_story_addition(message.content)
+                    line=content_to_send
                     )
-                
-                current = await self.bot.fetch_user(int(self.user_manager.get_current_user(self.get_proper_guild_id(message.channel))))
-                
-                if config_manager.get_send_story_as_embed(message.guild.id):
-                    content_to_send = None
-                    emb = create_embed(
-                        author_name=current.name,
-                        author_icon_url=current.display_avatar.url,
-                        content=self.format_story_addition(message.content)
-                    )
-                else:
-                    content_to_send = self.format_story_addition(message.content)
-                    emb = None
                 
                 # Mirror the messages to a Discord channel
-                for channel in config_manager.get_story_output_channels(message.guild.id):
-                    await self.bot.get_channel(channel).send(content_to_send, embed = emb)
+                for channel in config_manager.get_story_output_channels(self.get_proper_guild_id(message.channel)):
+                    await self.bot.get_channel(channel).send(content_to_send)
                 
                 await self.reply_to_message(message, "Got it!  Thanks!")
                 
@@ -272,12 +261,12 @@ class dm_listener(commands.Cog):
         
         for guild_id in self.file_manager.get_all_guild_ids():
             
-            if time.time() - self.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
+            if time.time() - file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
                 print('about to timeout for '+self.user_manager.get_current_user(guild_id))
                 await self.timeout_happened(guild_id)
                 print('timeout happened. New user is '+self.user_manager.get_current_user(guild_id))
             
-            print('checked: {0} seconds at {1}'.format(time.time() - self.load_timestamp(guild_id), time.time()))
+            print('checked: {0} seconds at {1}'.format(time.time() - file_manager.load_timestamp(guild_id), time.time()))
 
 
     @commands.Cog.listener()
@@ -309,29 +298,6 @@ class dm_listener(commands.Cog):
         
         self.user_manager.remove_user(self.get_proper_guild_id(ctx), ctx.author.id)
         await self.reply_to_message(context=ctx, content="Done!")
-
-    @staticmethod
-    def load_timestamp(guild_id: int, filename: str = "timestamp.txt") -> float:
-        """Returns the timestamp if it exists. If it doesn't, it'll reset the timestamp and return the new one."""
-
-        try:
-            with open(filename, "r") as f:
-                return float(f.read())
-        except FileNotFoundError:
-            print("Timestamp not found. Resetting timestamp...")
-            dm_listener.reset_timestamp(guild_id)
-            return dm_listener.load_timestamp(guild_id)
-        except ValueError:
-            dm_listener.reset_timestamp(guild_id)
-            raise RuntimeWarning("Timestamp has been corrupted. I have reset the timestamp, but if this keeps happening, something's wrong.")
-
-    @staticmethod
-    def reset_timestamp(guild_id: int, filename:str = "timestamp.txt") -> float:
-        """Resets the timestamp to the current time"""
-        now = time.time()
-        with open(filename, "w") as f:
-            f.write(str(now))
-        return now
 
     def format_story_addition(self, line:str) -> str:
         if(line.startswith(config_manager.get_prefix())):
@@ -394,7 +360,7 @@ class dm_listener(commands.Cog):
         self.user_manager.set_random_weighted_user(guild_id, add_last_user_to_queue = True)
         
         print("New current user: " + self.user_manager.get_current_user(guild_id))
-        self.reset_timestamp(guild_id)
+        file_manager.reset_timestamp(guild_id)
         await self.notify_people(guild_id)
 
     def get_proper_guild_id(self, channel: discord.abc.Messageable) -> int:

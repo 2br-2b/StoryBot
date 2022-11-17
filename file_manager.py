@@ -1,11 +1,14 @@
 import os
 import time
 import config_manager
+from pathlib import Path
 
 class file_manager():
     def __init__(self):
-        file = open("story.txt", "r", encoding="utf8")
-        file.close()
+
+        if not Path("story.txt").is_file():
+            print("Created story.txt")
+            open("story.txt", "x").close()
 
     def getStory(self, guild_id: int, story_number = 0):
         """Returns the story in the story.txt file"""
@@ -66,3 +69,30 @@ class file_manager():
     def get_all_guild_ids(self) -> list[int]:
         # TODO: not implemented
         return [ config_manager.get_default_guild_id() ]
+
+
+
+
+
+@staticmethod
+def load_timestamp(guild_id: int, filename: str = "timestamp.txt") -> float:
+    """Returns the timestamp if it exists. If it doesn't, it'll reset the timestamp and return the new one."""
+
+    try:
+        with open(filename, "r") as f:
+            return float(f.read())
+    except FileNotFoundError:
+        print("Timestamp not found. Resetting timestamp...")
+        reset_timestamp(guild_id)
+        return load_timestamp(guild_id)
+    except ValueError:
+        reset_timestamp(guild_id)
+        raise RuntimeWarning("Timestamp has been corrupted. I have reset the timestamp, but if this keeps happening, something's wrong.")
+
+@staticmethod
+def reset_timestamp(guild_id: int, filename:str = "timestamp.txt") -> float:
+    """Resets the timestamp to the current time"""
+    now = time.time()
+    with open(filename, "w") as f:
+        f.write(str(now))
+    return now
