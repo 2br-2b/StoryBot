@@ -11,10 +11,15 @@ class file_manager():
         """Returns the story in the story.txt file"""
         if story_number == 0:
             with open("story.txt", "r", encoding="utf8") as file:
-                return file.read()
+                text = file.read() 
         else:
             with open("story " + str(story_number) + ".txt", "r", encoding="utf8") as file:
-                return file.read()
+                text = file.read()
+        
+        if(text == ""):
+            return "<Waiting for the first user to begin!>"
+        else:
+            return text
 
     def addLine(self, guild_id: int, line):
         """Appends the given line to the story and writes it to the file"""
@@ -60,4 +65,4 @@ class file_manager():
 
     def get_all_guild_ids(self) -> list[int]:
         # TODO: not implemented
-        return [ 00000000 ]
+        return [ config_manager.get_default_guild_id() ]

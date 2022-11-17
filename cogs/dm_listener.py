@@ -24,6 +24,8 @@ class dm_listener(commands.Cog):
 
 
     async def check_for_prefix_command(self, ctx: commands.Context, just_removed = False):
+        if(config_manager.is_debug_mode()):
+            return
         if(ctx.prefix != "/"):
             if(just_removed):
                 msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but if you choose to use this bot again in the future, you'll need to switch over to slash commands.\n\nTo rejoin, you'll have to run `/add` as opposed to `{config_manager.get_prefix()}add`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
@@ -36,7 +38,7 @@ class dm_listener(commands.Cog):
     async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
         """Sends the given message to the current user"""
         
-        await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user()))).create_dm()).send(message, embed=embed, file = file)
+        await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
         if self._notif_line_cont:
             self._notif_line_cont = False
             await self.dm_current_user(guild_id, "**Please pick up the writing in the middle of the last sentence.**")
@@ -50,9 +52,9 @@ class dm_listener(commands.Cog):
             
             **MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.
             
-            Here is the story so far:""", file = file, embed = create_embed(content=self.lastChars(self.file_manager.getStory(guild_id=guild_id)), author_name=None, author_icon_url=None))
+            Here is the story so far:""", file = file, embed = create_embed(content=self.lastChars(self.file_manager.getStory(guild_id)), author_name=None, author_icon_url=None))
         
-        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
+        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user(guild_id)))
         
         emb = create_embed(
             author_icon_url=current_user.display_avatar.url,
@@ -93,9 +95,9 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx)
         
-        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
+        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user(self.get_proper_guild_id(ctx))))
         
-        #ctx.message.guild.get_member(int(self.user_manager.get_current_user()))
+        #ctx.message.guild.get_member(int(self.user_manager.get_current_user(self.get_proper_guild_id(ctx))))
         
         await self.reply_to_message(author=current_user, context=ctx, single_user=True)
 
@@ -118,7 +120,7 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx)
         
-        if str(ctx.author.id) != self.user_manager.get_current_user() and not config_manager.is_admin(ctx.author.id, ctx.guild.id):
+        if str(ctx.author.id) != self.user_manager.get_current_user(self.get_proper_guild_id(ctx)) and not config_manager.is_admin(ctx.author.id, ctx.guild.id):
             await self.reply_to_message(context=ctx, content="It's not your turn!")
             return
         
@@ -154,7 +156,7 @@ class dm_listener(commands.Cog):
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
         
-        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
+        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user(self.get_proper_guild_id(ctx))))
         
         await self.reply_to_message(context=ctx, content="Time remaining: " + dm_listener.print_time(seconds=seconds_remaining + 60) +"\nTime used: " + dm_listener.print_time(seconds=seconds_since_timestamp)+"", single_user=True, author=current_user)
         
@@ -200,7 +202,7 @@ class dm_listener(commands.Cog):
             self.messageNotSent = False
 
         if message.guild is None:
-            if self.user_manager.get_current_user() == str(message.author.id):
+            if self.user_manager.get_current_user(self.get_proper_guild_id(message.channel)) == str(message.author.id):
                 if message.content.startswith("/") or message.content.startswith(config_manager.get_prefix()):
                     return
                 
@@ -210,7 +212,7 @@ class dm_listener(commands.Cog):
                     line=self.format_story_addition(message.content)
                     )
                 
-                current = await self.bot.fetch_user(int(self.user_manager.get_current_user()))
+                current = await self.bot.fetch_user(int(self.user_manager.get_current_user(self.get_proper_guild_id(message.channel))))
                 
                 if config_manager.get_send_story_as_embed(None):
                     content_to_send = None
@@ -229,7 +231,8 @@ class dm_listener(commands.Cog):
                 
                 await self.reply_to_message(message, "Got it!  Thanks!")
                 
-                self.user_manager.boost_user(int(self.user_manager.get_current_user()))
+                guild_id_to_use = self.get_proper_guild_id(message.channel)
+                self.user_manager.boost_user(guild_id_to_use, int(self.user_manager.get_current_user(guild_id_to_use)))
                 await self.new_user(self.get_proper_guild_id(message.channel))
 
     def pieMethod(self, story):
@@ -260,7 +263,7 @@ class dm_listener(commands.Cog):
         
         print('Timing out...') 
         await self.dm_current_user(guild_id, 'You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
-        self.user_manager.unboost_user(int(self.user_manager.get_current_user()))
+        self.user_manager.unboost_user(guild_id, int(self.user_manager.get_current_user(guild_id)))
         await self.new_user(guild_id)
 
     @tasks.loop(seconds=60 * 60) # Check back every hour
@@ -270,9 +273,9 @@ class dm_listener(commands.Cog):
         for guild_id in self.file_manager.get_all_guild_ids():
             
             if time.time() - self.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(None): # if the time is over the allotted time
-                print('about to timeout for '+self.user_manager.get_current_user())
+                print('about to timeout for '+self.user_manager.get_current_user(guild_id))
                 await self.timeout_happened(guild_id)
-                print('timeout happened. New user is '+self.user_manager.get_current_user())
+                print('timeout happened. New user is '+self.user_manager.get_current_user(guild_id))
             
             print('checked: {0} seconds at {1}'.format(time.time() - self.load_timestamp(guild_id), time.time()))
 
@@ -295,7 +298,7 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx)
         
-        self.user_manager.add_user(ctx.author.id)
+        self.user_manager.add_user(self.get_proper_guild_id(ctx), ctx.author.id)
         await self.reply_to_message(context=ctx, content="Done!")
 
     @commands.hybrid_command(name="remove")
@@ -304,7 +307,7 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx, just_removed=True)
         
-        self.user_manager.remove_user(ctx.author.id)
+        self.user_manager.remove_user(self.get_proper_guild_id(ctx), ctx.author.id)
         await self.reply_to_message(context=ctx, content="Done!")
 
     @staticmethod
@@ -388,9 +391,9 @@ class dm_listener(commands.Cog):
           
     async def new_user(self, guild_id: int):
         """Chooses a new random user and notifies all relevant parties"""
-        self.user_manager.set_random_weighted_user(add_last_user_to_queue = True)
+        self.user_manager.set_random_weighted_user(guild_id, add_last_user_to_queue = True)
         
-        print("New current user: " + self.user_manager.get_current_user())
+        print("New current user: " + self.user_manager.get_current_user(guild_id))
         self.reset_timestamp(guild_id)
         await self.notify_people(guild_id)
 

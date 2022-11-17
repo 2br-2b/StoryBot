@@ -56,3 +56,12 @@ def get_embed_color() -> Color:
 def get_amount_to_not_repeat() -> int:
     # TODO: Phase out
     return config.LAST_N_PLAYERS_NO_REPEAT
+
+def get_default_guild_id() -> int:
+    return config.GUILD_ID
+
+def is_debug_mode() -> bool:
+    try:
+        return config.DEBUG_MODE
+    except AttributeError:
+        return False
