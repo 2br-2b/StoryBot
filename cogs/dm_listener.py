@@ -17,7 +17,6 @@ class dm_listener(commands.Cog):
         self.user_manager = user_manager
         
         self.bot = bot
-        self.messageNotSent = False
 
         # The timestamp keeps track of when the last user was notified, so that even if the bot goes down, it still knows how much longer the current user has to continue the story
         self._notif_line_cont = False
@@ -199,13 +198,8 @@ class dm_listener(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         """Checks if the message should be added the story, and if it is, appends it"""
-        
-        if self.messageNotSent:
-            file = discord.File("story.txt", filename="story.txt")
-            await self.notify_people(self.get_proper_guild_id(message.channel))
-            self.messageNotSent = False
 
-        if message.guild is None:
+        if message.guild is None and message.author != self.bot.user:
             if self.user_manager.get_current_user(self.get_proper_guild_id(message.channel)) == str(message.author.id):
                 if message.content.startswith("/") or message.content.startswith(config_manager.get_prefix()):
                     return
