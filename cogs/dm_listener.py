@@ -1,3 +1,5 @@
+import inspect
+
 import discord
 import math
 import time
@@ -36,7 +38,7 @@ class dm_listener(commands.Cog):
 
 
     async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
-        print(guild_id)
+        print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Sends the given message to the current user"""
         
         await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
@@ -46,7 +48,7 @@ class dm_listener(commands.Cog):
             
 
     async def notify_people(self, guild_id: int):
-        print(guild_id)
+        print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Notifies the current user that it's their turn to add to the story"""
         
         file = discord.File("story.txt", filename="story.txt")
@@ -250,7 +252,7 @@ class dm_listener(commands.Cog):
             return story
 
     async def timeout_happened(self, guild_id: int):
-        print(guild_id)
+        print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Skips the current user's turn if they don't respond in the specified amount of time"""
         
         print('Timing out...') 
@@ -265,11 +267,11 @@ class dm_listener(commands.Cog):
         for guild_id in self.file_manager.get_all_guild_ids():
             
             if time.time() - file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
-                print('about to timeout for '+self.user_manager.get_current_user(guild_id))
+                #print('about to timeout for '+self.user_manager.get_current_user(guild_id))
                 await self.timeout_happened(guild_id)
-                print('timeout happened. New user is '+self.user_manager.get_current_user(guild_id))
+                #print('timeout happened. New user is '+self.user_manager.get_current_user(guild_id))
             
-            print('checked: {0} seconds at {1}'.format(time.time() - file_manager.load_timestamp(guild_id), time.time()))
+            #print('checked: {0} seconds at {1}'.format(time.time() - file_manager.load_timestamp(guild_id), time.time()))
 
 
     @commands.Cog.listener()
@@ -359,7 +361,7 @@ class dm_listener(commands.Cog):
           
           
     async def new_user(self, guild_id: int):
-        print(guild_id)
+        print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Chooses a new random user and notifies all relevant parties"""
         self.user_manager.set_random_weighted_user(guild_id, add_last_user_to_queue = True)
         
