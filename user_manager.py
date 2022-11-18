@@ -124,7 +124,7 @@ class user_manager():
     def boost_user(self, guild_id: int, user_id):
         print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Boosts the given user's reputation"""
-        if(collections.Counter(self.weighted_list_of_users)[user_id] < config_manager.get_max_reputation(user_id)):
+        if(collections.Counter(self.weighted_list_of_users)[user_id] < config_manager.get_max_reputation(guild_id)):
             self.weighted_list_of_users.append(user_id)
         self.serialize()
         print('boosted {0} finished'.format(user_id))
