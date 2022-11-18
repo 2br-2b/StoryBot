@@ -57,35 +57,6 @@ class file_manager():
         with open("story.txt", "r", encoding="utf8") as f:
             self.story = f.read()
 
-    @staticmethod
-    def new_story(self, guild_id: int):
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
-        """A work in progress
-        Should save the old story and restart the current story from scratch"""
-        raise NotImplementedError("The `file_manager.new_story()` command is not finished yet.")
-        
-        with open("story.txt", "r", encoding="utf8") as f:
-            old_story = f.read()
-
-        time.sleep(0.01)
-
-        backup_filename = file_manager.find_next_available_filename(guild_id)
-
-        with open(backup_filename, 'w') as f:
-            f.write(str(old_story))
-
-        with open('story.txt', 'w+') as f:
-            f.write('')
-
-    @staticmethod
-    def find_next_available_filename(guild_id: int) -> str:
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
-        """This method finds the next available name for a story file and returns it"""
-        i = 1
-        while os.file.exists(f"story {i}.txt"):
-            i += 1
-
-        return f"story {i}.txt"
 
     def get_all_guild_ids(self) -> list[int]:
         # TODO: not implemented
