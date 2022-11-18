@@ -11,6 +11,7 @@ class file_manager():
             open("story.txt", "x").close()
 
     def getStory(self, guild_id: int, story_number = 0):
+        print(guild_id)
         """Returns the story in the story.txt file"""
         if story_number == 0:
             with open("story.txt", "r", encoding="utf8") as file:
@@ -25,6 +26,7 @@ class file_manager():
             return text
 
     def addLine(self, guild_id: int, line):
+        print(guild_id)
         """Appends the given line to the story and writes it to the file"""
         
         # Makes sure the bot isn't trying to append a command onto the story
@@ -40,6 +42,7 @@ class file_manager():
 
     @staticmethod
     def new_story(self, guild_id: int):
+        print(guild_id)
         """A work in progress
         Should save the old story and restart the current story from scratch"""
         raise NotImplementedError("The `file_manager.new_story()` command is not finished yet.")
@@ -59,6 +62,7 @@ class file_manager():
 
     @staticmethod
     def find_next_available_filename(guild_id: int) -> str:
+        print(guild_id)
         """This method finds the next available name for a story file and returns it"""
         i = 1
         while os.file.exists(f"story {i}.txt"):
@@ -76,6 +80,7 @@ class file_manager():
 
 @staticmethod
 def load_timestamp(guild_id: int, filename: str = "timestamp.txt") -> float:
+    print(guild_id)
     """Returns the timestamp if it exists. If it doesn't, it'll reset the timestamp and return the new one."""
 
     try:
@@ -91,6 +96,7 @@ def load_timestamp(guild_id: int, filename: str = "timestamp.txt") -> float:
 
 @staticmethod
 def reset_timestamp(guild_id: int, filename:str = "timestamp.txt") -> float:
+    print(guild_id)
     """Resets the timestamp to the current time"""
     now = time.time()
     with open(filename, "w") as f:

@@ -22,12 +22,15 @@ def get_token() -> str:
     return config.TOKEN
 
 def get_timeout_days(guild_id: int) -> float:
+    print(guild_id)
     return config.TIMEOUT_DAYS
 
 def get_default_reputation(guild_id: int) -> int:
+    print(guild_id)
     return config.DEFAULT_REPUTATION
 
 def get_max_reputation(guild_id: int) -> int:
+    print(guild_id)
     return config.MAX_REPUTATION
 
 def get_prefix() -> str:
@@ -35,12 +38,15 @@ def get_prefix() -> str:
     return config.PREFIX
 
 def get_story_announcement_channels(guild_id: int) -> list[int]:
+    print(guild_id)
     return config.STORY_CHANNELS
 
 def get_story_output_channels(guild_id: int) -> list[int]:
+    print(guild_id)
     return config.STORY_OUTPUT_CHANNELS
 
 def is_admin(author_id: int, guild_id: int) -> bool:
+    print(guild_id)
     return author_id in config.ADMIN_IDS
 
 def get_default_user_ids() -> list[int]:
