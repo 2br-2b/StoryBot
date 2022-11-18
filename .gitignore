@@ -4,9 +4,8 @@ token_manager.py
 
 config.py
 
-story*
 
-user.txt
-timestamp.txt
 weighted\ list\ of\ users.json
 recent_users.json
+
+storage/*

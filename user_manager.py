@@ -5,16 +5,10 @@ import os
 import collections
 import json
 import config_manager
-from pathlib import Path
 
 class user_manager():
     def __init__(self, bot):
         self.bot = bot
-        
-        if not Path("user.txt").is_file():
-            print("Created user.txt")
-            with open("user.txt", "w") as f:
-                f.write(str(config_manager.get_default_user_ids()[0]))
         
         # Create the initial list of users 
         try:
@@ -42,7 +36,9 @@ class user_manager():
         print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Sets a random user as the current user based on their reputation"""
         if add_last_user_to_queue:
-            self.add_to_recent_users_queue(guild_id, int(user_manager.get_current_user(guild_id)))
+            current_user = self.get_current_user(guild_id)
+            if current_user != None:
+                self.add_to_recent_users_queue(guild_id, int(current_user))
         
         return self.__set_new_random_user(self.get_weighted_list(guild_id), guild_id)
 
@@ -50,7 +46,7 @@ class user_manager():
         print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Sets a random user as the current user. Doesn't care about reputation."""
         if add_last_user_to_queue:
-            self.add_to_recent_users_queue(guild_id, int(user_manager.get_current_user(guild_id)))
+            self.add_to_recent_users_queue(guild_id, int(self.get_current_user(guild_id)))
             
         return self.__set_new_random_user(self.get_unweighted_list(guild_id), guild_id)
     
@@ -75,11 +71,11 @@ class user_manager():
 
         if config_manager.get_amount_to_not_repeat() > 0:
             # Makes sure the same user isn't chosen more than once in a row, even if the most recent user wasn't added to the queue (like in a skip)
-            internalListToChooseFrom = user_manager.remove_all_occurrences(internalListToChooseFrom, user_manager.get_current_user(guild_id))
+            internalListToChooseFrom = remove_all_occurrences(internalListToChooseFrom, self.get_current_user(guild_id))
                 
             # Makes sure that the chosen user isn't in the recent users queue
             for item in self.get_recent_users_queue(guild_id):
-                internalListToChooseFrom = user_manager.remove_all_occurrences(internalListToChooseFrom, item)
+                internalListToChooseFrom = remove_all_occurrences(internalListToChooseFrom, item)
             
         
         # If there's too many people on the recent user queue, pop the most recent and try again. That way, it'll go in sequential order
@@ -89,22 +85,20 @@ class user_manager():
         
         new_user = secrets.choice(internalListToChooseFrom)
         
-        os.remove("user.txt")
-        with open('user.txt', 'w') as f:
-            f.write(str(new_user))
+        self.bot.file_manager.set_current_user_id(guild_id, new_user)
         
         return new_user
 
 
 
-    @staticmethod
-    def get_current_user(guild_id: int) -> str:
+    def get_current_user(self, guild_id: int) -> str:
         print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Returns the current user"""
-        file = open("user.txt", "r")
-        currentUserID = file.read()
-        file.close()
-        return currentUserID
+        ret = self.bot.file_manager.get_current_user_id(guild_id)
+        if ret == "":
+            return None
+        else:
+            return self.bot.file_manager.get_current_user_id(guild_id)
 
     def add_user(self, guild_id: int, user_id):
         print(str(guild_id) + ": " + inspect.stack()[1][3])
@@ -214,18 +208,18 @@ class user_manager():
 
 
 
-    @staticmethod
-    def remove_all_occurrences(given_list:list, item) -> list:
-        """Removes all occurrences of an item from a given list
+@staticmethod
+def remove_all_occurrences(given_list:list, item) -> list:
+    """Removes all occurrences of an item from a given list
 
-        Args:
-            given_list (list): the list to remove the item from
-            item: the item to remove
+    Args:
+        given_list (list): the list to remove the item from
+        item: the item to remove
 
-        Returns:
-            list: the list without the item in it
-        """
-        given_list = given_list.copy()
-        while(item in given_list):
-            given_list.remove(item)
-        return given_list
+    Returns:
+        list: the list without the item in it
+    """
+    given_list = given_list.copy()
+    while(item in given_list):
+        given_list.remove(item)
+    return given_list

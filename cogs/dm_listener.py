@@ -98,11 +98,12 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx)
         
-        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user(self.get_proper_guild_id(ctx))))
-        
-        #ctx.message.guild.get_member(int(self.user_manager.get_current_user(self.get_proper_guild_id(ctx))))
-        
-        await self.reply_to_message(author=current_user, context=ctx, single_user=True)
+        current_user_id = self.user_manager.get_current_user(self.get_proper_guild_id(ctx))
+        if current_user_id != None:
+            current_user = await self.bot.fetch_user(int(current_user_id))
+            await self.reply_to_message(author=current_user, context=ctx, single_user=True)
+        else:
+            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, single_user=True)
 
     @commands.hybrid_command(name="help")
     async def help(self, ctx):
@@ -156,7 +157,7 @@ class dm_listener(commands.Cog):
         proper_guild_id = self.get_proper_guild_id(ctx)
         
         seconds_per_turn = config_manager.get_timeout_days(ctx.guild.id) * 24 * 60 * 60
-        timeout_timestamp = int(file_manager.load_timestamp(proper_guild_id))
+        timeout_timestamp = int(self.file_manager.load_timestamp(proper_guild_id))
         current_time = int(time.time())
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
@@ -264,12 +265,12 @@ class dm_listener(commands.Cog):
         
         for guild_id in self.file_manager.get_all_guild_ids():
             
-            if time.time() - file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
+            if time.time() - self.file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
                 #print('about to timeout for '+self.user_manager.get_current_user(guild_id))
                 await self.timeout_happened(guild_id)
                 #print('timeout happened. New user is '+self.user_manager.get_current_user(guild_id))
             
-            #print('checked: {0} seconds at {1}'.format(time.time() - file_manager.load_timestamp(guild_id), time.time()))
+            #print('checked: {0} seconds at {1}'.format(time.time() - self.file_manager.load_timestamp(guild_id), time.time()))
 
 
     @commands.Cog.listener()
@@ -364,7 +365,7 @@ class dm_listener(commands.Cog):
         self.user_manager.set_random_weighted_user(guild_id, add_last_user_to_queue = True)
         
         print("New current user: " + self.user_manager.get_current_user(guild_id))
-        file_manager.reset_timestamp(guild_id)
+        self.file_manager.reset_timestamp(guild_id)
         await self.notify_people(guild_id)
 
     def get_proper_guild_id(self, channel: discord.abc.Messageable) -> int:
