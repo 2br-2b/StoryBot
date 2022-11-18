@@ -370,7 +370,7 @@ class dm_listener(commands.Cog):
     def get_proper_guild_id(self, channel: discord.abc.Messageable) -> int:
         if channel.guild is None:
             # TODO: figure out how to implement this
-            return None
+            return config_manager.get_default_guild_id()
         
         return channel.guild.id
         
