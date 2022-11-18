@@ -24,9 +24,9 @@ If you have any problems while setting up the bot, feel free to [start a discuss
 ## Reputation
 Each user writing the story has a reputation. Reputation is kept so that if someone times out often, they'll end up being chosen less often so that they're less likely to keep other players waiting.
 
-Reputation is a value from 1 to 22 representing a number of "tickets" in a weighted random lottery. Whichever user is chosen in this lottery will go next.
+Reputation is a value from 1 to 20 representing a number of "tickets" in a weighted random lottery. Whichever user is chosen in this lottery will go next.
 
-The default reputation for a new user is 20; bear in mind, however, that individual servers can customize these values.
+The default reputation for a new user is 20, the maximum; bear in mind, however, that individual servers can customize these values.
 
 After the story is added to, a new user is chosen based off of a weighted random number using each user's reputation.
 

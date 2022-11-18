@@ -12,7 +12,7 @@ TIMEOUT_DAYS = 1
 
 # The default and maximum reputations for a user
 DEFAULT_REPUTATION = 20
-MAX_REPUTATION = 22
+MAX_REPUTATION = 20
 
 # The ID(s) of the channels you want the bot to notify when it's a new player's turn
 # I only use one channel myself, but if you want to use more or split one story across multiple servers, feel free to!
