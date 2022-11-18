@@ -4,28 +4,43 @@ import os
 import time
 import config_manager
 from pathlib import Path
+import discord.file
 
 class file_manager():
-    def __init__(self):
-
-        if not Path("story.txt").is_file():
-            print("Created story.txt")
-            open("story.txt", "x").close()
-
-    def getStory(self, guild_id: int, story_number = 0):
+    def getStory(self, guild_id: int, story_number = 0) -> str:
         print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Returns the story in the story.txt file"""
         if story_number == 0:
-            with open("story.txt", "r", encoding="utf8") as file:
-                text = file.read() 
+            story_file_name = "story.txt"
         else:
-            with open("story " + str(story_number) + ".txt", "r", encoding="utf8") as file:
-                text = file.read()
+            story_file_name = "story " + str(story_number) + ".txt"
+            
+            
+        try:
+            with open(story_file_name, "r", encoding="utf8") as file:
+                text = file.read() 
+        except FileNotFoundError:
+            Path(story_file_name).touch()
+            return self.getStory(guild_id, story_number)
         
         if(text == ""):
             return "<Waiting for the first user to begin!>"
         else:
             return text
+       
+    def get_story_file(self, guild_id: int, story_number = 0) -> discord.file:
+        
+        if story_number == 0:
+            story_file_name = "story.txt"
+        else:
+            story_file_name = "story " + str(story_number) + ".txt"
+        
+        try:
+            return discord.File(story_file_name, filename=story_file_name)
+        except FileNotFoundError:
+            Path(story_file_name).touch()
+            return self.get_story_file(guild_id, story_number)
+                
 
     def addLine(self, guild_id: int, line):
         print(str(guild_id) + ": " + inspect.stack()[1][3])
@@ -36,7 +51,7 @@ class file_manager():
         if line.startswith(config_manager.get_prefix()):
             raise RuntimeWarning("I was just told to add this to the story, but this is clearly a command:\n"+line)
         
-        with open("story.txt", "a", encoding="utf8") as append_to:
+        with open("story.txt", "a+", encoding="utf8") as append_to:
             append_to.write(line)
 
         with open("story.txt", "r", encoding="utf8") as f:
@@ -101,6 +116,6 @@ def reset_timestamp(guild_id: int, filename:str = "timestamp.txt") -> float:
     print(str(guild_id) + ": " + inspect.stack()[1][3])
     """Resets the timestamp to the current time"""
     now = time.time()
-    with open(filename, "w") as f:
+    with open(filename, "w+") as f:
         f.write(str(now))
     return now

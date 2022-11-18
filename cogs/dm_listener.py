@@ -50,7 +50,7 @@ class dm_listener(commands.Cog):
         print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Notifies the current user that it's their turn to add to the story"""
         
-        file = discord.File("story.txt", filename="story.txt")
+        file = self.file_manager.get_story_file(guild_id)
         await self.dm_current_user(guild_id, """Your turn.  Respond with a DM to continue the story!  Use a \ to create a line break.
             
             **MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.
@@ -75,21 +75,21 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx)
         
-        # TODO: use file_manager.py here
+        proper_guild_id = self.get_proper_guild_id(ctx)
         
         if archived_story_number != 0:
             try:
-                file = discord.File("story {0}.txt".format(archived_story_number), filename="story {0}.txt".format(archived_story_number))
+                file = self.file_manager.get_story_file(proper_guild_id, archived_story_number)
                 title = "Story " + str(archived_story_number)
             except FileNotFoundError:
                 await self.reply_to_message(content='That story number couldn\'t be found!', context=ctx, single_user=True)
                 return
         else:
-            file = discord.File("story.txt", filename="story.txt")
+            file = self.file_manager.get_story_file(proper_guild_id)
             title="The Current Story"
             
         await self.reply_to_message(
-            content=self.lastChars(self.file_manager.getStory(guild_id = self.get_proper_guild_id(ctx), story_number = archived_story_number)),
+            content=self.lastChars(self.file_manager.getStory(guild_id = proper_guild_id, story_number = archived_story_number)),
             title=title, file = file, context=ctx, single_user=True)
 
     @commands.hybrid_command(name="turn")
@@ -222,8 +222,8 @@ class dm_listener(commands.Cog):
                 
                 await self.reply_to_message(message, "Got it!  Thanks!")
                 
-                guild_id_to_use = proper_guild_id
-                self.user_manager.boost_user(guild_id_to_use, int(self.user_manager.get_current_user(guild_id_to_use)))
+                self.user_manager.boost_user(proper_guild_id, int(self.user_manager.get_current_user(proper_guild_id)))
+                
                 await self.new_user(proper_guild_id)
 
     def pieMethod(self, story):
