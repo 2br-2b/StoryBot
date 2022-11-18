@@ -153,13 +153,15 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx)
         
+        proper_guild_id = self.get_proper_guild_id(ctx)
+        
         seconds_per_turn = config_manager.get_timeout_days(ctx.guild.id) * 24 * 60 * 60
-        timeout_timestamp = int(file_manager.load_timestamp(self.get_proper_guild_id(ctx)))
+        timeout_timestamp = int(file_manager.load_timestamp(proper_guild_id))
         current_time = int(time.time())
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
         
-        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user(self.get_proper_guild_id(ctx))))
+        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user(proper_guild_id)))
         
         await self.reply_to_message(context=ctx, content="Time remaining: " + dm_listener.print_time(seconds=seconds_remaining + 60) +"\nTime used: " + dm_listener.print_time(seconds=seconds_since_timestamp)+"", single_user=True, author=current_user)
         
@@ -200,7 +202,9 @@ class dm_listener(commands.Cog):
         """Checks if the message should be added the story, and if it is, appends it"""
 
         if message.guild is None and message.author != self.bot.user:
-            if self.user_manager.get_current_user(self.get_proper_guild_id(message.channel)) == str(message.author.id):
+            proper_guild_id = self.get_proper_guild_id(message.channel)
+            
+            if self.user_manager.get_current_user(proper_guild_id) == str(message.author.id):
                 if message.content.startswith("/") or message.content.startswith(config_manager.get_prefix()):
                     return
                 
@@ -208,19 +212,19 @@ class dm_listener(commands.Cog):
                 
                 # Add the given line to the story file
                 self.file_manager.addLine(
-                    guild_id=self.get_proper_guild_id(message.channel),
+                    guild_id=proper_guild_id,
                     line=content_to_send
                     )
                 
                 # Mirror the messages to a Discord channel
-                for channel in config_manager.get_story_output_channels(self.get_proper_guild_id(message.channel)):
+                for channel in config_manager.get_story_output_channels(proper_guild_id):
                     await self.bot.get_channel(channel).send(content_to_send)
                 
                 await self.reply_to_message(message, "Got it!  Thanks!")
                 
-                guild_id_to_use = self.get_proper_guild_id(message.channel)
+                guild_id_to_use = proper_guild_id
                 self.user_manager.boost_user(guild_id_to_use, int(self.user_manager.get_current_user(guild_id_to_use)))
-                await self.new_user(self.get_proper_guild_id(message.channel))
+                await self.new_user(proper_guild_id)
 
     def pieMethod(self, story):
         """The all-powerful pieMethod
