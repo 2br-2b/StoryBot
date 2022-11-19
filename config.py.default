@@ -3,6 +3,14 @@ from discord import Color
 # The bot's Discord token
 TOKEN = 'xxxxxxxxxxxxx'
 
+# Database info
+# This info should point to a PostgreSQL database
+DATABASE_USER="username"
+DATABASE_PASSWORD="password"
+DATABASE_DB_NAME="storybot"
+DATABASE_HOST="0.0.0.0"
+DATABASE_PORT="0000"
+
 # The bot's command prefix
 # Will be phased out eventually in favor of slash commands
 PREFIX = "s."
