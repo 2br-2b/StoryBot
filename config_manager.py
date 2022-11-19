@@ -24,15 +24,15 @@ def get_token() -> str:
     return config.TOKEN
 
 def get_timeout_days(guild_id: int) -> float:
-    print(str(guild_id) + ": " + inspect.stack()[1][3])
+    # print(str(guild_id) + ": " + inspect.stack()[1][3])
     return config.TIMEOUT_DAYS
 
 def get_default_reputation(guild_id: int) -> int:
-    print(str(guild_id) + ": " + inspect.stack()[1][3])
+    # print(str(guild_id) + ": " + inspect.stack()[1][3])
     return config.DEFAULT_REPUTATION
 
 def get_max_reputation(guild_id: int) -> int:
-    print(str(guild_id) + ": " + inspect.stack()[1][3])
+    # print(str(guild_id) + ": " + inspect.stack()[1][3])
     return config.MAX_REPUTATION
 
 def get_prefix() -> str:
@@ -40,15 +40,15 @@ def get_prefix() -> str:
     return config.PREFIX
 
 def get_story_announcement_channels(guild_id: int) -> list[int]:
-    print(str(guild_id) + ": " + inspect.stack()[1][3])
+    # print(str(guild_id) + ": " + inspect.stack()[1][3])
     return config.STORY_CHANNELS
 
 def get_story_output_channels(guild_id: int) -> list[int]:
-    print(str(guild_id) + ": " + inspect.stack()[1][3])
+    # print(str(guild_id) + ": " + inspect.stack()[1][3])
     return config.STORY_OUTPUT_CHANNELS
 
 def is_admin(author_id: int, guild_id: int) -> bool:
-    print(str(guild_id) + ": " + inspect.stack()[1][3])
+    # print(str(guild_id) + ": " + inspect.stack()[1][3])
     return author_id in config.ADMIN_IDS
 
 def get_default_user_ids() -> list[int]:
@@ -70,3 +70,19 @@ def is_debug_mode() -> bool:
         return config.DEBUG_MODE
     except AttributeError:
         return False
+    
+        
+def get_database_user() -> str:
+    return config.DATABASE_USER
+
+def get_database_password() -> str:
+    return config.DATABASE_PASSWORD
+
+def get_database_name() -> str:
+    return config.DATABASE_DB_NAME
+
+def get_database_host() -> str:
+    return config.DATABASE_HOST
+
+def get_database_port() -> str:
+    return config.DATABASE_PORT

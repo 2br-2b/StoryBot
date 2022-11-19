@@ -26,6 +26,10 @@ class StoryBot(commands.Bot):
         await load_cogs(self, ["cogs.dm_listener"])
         # TODO: make this so it doesn't run every time (maybe make it a command)
         asyncio.create_task(bot.tree.sync())
+        
+        await bot.file_manager.initialize_connection()
+        
+        
 
 
 bot = StoryBot(config_manager.get_prefix(), help_command = None, intents=intents)

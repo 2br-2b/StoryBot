@@ -37,27 +37,27 @@ class dm_listener(commands.Cog):
 
 
     async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Sends the given message to the current user"""
         
-        await (await (await self.bot.fetch_user(int(self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
+        await (await (await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
         if self._notif_line_cont:
             self._notif_line_cont = False
             await self.dm_current_user(guild_id, "**Please pick up the writing in the middle of the last sentence.**")
             
 
     async def notify_people(self, guild_id: int):
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Notifies the current user that it's their turn to add to the story"""
         
-        file = self.file_manager.get_story_file(guild_id)
+        file = await self.file_manager.get_story_file(guild_id)
         await self.dm_current_user(guild_id, """Your turn.  Respond with a DM to continue the story!  Use a \ to create a line break.
             
             **MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.
             
-            Here is the story so far:""", file = file, embed = create_embed(content=self.lastChars(self.file_manager.getStory(guild_id)), author_name=None, author_icon_url=None))
+            Here is the story so far:""", file = file, embed = create_embed(content=self.lastChars(await self.file_manager.getStory(guild_id)), author_name=None, author_icon_url=None))
         
-        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user(guild_id)))
+        current_user = await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))
         
         emb = create_embed(
             author_icon_url=current_user.display_avatar.url,
@@ -79,17 +79,17 @@ class dm_listener(commands.Cog):
         
         if archived_story_number != 0:
             try:
-                file = self.file_manager.get_story_file(proper_guild_id, archived_story_number)
+                file = await self.file_manager.get_story_file(proper_guild_id, archived_story_number)
                 title = "Story " + str(archived_story_number)
             except FileNotFoundError:
                 await self.reply_to_message(content='That story number couldn\'t be found!', context=ctx, single_user=True)
                 return
         else:
-            file = self.file_manager.get_story_file(proper_guild_id)
+            file = await self.file_manager.get_story_file(proper_guild_id)
             title="The Current Story"
             
         await self.reply_to_message(
-            content=self.lastChars(self.file_manager.getStory(guild_id = proper_guild_id, story_number = archived_story_number)),
+            content=self.lastChars(await self.file_manager.getStory(guild_id = proper_guild_id, story_number = archived_story_number)),
             title=title, file = file, context=ctx, single_user=True)
 
     @commands.hybrid_command(name="turn")
@@ -98,7 +98,7 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx)
         
-        current_user_id = self.user_manager.get_current_user(self.get_proper_guild_id(ctx))
+        current_user_id = await self.user_manager.get_current_user(self.get_proper_guild_id(ctx))
         if current_user_id != None:
             current_user = await self.bot.fetch_user(int(current_user_id))
             await self.reply_to_message(author=current_user, context=ctx, single_user=True)
@@ -124,7 +124,7 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx)
         
-        if str(ctx.author.id) != self.user_manager.get_current_user(self.get_proper_guild_id(ctx)) and not config_manager.is_admin(ctx.author.id, ctx.guild.id):
+        if str(ctx.author.id) != await self.user_manager.get_current_user(self.get_proper_guild_id(ctx)) and not config_manager.is_admin(ctx.author.id, ctx.guild.id):
             await self.reply_to_message(context=ctx, content="It's not your turn!")
             return
         
@@ -157,12 +157,12 @@ class dm_listener(commands.Cog):
         proper_guild_id = self.get_proper_guild_id(ctx)
         
         seconds_per_turn = config_manager.get_timeout_days(ctx.guild.id) * 24 * 60 * 60
-        timeout_timestamp = int(self.file_manager.load_timestamp(proper_guild_id))
+        timeout_timestamp = int(await self.file_manager.load_timestamp(proper_guild_id))
         current_time = int(time.time())
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
         
-        current_user = await self.bot.fetch_user(int(self.user_manager.get_current_user(proper_guild_id)))
+        current_user = await self.bot.fetch_user(int(await self.user_manager.get_current_user(proper_guild_id)))
         
         await self.reply_to_message(context=ctx, content="Time remaining: " + dm_listener.print_time(seconds=seconds_remaining + 60) +"\nTime used: " + dm_listener.print_time(seconds=seconds_since_timestamp)+"", single_user=True, author=current_user)
         
@@ -205,14 +205,14 @@ class dm_listener(commands.Cog):
         if message.guild is None and message.author != self.bot.user:
             proper_guild_id = self.get_proper_guild_id(message.channel)
             
-            if self.user_manager.get_current_user(proper_guild_id) == str(message.author.id):
+            if await self.user_manager.get_current_user(proper_guild_id) == str(message.author.id):
                 if message.content.startswith("/") or message.content.startswith(config_manager.get_prefix()):
                     return
                 
                 content_to_send = self.format_story_addition(message.content)
                 
                 # Add the given line to the story file
-                self.file_manager.addLine(
+                await self.file_manager.addLine(
                     guild_id=proper_guild_id,
                     line=content_to_send
                     )
@@ -223,7 +223,7 @@ class dm_listener(commands.Cog):
                 
                 await self.reply_to_message(message, "Got it!  Thanks!")
                 
-                self.user_manager.boost_user(proper_guild_id, int(self.user_manager.get_current_user(proper_guild_id)))
+                self.user_manager.boost_user(proper_guild_id, int(await self.user_manager.get_current_user(proper_guild_id)))
                 
                 await self.new_user(proper_guild_id)
 
@@ -251,26 +251,23 @@ class dm_listener(commands.Cog):
             return story
 
     async def timeout_happened(self, guild_id: int):
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Skips the current user's turn if they don't respond in the specified amount of time"""
         
         print('Timing out...') 
         await self.dm_current_user(guild_id, 'You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
-        self.user_manager.unboost_user(guild_id, int(self.user_manager.get_current_user(guild_id)))
+        self.user_manager.unboost_user(guild_id, int(await self.user_manager.get_current_user(guild_id)))
         await self.new_user(guild_id)
 
     @tasks.loop(seconds=60 * 60) # Check back every hour
     async def timeout_checker(self):
         """Will skip the current user's turn if they don't respond in the specified amount of time"""
         
-        for guild_id in self.file_manager.get_all_guild_ids():
+        for guild_id in await self.file_manager.get_all_guild_ids():
             
-            if time.time() - self.file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
-                #print('about to timeout for '+self.user_manager.get_current_user(guild_id))
+            if time.time() - await self.file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
                 await self.timeout_happened(guild_id)
-                #print('timeout happened. New user is '+self.user_manager.get_current_user(guild_id))
-            
-            #print('checked: {0} seconds at {1}'.format(time.time() - self.file_manager.load_timestamp(guild_id), time.time()))
+                
 
 
     @commands.Cog.listener()
@@ -360,12 +357,12 @@ class dm_listener(commands.Cog):
           
           
     async def new_user(self, guild_id: int):
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Chooses a new random user and notifies all relevant parties"""
-        self.user_manager.set_random_weighted_user(guild_id, add_last_user_to_queue = True)
+        await self.user_manager.set_random_weighted_user(guild_id, add_last_user_to_queue = True)
         
-        print("New current user: " + self.user_manager.get_current_user(guild_id))
-        self.file_manager.reset_timestamp(guild_id)
+        print("New current user: " + await self.user_manager.get_current_user(guild_id))
+        await self.file_manager.reset_timestamp(guild_id)
         await self.notify_people(guild_id)
 
     def get_proper_guild_id(self, channel: discord.abc.Messageable) -> int:

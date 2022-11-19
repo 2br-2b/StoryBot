@@ -5,6 +5,7 @@ import os
 import collections
 import json
 import config_manager
+import asyncio
 
 class user_manager():
     def __init__(self, bot):
@@ -32,26 +33,26 @@ class user_manager():
             self.serialize_queue()
         
     
-    def set_random_weighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+    async def set_random_weighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Sets a random user as the current user based on their reputation"""
         if add_last_user_to_queue:
-            current_user = self.get_current_user(guild_id)
+            current_user = await self.get_current_user(guild_id)
             if current_user != None:
                 self.add_to_recent_users_queue(guild_id, int(current_user))
         
-        return self.__set_new_random_user(self.get_weighted_list(guild_id), guild_id)
+        return await self.__set_new_random_user(self.get_weighted_list(guild_id), guild_id)
 
-    def set_random_unweighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+    async def set_random_unweighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Sets a random user as the current user. Doesn't care about reputation."""
         if add_last_user_to_queue:
-            self.add_to_recent_users_queue(guild_id, int(self.get_current_user(guild_id)))
+            self.add_to_recent_users_queue(guild_id, int(await self.get_current_user(guild_id)))
             
-        return self.__set_new_random_user(self.get_unweighted_list(guild_id), guild_id)
+        return await self.__set_new_random_user(self.get_unweighted_list(guild_id), guild_id)
     
     
-    def __set_new_random_user(self, listToChooseFrom:list, guild_id = int) -> int:
+    async def __set_new_random_user(self, listToChooseFrom:list, guild_id = int) -> int:
         """Sets a random user from the list as the current user
 
         Args:
@@ -71,7 +72,7 @@ class user_manager():
 
         if config_manager.get_amount_to_not_repeat() > 0:
             # Makes sure the same user isn't chosen more than once in a row, even if the most recent user wasn't added to the queue (like in a skip)
-            internalListToChooseFrom = remove_all_occurrences(internalListToChooseFrom, self.get_current_user(guild_id))
+            internalListToChooseFrom = remove_all_occurrences(internalListToChooseFrom, await self.get_current_user(guild_id))
                 
             # Makes sure that the chosen user isn't in the recent users queue
             for item in self.get_recent_users_queue(guild_id):
@@ -81,27 +82,27 @@ class user_manager():
         # If there's too many people on the recent user queue, pop the most recent and try again. That way, it'll go in sequential order
         if(len(internalListToChooseFrom) < 1):
             self.pop_from_recent_users_queue(guild_id)
-            return self.__set_new_random_user(listToChooseFrom, guild_id)
+            return await self.__set_new_random_user(listToChooseFrom, guild_id)
         
         new_user = secrets.choice(internalListToChooseFrom)
         
-        self.bot.file_manager.set_current_user_id(guild_id, new_user)
+        await self.bot.file_manager.set_current_user_id(guild_id, new_user)
         
         return new_user
 
 
 
-    def get_current_user(self, guild_id: int) -> str:
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+    async def get_current_user(self, guild_id: int) -> str:
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Returns the current user"""
-        ret = self.bot.file_manager.get_current_user_id(guild_id)
+        ret = await self.bot.file_manager.get_current_user_id(guild_id)
         if ret == "":
             return None
         else:
-            return self.bot.file_manager.get_current_user_id(guild_id)
+            return ret
 
     def add_user(self, guild_id: int, user_id):
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Adds the given user to the list of users"""
         if user_id not in self.get_weighted_list(guild_id):
             for i in range(0, config_manager.get_default_reputation(guild_id)):
@@ -109,14 +110,14 @@ class user_manager():
         self.serialize()
 
     def remove_user(self, guild_id: int, user_id):
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Removes the given user from the list of users"""
         for i in range(0, collections.Counter(self.weighted_list_of_users)[user_id]):
             self.weighted_list_of_users.remove(user_id)
         self.serialize()
 
     def boost_user(self, guild_id: int, user_id):
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Boosts the given user's reputation"""
         if(collections.Counter(self.weighted_list_of_users)[user_id] < config_manager.get_max_reputation(guild_id)):
             self.weighted_list_of_users.append(user_id)
@@ -124,7 +125,7 @@ class user_manager():
         print('boosted {0} finished'.format(user_id))
 
     def unboost_user(self, guild_id: int, user_id):
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Reduces the given user's reputation"""
         if(collections.Counter(self.weighted_list_of_users)[user_id] > 2):
             self.weighted_list_of_users.remove(user_id)
@@ -132,11 +133,11 @@ class user_manager():
         print('unboosted {0} successful'.format(user_id))
 
     def get_weighted_list(self, guild_id: int):
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         return self.weighted_list_of_users
 
     def get_unweighted_list(self, guild_id: int):
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         return set(self.weighted_list_of_users)
 
 
@@ -146,7 +147,7 @@ class user_manager():
     ######################################
     
     def pop_from_recent_users_queue(self, guild_id: int) -> None:
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Removes the first user from the list of recent users"""
         try:
             self.recent_users.pop(0)
@@ -155,7 +156,7 @@ class user_manager():
         self.serialize_queue()
         
     def add_to_recent_users_queue(self, guild_id: int, user_id: int) -> None:
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Adds a given user ID to the list of recent users. Pops the first user if the list's length is longer than `LAST_N_PLAYERS_NO_REPEAT`
 
         Args:
@@ -173,12 +174,12 @@ class user_manager():
             
             
     def recent_users_queue_size(self, guild_id: int) -> int:
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Returns the size of the list of recent users"""
         return len(self.recent_users)
             
     def is_recent_user(self, guild_id: int, user_id: int) -> bool:
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Returns if a user is in the list of recent users
 
         Args:
@@ -191,7 +192,7 @@ class user_manager():
         return user_id in self.recent_users
     
     def get_recent_users_queue(self, guild_id: int) -> list:
-        print(str(guild_id) + ": " + inspect.stack()[1][3])
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         return self.recent_users
     
     
