@@ -34,8 +34,19 @@ class file_manager():
     async def getStory(self, guild_id: int, story_number = 0) -> str:
         # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Returns the story in the story.txt file"""
+
+        story_file_name = _get_story_file_name(guild_id, story_number)
+
+        try:
+            with open(story_file_name, "r", encoding="utf8") as file:
+                text = file.read() 
+        except FileNotFoundError as e:
+            if story_number == 0:
+                Path(story_file_name).touch()
+                return self.getStory(guild_id, story_number)
+            else:
+                raise e
         
-        text = (await self.db_connection.fetchrow(f"select text from \"Stories\" where guild_id = '{guild_id}' and story_number = {story_number}")).get("text")
         
         if(text == ""):
             return "<Waiting for the first user to begin!>"
@@ -43,12 +54,15 @@ class file_manager():
             return text
        
     async def get_story_file(self, guild_id: int, story_number = 0) -> discord.file:
-        file_name = f"storage/{uuid.uuid4()}"
-        
-        with open(file_name, "w+") as f:
-            f.write(await self.getStory(guild_id, story_number))
-        
-        return discord.File(file_name, filename="Story.txt")
+        story_file_name = _get_story_file_name(guild_id, story_number)
+        try:
+            return discord.File(story_file_name, filename="Story.txt")
+        except FileNotFoundError as e:
+            if story_number == 0:
+                Path(story_file_name).touch()
+                return await self.get_story_file(guild_id, story_number)
+            else:
+                raise e
         
 
     async def addLine(self, guild_id: int, line):
@@ -60,7 +74,8 @@ class file_manager():
         if line.startswith(config_manager.get_prefix()):
             raise RuntimeWarning("I was just told to add this to the story, but this is clearly a command:\n"+line)
         
-        await self.db_connection.execute(f"UPDATE \"Stories\" SET text=CONCAT(text,'{line}') WHERE  guild_id='{guild_id}' and story_number = 0")
+        with open(_get_story_file_name(guild_id), "a+", encoding="utf8") as append_to:
+            append_to.write(line)
 
 
     async def get_all_guild_ids(self) -> list[int]:
@@ -102,3 +117,10 @@ class file_manager():
         
         await self.db_connection.execute(f"UPDATE \"Guilds\" SET timestamp='{q}' WHERE guild_id='{guild_id}'")
 
+@staticmethod
+def _get_story_file_name(guild_id: int, story_number: int = 0) -> str:
+    if story_number == 0:
+        story_file_name = f"storage/{guild_id} story.txt"
+    else:
+        story_file_name = f"storage/archive/{guild_id} archived story {str(story_number)}.txt"
+    return story_file_name
