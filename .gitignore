@@ -3,7 +3,7 @@ token_manager.py
 .vscode/
 
 config.py
-
+SQL scripts/
 
 weighted\ list\ of\ users.json
 recent_users.json
