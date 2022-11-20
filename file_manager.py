@@ -120,6 +120,35 @@ class file_manager():
         q=datetime.now().isoformat(sep=" ", timespec="seconds")
         
         await self.db_connection.execute(f"UPDATE \"Guilds\" SET timestamp='{q}' WHERE guild_id='{guild_id}'")
+        
+    async def get_current_turns_of_user(self, user_id: int) -> list[int]:
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
+        """Returns all servers where it is a user's turn
+
+        Args:
+            user_id (int): the user id to check for
+
+        Returns:
+            list[int]: a list with all of the user's current turns
+        """
+        result = (await self.db_connection.fetch(f"select guild_id from \"Guilds\" where user_id = '{user_id}'"))
+        result = [int(i.get("guild_id")) for i in result]
+        return result
+    
+    async def get_active_guilds(self, user_id: int) -> list[int]:
+        # print(str(guild_id) + ": " + inspect.stack()[1][3])
+        """Returns all servers where a user is active
+
+        Args:
+            user_id (int): the user id to check for
+
+        Returns:
+            list[int]: a list with all of the user's servers
+        """
+        result = (await self.db_connection.fetch(f"select guild_id from \"Users\" where user_id = '{user_id}'"))
+        result = [int(i.get("guild_id")) for i in result]
+        return result
+        
 
 @staticmethod
 def _get_story_file_name(guild_id: int, story_number: int = 0) -> str:
