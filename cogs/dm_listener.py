@@ -292,12 +292,26 @@ class dm_listener(commands.Cog):
         await self.reply_to_message(context=ctx, content="Done!")
 
     @commands.hybrid_command(name="remove")
-    async def remove(self, ctx):
-        """Removes a user from the list of participants"""
+    async def remove(self, ctx: commands.Context):
+        """Removes a user from the list of participants. If it is their turn, it also skips them"""
         
         await self.check_for_prefix_command(ctx, just_removed=True)
         
-        self.user_manager.remove_user(self.get_proper_guild_id(ctx), ctx.author.id)
+        proper_guild = self.get_proper_guild_id(ctx)
+        
+        if self.user_manager.get_current_user(proper_guild) == str(ctx.author.id):
+            skip_after = True
+        else:
+            skip_after = False
+        
+        self.user_manager.remove_user(proper_guild, ctx.author.id)
+        
+        if(skip_after):
+            try:
+                await self.new_user(proper_guild)
+            except ValueError: #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
+                pass
+        
         await self.reply_to_message(context=ctx, content="Done!")
 
     def format_story_addition(self, line:str) -> str:

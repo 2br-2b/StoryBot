@@ -87,12 +87,16 @@ class file_manager():
         
     
     async def get_current_user_id(self,  guild_id: int) -> str:
-        result = await self.db_connection.fetchrow(f"select current_user_id from \"Guilds\" where guild_id = '{guild_id}'")
-        return result.get("current_user_id")
+        result = (await self.db_connection.fetchrow(f"select current_user_id from \"Guilds\" where guild_id = '{guild_id}'")).get("current_user_id")
+        if result == "0":
+            return None
+        return result
     
 
     async def set_current_user_id(self,  guild_id: int, user_id: int) -> str:
         """Sets the current user for a given guild"""
+        if user_id == None:
+            user_id = 0
         await self.db_connection.execute(f"UPDATE \"Guilds\" SET current_user_id='{user_id}' WHERE guild_id='{guild_id}'")
         return str(user_id)
         

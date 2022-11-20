@@ -66,6 +66,7 @@ class user_manager():
         """
         
         if len(listToChooseFrom) == 0:
+            await self.bot.file_manager.set_current_user_id(guild_id, None)
             raise ValueError("No users passed to `__set_new_random_user`")
         
         internalListToChooseFrom = listToChooseFrom
@@ -94,7 +95,7 @@ class user_manager():
 
     async def get_current_user(self, guild_id: int) -> str:
         # print(str(guild_id) + ": " + inspect.stack()[1][3])
-        """Returns the current user"""
+        """Returns the current user's id as a string"""
         ret = await self.bot.file_manager.get_current_user_id(guild_id)
         if ret == "":
             return None
