@@ -26,9 +26,9 @@ class file_manager():
         )
 
 
-    def is_active_server(self, guild_id: int) -> bool:
+    async def is_active_server(self, guild_id: int) -> bool:
         """Returns if a guild is currently participating in StoryBot"""
-        return guild_id in self.get_all_guild_ids()
+        return guild_id in await self.get_all_guild_ids()
     
     
     async def getStory(self, guild_id: int, story_number = 0) -> str:
@@ -148,7 +148,49 @@ class file_manager():
         result = (await self.db_connection.fetch(f"select guild_id from \"Users\" where user_id = '{user_id}'"))
         result = [int(i.get("guild_id")) for i in result]
         return result
+    
+    async def add_user(self, user_id: int, guild_id: int):
+        if not user_id in self.get_active_users(guild_id):
+            await self.db_connection.execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {config_manager.get_default_reputation()}, False)")
+    
+    async def remove_user(self, user_id: int, guild_id: int):
+        """Removes a user from a given server"""
+        await self.db_connection.execute(f"delete from \"Users\" where user_id='{user_id}' and guild_id='{guild_id}'")
+    
+    async def get_reputation(self, user_id: int, guild_id: int) -> int:
+        """Returns the reputation of a given user in a given server"""
+        return (await self.db_connection.fetchrow(f"select reputation from \"Users\" where user_id='{user_id}' and guild_id='{guild_id}'")).get("reputation")
+    
+    async def alter_reputation(self, user_id: int, guild_id: int, amount: int):
+        """Changes a user's reputation by a given amount"""
+        current_reputation=await self.get_reputation(user_id=user_id, guild_id=guild_id)
+        new_reputation = current_reputation + amount
         
+        if(new_reputation > config_manager.get_max_reputation()):
+            new_reputation = config_manager.get_max_reputation()
+        elif(new_reputation < 0):
+            new_reputation = 0
+        
+        await self.db_connection.execute(f"UPDATE \"Users\" SET reputation = {new_reputation} WHERE user_id='{user_id}' AND guild_id='{guild_id}'")
+        
+    
+    async def get_admins(self, guild_id: int) -> list[int]:
+        """Returns all the admins of a given guild"""
+        responses = await self.db_connection.fetch(f"select user_id from \"Users\" where guild_id='{guild_id}' and is_admin=True")
+        return [int(i.get("user_id")) for i in responses]
+    
+    async def get_config_value(self, guild_id: int, config_value: str):
+        """Returns a given config value for a server"""
+        response = await self.db_connection.fetchrow(f"select {config_value} from \"Guilds\" where guild_id='{guild_id}'")
+        return response.get(f"{config_value}")
+    
+    async def get_active_users(self, guild_id: int) -> list[int]:
+        """Returns the user ids of all users in a guild"""
+        responses = await self.db_connection.fetch(f"select user_id from \"Users\" where guild_id='{guild_id}'")
+        return [int(i.get("user_id")) for i in responses]
+    
+    async def get_weighted_list_of_users(self, guild_id: int) -> list[int]:
+        raise NotImplementedError()
 
 @staticmethod
 def _get_story_file_name(guild_id: int, story_number: int = 0) -> str:

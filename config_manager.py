@@ -31,7 +31,7 @@ def get_default_reputation(guild_id: int) -> int:
     # print(str(guild_id) + ": " + inspect.stack()[1][3])
     return config.DEFAULT_REPUTATION
 
-def get_max_reputation(guild_id: int) -> int:
+def get_max_reputation() -> int:
     # print(str(guild_id) + ": " + inspect.stack()[1][3])
     return config.MAX_REPUTATION
 

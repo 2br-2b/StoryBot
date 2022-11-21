@@ -10,19 +10,7 @@ import asyncio
 class user_manager():
     def __init__(self, bot):
         self.bot = bot
-        
-        # Create the initial list of users 
-        try:
-            with open('weighted list of users.json', 'rt') as f:
-                self.weighted_list_of_users = json.load(f)
-            # TODO: make sure no user is in the list too often
-        except:
-            self.weighted_list_of_users = []
-            for item in config_manager.get_default_user_ids():
-                self.add_user(config_manager.get_default_guild_id(), item)
-            self.serialize()
-                
-                
+             
         # Create the recent queue
         try:
             with open('recent_users.json', 'rt') as f:
@@ -41,7 +29,7 @@ class user_manager():
             if current_user != None:
                 self.add_to_recent_users_queue(guild_id, int(current_user))
         
-        return await self.__set_new_random_user(self.get_weighted_list(guild_id), guild_id)
+        return await self.__set_new_random_user(await self.get_weighted_list(guild_id), guild_id)
 
     async def set_random_unweighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
         # print(str(guild_id) + ": " + inspect.stack()[1][3])
@@ -49,7 +37,7 @@ class user_manager():
         if add_last_user_to_queue:
             self.add_to_recent_users_queue(guild_id, int(await self.get_current_user(guild_id)))
             
-        return await self.__set_new_random_user(self.get_unweighted_list(guild_id), guild_id)
+        return await self.__set_new_random_user(await self.get_unweighted_list(guild_id), guild_id)
     
     
     async def __set_new_random_user(self, listToChooseFrom:list, guild_id = int) -> int:
@@ -102,44 +90,35 @@ class user_manager():
         else:
             return ret
 
-    def add_user(self, guild_id: int, user_id):
+    async def add_user(self, guild_id: int, user_id):
         # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Adds the given user to the list of users"""
-        if user_id not in self.get_weighted_list(guild_id):
-            for i in range(0, config_manager.get_default_reputation(guild_id)):
-                self.weighted_list_of_users.append(user_id)
-        self.serialize()
+        await self.bot.file_manager.add_user(user_id=user_id, guild_id=guild_id)
 
-    def remove_user(self, guild_id: int, user_id):
+    async def remove_user(self, guild_id: int, user_id):
         # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Removes the given user from the list of users"""
-        for i in range(0, collections.Counter(self.weighted_list_of_users)[user_id]):
-            self.weighted_list_of_users.remove(user_id)
-        self.serialize()
+        await self.bot.file_manager.remove_user(user_id=user_id, guild_id=guild_id)
 
-    def boost_user(self, guild_id: int, user_id):
+    async def boost_user(self, guild_id: int, user_id):
         # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Boosts the given user's reputation"""
-        if(collections.Counter(self.weighted_list_of_users)[user_id] < config_manager.get_max_reputation(guild_id)):
-            self.weighted_list_of_users.append(user_id)
-        self.serialize()
-        print('boosted {0} finished'.format(user_id))
-
-    def unboost_user(self, guild_id: int, user_id):
+        
+        await self.bot.file_manager.alter_reputation(user_id=user_id, guild_id=guild_id, amount=1)
+        
+    async def unboost_user(self, guild_id: int, user_id):
         # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Reduces the given user's reputation"""
-        if(collections.Counter(self.weighted_list_of_users)[user_id] > 2):
-            self.weighted_list_of_users.remove(user_id)
-        self.serialize()
-        print('unboosted {0} successful'.format(user_id))
+        
+        await self.bot.file_manager.alter_reputation(user_id=user_id, guild_id=guild_id, amount=-1)
 
-    def get_weighted_list(self, guild_id: int):
+    async def get_weighted_list(self, guild_id: int) -> list[int]:
         # print(str(guild_id) + ": " + inspect.stack()[1][3])
-        return self.weighted_list_of_users
+        return await self.bot.file_manager.get_weighted_list_of_users(guild_id)
 
-    def get_unweighted_list(self, guild_id: int):
+    async def get_unweighted_list(self, guild_id: int) -> list[int]:
         # print(str(guild_id) + ": " + inspect.stack()[1][3])
-        return set(self.weighted_list_of_users)
+        return await self.bot.file_manager.get_active_users(guild_id)
 
 
     ######################################
@@ -169,7 +148,7 @@ class user_manager():
             while(self.recent_users_queue_size(guild_id) > config_manager.get_amount_to_not_repeat()):
                 self.pop_from_recent_users_queue(guild_id)
         
-            # There's no need to serialize here since pop_recent_queue() serializes automatically
+            # There's no need to serialize the queue here since pop_recent_queue() serializes automatically
         else:
             self.serialize_queue()
             
@@ -195,13 +174,7 @@ class user_manager():
     def get_recent_users_queue(self, guild_id: int) -> list:
         # print(str(guild_id) + ": " + inspect.stack()[1][3])
         return self.recent_users
-    
-    
-    
-        
-    def serialize(self):
-        with open('weighted list of users.json', 'w') as f:
-            json.dump(self.weighted_list_of_users, f, indent=4)
+
         
     def serialize_queue(self):
         with open('recent_users.json', 'w') as f:

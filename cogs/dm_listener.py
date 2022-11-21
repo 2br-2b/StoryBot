@@ -223,7 +223,7 @@ class dm_listener(commands.Cog):
                 
                 await self.reply_to_message(message, "Got it!  Thanks!")
                 
-                self.user_manager.boost_user(proper_guild_id, int(await self.user_manager.get_current_user(proper_guild_id)))
+                await self.user_manager.boost_user(proper_guild_id, int(await self.user_manager.get_current_user(proper_guild_id)))
                 
                 await self.new_user(proper_guild_id)
 
@@ -256,7 +256,7 @@ class dm_listener(commands.Cog):
         
         print('Timing out...') 
         await self.dm_current_user(guild_id, 'You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
-        self.user_manager.unboost_user(guild_id, int(await self.user_manager.get_current_user(guild_id)))
+        await self.user_manager.unboost_user(guild_id, int(await self.user_manager.get_current_user(guild_id)))
         await self.new_user(guild_id)
 
     @tasks.loop(seconds=60 * 60) # Check back every hour
@@ -288,7 +288,7 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx)
         
-        self.user_manager.add_user(self.get_proper_guild_id(ctx), ctx.author.id)
+        await self.user_manager.add_user(self.get_proper_guild_id(ctx), ctx.author.id)
         await self.reply_to_message(context=ctx, content="Done!")
 
     @commands.hybrid_command(name="remove")
@@ -304,7 +304,7 @@ class dm_listener(commands.Cog):
         else:
             skip_after = False
         
-        self.user_manager.remove_user(proper_guild, ctx.author.id)
+        await self.user_manager.remove_user(proper_guild, ctx.author.id)
         
         if(skip_after):
             try:
