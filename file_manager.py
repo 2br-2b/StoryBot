@@ -211,6 +211,17 @@ class file_manager():
         # - Manually skipping (`skip`)
         # - Timing out (`timeout`)
         await self.db_connection.execute(f"INSERT INTO \"Logs\" (user_id, guild_id, action) VALUES ('{user_id}', '{guild_id}', '{action}')")
+        
+        
+    async def get_recent_users_queue(self, guild_id: int) -> list[int]:
+        user_count = len(await self.get_active_users(guild_id))
+        recent_users_to_skip = user_count // 2
+        results = await self.db_connection.fetch(f"select user_id from \"Logs\" where guild_id = '{guild_id}' order by timestamp DESC limit {recent_users_to_skip}")
+        
+        return [int(i.get("user_id")) for i in results]
+        
+        
+        
 
 @staticmethod
 def _get_story_file_name(guild_id: int, story_number: int = 0) -> str:

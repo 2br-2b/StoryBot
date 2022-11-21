@@ -1,6 +1,7 @@
 import inspect
 
 import secrets
+import random
 import os
 import collections
 import json
@@ -10,77 +11,36 @@ import asyncio
 class user_manager():
     def __init__(self, bot):
         self.bot = bot
-             
-        # Create the recent queue
-        try:
-            with open('recent_users.json', 'rt') as f:
-                self.recent_users = json.load(f)
-            # TODO: check if any user is in the list of recent users more often than the maximum
-        except:
-            self.recent_users = []
-            self.serialize_queue()
-        
     
     async def set_random_weighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
         """Sets a random user as the current user based on their reputation"""
-        raise NotImplementedError()
-        if add_last_user_to_queue:
-            current_user = await self.get_current_user(guild_id)
-            if current_user != None:
-                self.add_to_recent_users_queue(guild_id, int(current_user))
+        json_formatted = await self.bot.file_manager.get_users_and_reputations(guild_id)
+        ids = []
+        reputations = []
+        for key in json_formatted.keys():
+            if await self.is_recent_user(guild_id, int(key)):
+                continue
+            ids.append(key)
+            reputations.append(json_formatted[key])
         
-        return await self.__set_new_random_user(await self.get_weighted_list(guild_id), guild_id)
-
-    async def set_random_unweighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
-        """Sets a random user as the current user. Doesn't care about reputation."""
-        raise NotImplementedError()
-        if add_last_user_to_queue:
-            self.add_to_recent_users_queue(guild_id, int(await self.get_current_user(guild_id)))
-            
-        return await self.__set_new_random_user(await self.get_unweighted_list(guild_id), guild_id)
-    
-    
-    async def __set_new_random_user(self, listToChooseFrom:list, guild_id = int) -> int:
-        raise NotImplementedError()
-        """Sets a random user from the list as the current user
-
-        Args:
-            listToChooseFrom (list): the list to choose a random user from
-
-        Raises:
-            ValueError: the list passed to the function doesn't have any members
-        
-        Returns:
-            int: the random user now set as the current user
-        """
-        
-        if len(listToChooseFrom) == 0:
-            await self.bot.file_manager.set_current_user_id(guild_id, None)
-            raise ValueError("No users passed to `__set_new_random_user`")
-        
-        internalListToChooseFrom = listToChooseFrom
-
-        if config_manager.get_amount_to_not_repeat() > 0:
-            # Makes sure the same user isn't chosen more than once in a row, even if the most recent user wasn't added to the queue (like in a skip)
-            internalListToChooseFrom = remove_all_occurrences(internalListToChooseFrom, await self.get_current_user(guild_id))
-                
-            # Makes sure that the chosen user isn't in the recent users queue
-            for item in self.get_recent_users_queue(guild_id):
-                internalListToChooseFrom = remove_all_occurrences(internalListToChooseFrom, item)
-            
-        
-        # If there's too many people on the recent user queue, pop the most recent and try again. That way, it'll go in sequential order
-        if(len(internalListToChooseFrom) < 1):
-            self.pop_from_recent_users_queue(guild_id)
-            return await self.__set_new_random_user(listToChooseFrom, guild_id)
-        
-        new_user = secrets.choice(internalListToChooseFrom)
+        new_user = int(random.choices(ids, weights=reputations)[0])
         
         await self.bot.file_manager.set_current_user_id(guild_id, new_user)
         
         return new_user
 
-
+    async def set_random_unweighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
+        """Sets a random user as the current user. Doesn't care about reputation."""
+        unweighted_list = await self.get_unweighted_list(guild_id)
+        
+        for id in await self.get_recent_users_queue(guild_id):
+            unweighted_list.remove(id)
+        
+        new_user = int(random.choice(unweighted_list))
+        
+        await self.bot.file_manager.set_current_user_id(guild_id, new_user)
+        
+        return new_user
 
     async def get_current_user(self, guild_id: int) -> str:
         """Returns the current user's id as a string"""
@@ -119,55 +79,23 @@ class user_manager():
     # The methods for the recent users queue.
     # These should probably be in their own class, but since this implementation may be changing when multi server support is added, I decided to just put them in here for now.
     ######################################
-    
-    def pop_from_recent_users_queue(self, guild_id: int) -> None:
-        """Removes the first user from the list of recent users"""
-        try:
-            self.recent_users.pop(0)
-        except IndexError:
-            pass
-        self.serialize_queue()
-        
-    def add_to_recent_users_queue(self, guild_id: int, user_id: int) -> None:
-        """Adds a given user ID to the list of recent users. Pops the first user if the list's length is longer than `LAST_N_PLAYERS_NO_REPEAT`
 
-        Args:
-            id (int): the user ID to add to the recent user queue
-        """
-        self.recent_users.append(user_id)
+    async def get_recent_users_queue(self, guild_id: int) -> list[int]:
+        return await self.bot.file_manager.get_recent_users_queue(guild_id)
+
         
-        if(self.recent_users_queue_size(guild_id) > config_manager.get_amount_to_not_repeat()):
-            while(self.recent_users_queue_size(guild_id) > config_manager.get_amount_to_not_repeat()):
-                self.pop_from_recent_users_queue(guild_id)
-        
-            # There's no need to serialize the queue here since pop_recent_queue() serializes automatically
-        else:
-            self.serialize_queue()
-            
-            
-    def recent_users_queue_size(self, guild_id: int) -> int:
-        """Returns the size of the list of recent users"""
-        return len(self.recent_users)
-            
-    def is_recent_user(self, guild_id: int, user_id: int) -> bool:
+    async def is_recent_user(self, guild_id: int, user_id: int) -> bool:
         """Returns if a user is in the list of recent users
 
         Args:
+            guild_id (int): the guild to check for the user in
             user_id (int): the user id to check
 
         Returns:
             bool: whether the user is a recent user
         """
-        
-        return user_id in self.recent_users
+        return user_id in await self.get_recent_users_queue(guild_id)
     
-    def get_recent_users_queue(self, guild_id: int) -> list:
-        return self.recent_users
-
-        
-    def serialize_queue(self):
-        with open('recent_users.json', 'w') as f:
-            json.dump(self.recent_users, f, indent=4)
 
 
 

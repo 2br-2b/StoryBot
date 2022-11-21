@@ -379,7 +379,7 @@ class dm_listener(commands.Cog):
           
     async def new_user(self, guild_id: int):
         """Chooses a new random user and notifies all relevant parties"""
-        await self.user_manager.set_random_weighted_user(guild_id, add_last_user_to_queue = True)
+        await self.user_manager.set_random_weighted_user(guild_id)
         
         print("New current user: " + await self.user_manager.get_current_user(guild_id))
         await self.file_manager.reset_timestamp(guild_id)
