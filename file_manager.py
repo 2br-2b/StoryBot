@@ -148,10 +148,12 @@ class file_manager():
     async def add_user(self, user_id: int, guild_id: int):
         if not user_id in self.get_active_users(guild_id):
             await self.db_connection.execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {config_manager.get_default_reputation()}, False)")
+        await self.log_action(self, user_id=user_id, guild_id=guild_id, action="join")
     
     async def remove_user(self, user_id: int, guild_id: int):
         """Removes a user from a given server"""
         await self.db_connection.execute(f"delete from \"Users\" where user_id='{user_id}' and guild_id='{guild_id}'")
+        await self.log_action(self, user_id=user_id, guild_id=guild_id, action="leave")
     
     async def get_reputation(self, user_id: int, guild_id: int) -> int:
         """Returns the reputation of a given user in a given server"""
@@ -201,6 +203,14 @@ class file_manager():
             ret[user.get("user_id")] = user.get("reputation")
         
         return ret
+    
+    async def log_action(self, user_id: int, guild_id: int, action: str) -> None:
+        # Actions to be logged:
+        # - Joining/leaving a story in a given server (`join`, `leave`)
+        # - Adding to the story (`add`)
+        # - Manually skipping (`skip`)
+        # - Timing out (`timeout`)
+        await self.db_connection.execute(f"INSERT INTO \"Logs\" (user_id, guild_id, action) VALUES ('{user_id}', '{guild_id}', '{action}')")
 
 @staticmethod
 def _get_story_file_name(guild_id: int, story_number: int = 0) -> str:

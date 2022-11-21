@@ -122,12 +122,20 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx)
         
-        if str(ctx.author.id) != await self.user_manager.get_current_user(self.get_proper_guild_id(ctx)) and not config_manager.is_admin(ctx.author.id, ctx.guild.id):
+        proper_guild_id = self.get_proper_guild_id(ctx)
+        current_user_id = await self.user_manager.get_current_user(proper_guild_id)
+        
+        if str(ctx.author.id) != current_user_id and not config_manager.is_admin(ctx.author.id, proper_guild_id):
             await self.reply_to_message(context=ctx, content="It's not your turn!")
             return
         
         try:
-            await self.new_user(self.get_proper_guild_id(ctx))
+            if(current_user_id != None):
+                await self.file_manager.log_action(self, user_id=int(current_user_id), guild_id=proper_guild_id, action="skip")
+            else:
+                await self.file_manager.log_action(self, user_id=0, guild_id=proper_guild_id, action="skip")
+            
+            await self.new_user(proper_guild_id)
             await self.reply_to_message(context=ctx, content="Skipping :(")
         except ValueError:
             await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!")
@@ -215,6 +223,8 @@ class dm_listener(commands.Cog):
                     line=content_to_send
                     )
                 
+                await self.file_manager.log_action(self, user_id=message.author.id, guild_id=proper_guild_id, action="add")
+                
                 # Mirror the messages to a Discord channel
                 for channel in config_manager.get_story_output_channels(proper_guild_id):
                     await self.bot.get_channel(channel).send(content_to_send)
@@ -253,7 +263,9 @@ class dm_listener(commands.Cog):
         
         print('Timing out...') 
         await self.dm_current_user(guild_id, 'You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
-        await self.user_manager.unboost_user(guild_id, int(await self.user_manager.get_current_user(guild_id)))
+        current_user_id = int(await self.user_manager.get_current_user(guild_id))
+        await self.user_manager.unboost_user(guild_id, current_user_id)
+        await self.file_manager.log_action(self, user_id=current_user_id, guild_id=guild_id, action="timeout")
         await self.new_user(guild_id)
 
     @tasks.loop(seconds=60 * 60) # Check back every hour
