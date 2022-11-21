@@ -277,7 +277,7 @@ class dm_listener(commands.Cog):
         
         for guild_id in await self.file_manager.get_all_guild_ids():
             
-            if len(await self.user_manager.get_unweighted_list()) >= 2 and time.time() - await self.file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
+            if len(await self.user_manager.get_unweighted_list(guild_id)) >= 2 and time.time() - await self.file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
                 await self.timeout_happened(guild_id)
                 
 
