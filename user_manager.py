@@ -23,6 +23,7 @@ class user_manager():
     
     async def set_random_weighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
         """Sets a random user as the current user based on their reputation"""
+        raise NotImplementedError()
         if add_last_user_to_queue:
             current_user = await self.get_current_user(guild_id)
             if current_user != None:
@@ -32,6 +33,7 @@ class user_manager():
 
     async def set_random_unweighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
         """Sets a random user as the current user. Doesn't care about reputation."""
+        raise NotImplementedError()
         if add_last_user_to_queue:
             self.add_to_recent_users_queue(guild_id, int(await self.get_current_user(guild_id)))
             
@@ -39,6 +41,7 @@ class user_manager():
     
     
     async def __set_new_random_user(self, listToChooseFrom:list, guild_id = int) -> int:
+        raise NotImplementedError()
         """Sets a random user from the list as the current user
 
         Args:

@@ -185,8 +185,22 @@ class file_manager():
         responses = await self.db_connection.fetch(f"select user_id from \"Users\" where guild_id='{guild_id}'")
         return [int(i.get("user_id")) for i in responses]
     
-    async def get_weighted_list_of_users(self, guild_id: int) -> list[int]:
-        raise NotImplementedError()
+    async def get_users_and_reputations(self, guild_id: int) -> json:
+        """Returns a json-format of all the user ids and their reputations from a server
+
+        Args:
+            guild_id (int): the guild to get user ids from
+
+        Returns:
+            json: the users in a server in a {userid (str): reputation (int)} format
+        """
+        responses = await self.db_connection.fetch(f"select user_id, reputation from \"Users\" where guild_id='{guild_id}'")
+        
+        ret = {}
+        for user in responses:
+            ret[user.get("user_id")] = user.get("reputation")
+        
+        return ret
 
 @staticmethod
 def _get_story_file_name(guild_id: int, story_number: int = 0) -> str:
