@@ -129,7 +129,7 @@ class file_manager():
         Returns:
             list[int]: a list with all of the user's current turns
         """
-        result = (await self.db_connection.fetch(f"select guild_id from \"Guilds\" where user_id = '{user_id}'"))
+        result = (await self.db_connection.fetch(f"select guild_id from \"Guilds\" where current_user_id = '{user_id}'"))
         result = [int(i.get("guild_id")) for i in result]
         return result
     

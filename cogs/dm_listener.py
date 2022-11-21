@@ -5,6 +5,7 @@ import math
 import time
 from discord.ext import tasks, commands
 import re
+import json
 
 import config_manager
 import file_manager
@@ -12,7 +13,7 @@ import user_manager
 
 # Listens for DMs to add to the story
 class dm_listener(commands.Cog):
-    def __init__(self, file_manager: file_manager.file_manager, user_manager: user_manager.user_manager, bot):
+    def __init__(self, file_manager: file_manager.file_manager, user_manager: user_manager.user_manager, bot: discord.Client):
         self.file_manager = file_manager
         self.user_manager = user_manager
         
@@ -75,7 +76,7 @@ class dm_listener(commands.Cog):
                 file = await self.file_manager.get_story_file(proper_guild_id, archived_story_number)
                 title = "Story " + str(archived_story_number)
             except FileNotFoundError:
-                await self.reply_to_message(content='That story number couldn\'t be found!', context=ctx, single_user=True)
+                await self.reply_to_message(content='That story number couldn\'t be found!', context=ctx, ephemeral=True)
                 return
         else:
             file = await self.file_manager.get_story_file(proper_guild_id)
@@ -83,7 +84,7 @@ class dm_listener(commands.Cog):
             
         await self.reply_to_message(
             content=self.lastChars(await self.file_manager.getStory(guild_id = proper_guild_id, story_number = archived_story_number)),
-            title=title, file = file, context=ctx, single_user=True)
+            title=title, file = file, context=ctx, ephemeral=True)
 
     @commands.guild_only()
     @commands.before_invoke(check_for_prefix_command)
@@ -96,9 +97,9 @@ class dm_listener(commands.Cog):
         current_user_id = await self.user_manager.get_current_user(self.get_proper_guild_id(ctx))
         if current_user_id != None:
             current_user = await self.bot.fetch_user(int(current_user_id))
-            await self.reply_to_message(author=current_user, context=ctx, single_user=True)
+            await self.reply_to_message(author=current_user, context=ctx, ephemeral=True)
         else:
-            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, single_user=True)
+            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=True)
 
     @commands.hybrid_command(name="help")
     async def help(self, ctx):
@@ -113,7 +114,7 @@ class dm_listener(commands.Cog):
     `/story` displays the story so far - put a number afterwards to see a past story
     `/turn` displays whose turn it is
     
-    Note - these commands only work in servers""", single_user=True)
+    Note - these commands only work in servers""", ephemeral=True)
 
     @commands.guild_only()
     @commands.before_invoke(check_for_prefix_command)
@@ -152,7 +153,7 @@ class dm_listener(commands.Cog):
         await self.check_for_prefix_command(ctx)
         
         if not config_manager.is_admin(ctx.author.id, ctx.guild.id):
-            await self.reply_to_message(context=ctx, content="Only admins can use this command.", single_user=True)
+            await self.reply_to_message(context=ctx, content="Only admins can use this command.", ephemeral=True)
             return
         
         await self.notify_people(self.get_proper_guild_id(ctx))
@@ -173,7 +174,7 @@ class dm_listener(commands.Cog):
         
         current_user = await self.bot.fetch_user(int(await self.user_manager.get_current_user(proper_guild_id)))
         
-        await self.reply_to_message(context=ctx, content="Time remaining: " + dm_listener.print_time(seconds=seconds_remaining + 60) +"\nTime used: " + dm_listener.print_time(seconds=seconds_since_timestamp)+"", single_user=True, author=current_user)
+        await self.reply_to_message(context=ctx, content="Time remaining: " + dm_listener.print_time(seconds=seconds_remaining + 60) +"\nTime used: " + dm_listener.print_time(seconds=seconds_since_timestamp)+"", ephemeral=True, author=current_user)
         
     @staticmethod
     def print_time(seconds:int, include_seconds: bool = False) -> str:
@@ -212,31 +213,43 @@ class dm_listener(commands.Cog):
         """Checks if the message should be added the story, and if it is, appends it"""
 
         if message.guild is None and message.author != self.bot.user:
-            proper_guild_id = self.get_proper_guild_id(message.channel)
             
-            if await self.user_manager.get_current_user(proper_guild_id) == str(message.author.id):
-                if message.content.startswith("/") or message.content.startswith(config_manager.get_prefix()):
-                    return
+            if message.content.startswith("/") or message.content.startswith(config_manager.get_prefix()):
+                return
+            
+            user_current_turns = await self.file_manager.get_current_turns_of_user(message.author.id)
+            
+            if len(user_current_turns) < 1:
+                return
+            elif len(user_current_turns) == 1:
+                proper_guild_id = user_current_turns[0]
+            else:
+                proper_guild_id = await self.request_guild_for_story_entry(message, user_current_turns)
                 
-                content_to_send = self.format_story_addition(message.content)
+            #self.get_proper_guild_id(message.channel)
+            
+            # if await self.user_manager.get_current_user(proper_guild_id) == str(message.author.id)
                 
-                # Add the given line to the story file
-                await self.file_manager.addLine(
-                    guild_id=proper_guild_id,
-                    line=content_to_send
-                    )
                 
-                await self.file_manager.log_action(user_id=message.author.id, guild_id=proper_guild_id, action="add")
-                
-                # Mirror the messages to a Discord channel
-                for channel in config_manager.get_story_output_channels(proper_guild_id):
-                    await self.bot.get_channel(channel).send(content_to_send)
-                
-                await self.reply_to_message(message, "Got it!  Thanks!")
-                
-                await self.user_manager.boost_user(proper_guild_id, int(await self.user_manager.get_current_user(proper_guild_id)))
-                
-                await self.new_user(proper_guild_id)
+            content_to_send = self.format_story_addition(message.content)
+            
+            # Add the given line to the story file
+            await self.file_manager.addLine(
+                guild_id=proper_guild_id,
+                line=content_to_send
+                )
+            
+            await self.file_manager.log_action(user_id=message.author.id, guild_id=proper_guild_id, action="add")
+            
+            # Mirror the messages to a Discord channel
+            for channel in config_manager.get_story_output_channels(proper_guild_id):
+                await self.bot.get_channel(channel).send(content_to_send)
+            
+            await self.reply_to_message(message, "Got it!  Thanks!")
+            
+            await self.user_manager.boost_user(proper_guild_id, int(await self.user_manager.get_current_user(proper_guild_id)))
+            
+            await self.new_user(proper_guild_id)
 
     def pieMethod(self, story):
         """The all-powerful pieMethod
@@ -317,7 +330,7 @@ class dm_listener(commands.Cog):
     async def remove(self, ctx: commands.Context):
         """Removes a user from the list of participants. If it is their turn, it also skips them"""
         
-        await self.check_for_prefix_command(ctx, just_removed=True)
+        await self.check_for_prefix_command(ctx)
         
         proper_guild = self.get_proper_guild_id(ctx)
         
@@ -364,7 +377,7 @@ class dm_listener(commands.Cog):
             return add_period_if_missing(line)
         
         
-    async def reply_to_message(self, message: discord.Message = None, content: str = "", context: commands.Context = None, file: discord.File = None, author: discord.User = None, title: str = None, single_user = False):
+    async def reply_to_message(self, message: discord.Message = None, content: str = "", context: commands.Context = None, file: discord.File = None, author: discord.User = None, title: str = None, ephemeral = False, view=None) -> discord.Message:
         """Replies the given message
 
         Args:
@@ -385,9 +398,9 @@ class dm_listener(commands.Cog):
             embed.set_author(name=author.name, icon_url=author.display_avatar.url)
             
         if not context is None:
-            await context.send(embed = embed, file = file, mention_author = False, ephemeral=single_user)
+            return await context.send(embed = embed, file = file, mention_author = False, ephemeral=ephemeral, view=view)
         elif not message is None:
-            await message.reply(embed = embed, file = file, mention_author = False)
+            return await message.reply(embed = embed, file = file, mention_author = False, view=view)
         else:
             raise ValueError("Both ctx and message passed to reply_to_message are None")
           
@@ -414,8 +427,51 @@ class dm_listener(commands.Cog):
     async def register_guild(self, ctx: commands.Context):
         await self.file_manager.add_guild(ctx.guild.id)
         
-
         
+    async def request_guild_for_story_entry(self, message: discord.Message, user_current_turns: list[int]) -> int:
+        server_json = []
+        for guild_id in user_current_turns:
+            guild_name = self.bot.get_guild(guild_id).name
+            server_json.append({"guild id": guild_id, "guild name": guild_name})
+        
+        view = DropdownView(server_json)
+        
+        my_message = await self.reply_to_message(message = message, content="Which server should this be added to?", view=view, ephemeral= True)
+        
+        await view.wait()
+        
+        await my_message.delete()
+        
+        return int(view.value)
+        
+class DropdownView(discord.ui.View):
+    def __init__(self, server_json):
+        super().__init__()
+
+        # Adds the dropdown to our view object.
+        self.add_item(ServerChooser(server_json, self))
+        self.guild_id = None
+        self.value = None
+
+class ServerChooser(discord.ui.Select):
+    def __init__(self, guild_json, view):
+        guilds = []
+
+        for item in guild_json:
+            option = discord.SelectOption(label=item["guild name"],
+                                          value=item["guild id"])
+            
+            guilds.append(option)
+            
+        self.vv = view
+        super().__init__(placeholder='Which server is this story for?', min_values=1, max_values=1, options=guilds)
+        
+    async def callback(self, interaction: discord.Interaction):
+        self.vv.value = self.values[0]
+        self.vv.guild_id = self.values[0]
+        self.vv.stop()
+
+
 
 def create_embed(content=None, color=config_manager.get_embed_color(), title=None, author_name=None, author_icon_url=None) -> discord.Embed:
     """Creates an embed with the given parameters. All values have defaults if not given."""
@@ -477,5 +533,3 @@ def add_period_if_missing(line: str) -> str:
 async def setup(bot):
     await bot.add_cog(dm_listener(bot.file_manager, bot.user_manager, bot))
 
-if __name__ == '__main__':
-    import main
