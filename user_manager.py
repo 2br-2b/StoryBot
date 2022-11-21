@@ -23,7 +23,10 @@ class user_manager():
             ids.append(key)
             reputations.append(json_formatted[key])
         
-        new_user = int(random.choices(ids, weights=reputations)[0])
+        if(len(ids)) == 0:
+            new_user = None
+        else:
+            new_user = int(random.choices(ids, weights=reputations)[0])
         
         await self.bot.file_manager.set_current_user_id(guild_id, new_user)
         
@@ -36,7 +39,10 @@ class user_manager():
         for id in await self.get_recent_users_queue(guild_id):
             unweighted_list.remove(id)
         
-        new_user = int(random.choice(unweighted_list))
+        if(len(unweighted_list)) == 0:
+            new_user = None
+        else:
+            new_user = int(random.choice(unweighted_list))
         
         await self.bot.file_manager.set_current_user_id(guild_id, new_user)
         

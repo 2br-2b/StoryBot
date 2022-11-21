@@ -147,7 +147,7 @@ class file_manager():
         return result
     
     async def add_user(self, user_id: int, guild_id: int):
-        if not user_id in self.get_active_users(guild_id):
+        if not user_id in await self.get_active_users(guild_id):
             await self.db_connection.execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {config_manager.get_default_reputation()}, False)")
         await self.log_action(user_id=user_id, guild_id=guild_id, action="join")
     

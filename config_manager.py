@@ -29,7 +29,7 @@ def get_default_timeout_days() -> float:
 def get_timeout_days(guild_id: int) -> float:
     return config.TIMEOUT_DAYS
 
-def get_default_reputation(guild_id: int) -> int:
+def get_default_reputation() -> int:
     return config.DEFAULT_REPUTATION
 
 def get_max_reputation() -> int:

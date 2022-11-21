@@ -38,7 +38,6 @@ class dm_listener(commands.Cog):
 
     async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
         """Sends the given message to the current user"""
-        
         await (await (await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
         if self._notif_line_cont:
             self._notif_line_cont = False
@@ -272,7 +271,7 @@ class dm_listener(commands.Cog):
         
         for guild_id in await self.file_manager.get_all_guild_ids():
             
-            if time.time() - await self.file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
+            if len(await self.user_manager.get_unweighted_list()) >= 2 and time.time() - await self.file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
                 await self.timeout_happened(guild_id)
                 
 
@@ -290,12 +289,18 @@ class dm_listener(commands.Cog):
         self.timeout_checker.cancel()
 
     @commands.hybrid_command(name="add")
-    async def add(self, ctx):
+    async def add(self, ctx: commands.Context):
         """Adds a user to the list of participants"""
         
         await self.check_for_prefix_command(ctx)
+        guild_id = ctx.guild.id
         
-        await self.user_manager.add_user(self.get_proper_guild_id(ctx), ctx.author.id)
+        if(await self.user_manager.get_current_user(guild_id) == None):
+            await self.file_manager.set_current_user_id(guild_id, ctx.author.id)
+            await self.notify_people(guild_id)
+            await self.file_manager.reset_timestamp(guild_id)
+        
+        await self.user_manager.add_user(guild_id, ctx.author.id)
         await self.reply_to_message(context=ctx, content="Done!")
 
     @commands.hybrid_command(name="remove")
@@ -306,7 +311,7 @@ class dm_listener(commands.Cog):
         
         proper_guild = self.get_proper_guild_id(ctx)
         
-        if self.user_manager.get_current_user(proper_guild) == str(ctx.author.id):
+        if await self.user_manager.get_current_user(proper_guild) == str(ctx.author.id):
             skip_after = True
         else:
             skip_after = False
@@ -379,11 +384,11 @@ class dm_listener(commands.Cog):
           
     async def new_user(self, guild_id: int):
         """Chooses a new random user and notifies all relevant parties"""
+        await self.file_manager.reset_timestamp(guild_id)
         await self.user_manager.set_random_weighted_user(guild_id)
         
-        print("New current user: " + await self.user_manager.get_current_user(guild_id))
-        await self.file_manager.reset_timestamp(guild_id)
-        await self.notify_people(guild_id)
+        if await self.user_manager.get_current_user(guild_id) != None:
+            await self.notify_people(guild_id)
 
     def get_proper_guild_id(self, channel: discord.abc.Messageable) -> int:
         if channel.guild is None:
