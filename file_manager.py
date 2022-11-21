@@ -32,7 +32,6 @@ class file_manager():
     
     
     async def getStory(self, guild_id: int, story_number = 0) -> str:
-        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Returns the story in the story.txt file"""
 
         story_file_name = _get_story_file_name(guild_id, story_number)
@@ -66,7 +65,6 @@ class file_manager():
         
 
     async def addLine(self, guild_id: int, line):
-        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Appends the given line to the story and writes it to the file"""
         
         # Makes sure the bot isn't trying to append a command onto the story
@@ -102,7 +100,6 @@ class file_manager():
         
         
     async def load_timestamp(self,  guild_id: int) -> float:
-        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Returns the timestamp if it exists. If it doesn't, it'll reset the timestamp and return the new one."""
 
         result = (await self.db_connection.fetchrow(f"select timestamp from \"Guilds\" where guild_id = '{guild_id}'")).get("timestamp")
@@ -115,14 +112,12 @@ class file_manager():
         
 
     async def reset_timestamp(self,  guild_id: int) -> None:
-        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Resets the timestamp to the current time"""
         q=datetime.now().isoformat(sep=" ", timespec="seconds")
         
         await self.db_connection.execute(f"UPDATE \"Guilds\" SET timestamp='{q}' WHERE guild_id='{guild_id}'")
         
     async def get_current_turns_of_user(self, user_id: int) -> list[int]:
-        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Returns all servers where it is a user's turn
 
         Args:
@@ -136,7 +131,6 @@ class file_manager():
         return result
     
     async def get_active_guilds(self, user_id: int) -> list[int]:
-        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Returns all servers where a user is active
 
         Args:

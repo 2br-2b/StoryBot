@@ -37,7 +37,6 @@ class dm_listener(commands.Cog):
 
 
     async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
-        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Sends the given message to the current user"""
         
         await (await (await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
@@ -47,7 +46,6 @@ class dm_listener(commands.Cog):
             
 
     async def notify_people(self, guild_id: int):
-        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Notifies the current user that it's their turn to add to the story"""
         
         file = await self.file_manager.get_story_file(guild_id)
@@ -251,7 +249,6 @@ class dm_listener(commands.Cog):
             return story
 
     async def timeout_happened(self, guild_id: int):
-        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Skips the current user's turn if they don't respond in the specified amount of time"""
         
         print('Timing out...') 
@@ -371,7 +368,6 @@ class dm_listener(commands.Cog):
           
           
     async def new_user(self, guild_id: int):
-        # print(str(guild_id) + ": " + inspect.stack()[1][3])
         """Chooses a new random user and notifies all relevant parties"""
         await self.user_manager.set_random_weighted_user(guild_id, add_last_user_to_queue = True)
         
