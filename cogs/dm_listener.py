@@ -392,6 +392,10 @@ class dm_listener(commands.Cog):
         
         return channel.guild.id
         
+    @commands.is_owner()
+    @commands.hybrid_command(name="register_guild")
+    async def register_guild(self, ctx: commands.Context):
+        await self.file_manager.add_guild(ctx.guild.id)
         
 
         

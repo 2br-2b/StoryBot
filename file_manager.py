@@ -31,7 +31,8 @@ class file_manager():
         return guild_id in await self.get_all_guild_ids()
     
     async def add_guild(self, guild_id: int) -> None:
-        await self.db_connection.execute(f"INSERT INTO \"Guilds\" (guild_id, timeout_days) VALUES ('{guild_id}, {config_manager.get_timeout_days()}')")
+        if not guild_id in await self.get_all_guild_ids():
+            await self.db_connection.execute(f"INSERT INTO \"Guilds\" (guild_id, timeout_days) VALUES ('{guild_id}', '{config_manager.get_default_timeout_days()}')")
     
     async def getStory(self, guild_id: int, story_number = 0) -> str:
         """Returns the story in the story.txt file"""
@@ -132,7 +133,7 @@ class file_manager():
         result = [int(i.get("guild_id")) for i in result]
         return result
     
-    async def get_active_guilds(self, user_id: int) -> list[int]:
+    async def get_user_active_guilds(self, user_id: int) -> list[int]:
         """Returns all servers where a user is active
 
         Args:

@@ -11,6 +11,7 @@ from file_manager import file_manager
 from discord.ext import commands
 
 intents = discord.Intents.default()
+intents.guilds = True
 intents.message_content = True
 
 class StoryBot(commands.Bot):
@@ -46,7 +47,13 @@ bot.user_manager = umgr
 async def on_ready():
     print("Bot started!")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=" for `/help`"))
-
+    
+@bot.event
+async def on_guild_join(guild_joined: discord.Guild):
+    await bot.file_manager.add_guild(guild_joined.id)
+    print(f"added guild {guild_joined.id}")
+    
+    
 
 async def load_cogs(bot: commands.Bot, cog_list: list):
     for cog_name in cog_list:

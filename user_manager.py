@@ -12,7 +12,7 @@ class user_manager():
     def __init__(self, bot):
         self.bot = bot
     
-    async def set_random_weighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
+    async def set_random_weighted_user(self, guild_id: int) -> int:
         """Sets a random user as the current user based on their reputation"""
         json_formatted = await self.bot.file_manager.get_users_and_reputations(guild_id)
         ids = []
@@ -29,7 +29,7 @@ class user_manager():
         
         return new_user
 
-    async def set_random_unweighted_user(self, guild_id: int, add_last_user_to_queue = True) -> int:
+    async def set_random_unweighted_user(self, guild_id: int) -> int:
         """Sets a random user as the current user. Doesn't care about reputation."""
         unweighted_list = await self.get_unweighted_list(guild_id)
         

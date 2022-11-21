@@ -23,6 +23,9 @@ def get_token() -> str:
         raise RuntimeError("Please update config.py with your bot's token!")
     return config.TOKEN
 
+def get_default_timeout_days() -> float:
+    return config.TIMEOUT_DAYS
+
 def get_timeout_days(guild_id: int) -> float:
     return config.TIMEOUT_DAYS
 
