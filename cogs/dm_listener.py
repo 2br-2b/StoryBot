@@ -24,15 +24,11 @@ class dm_listener(commands.Cog):
         self.CHARACTERS_TO_SHOW = 4096
 
 
-    async def check_for_prefix_command(self, ctx: commands.Context, just_removed = False):
-        if(config_manager.is_debug_mode()):
+    async def check_for_prefix_command(self, ctx: commands.Context):
+        if(config_manager.is_debug_mode() or ctx.author == self.bot.user):
             return
         if(ctx.prefix != "/"):
-            if(just_removed):
-                msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but if you choose to use this bot again in the future, you'll need to switch over to slash commands.\n\nTo rejoin, you'll have to run `/add` as opposed to `{config_manager.get_prefix()}add`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
-            else:
-                msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but you'll want to switch over to slash commands soon.\n\nIn the future, you'll need to run that command by typing `/{ctx.message.content[len(config_manager.get_prefix()):]}`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
-            
+            msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but you'll want to switch over to slash commands soon.\n\nIn the future, you'll need to run that command by typing `/{ctx.message.content[len(config_manager.get_prefix()):]}`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
             await (await ctx.author.create_dm()).send(msg)
 
 
@@ -63,6 +59,8 @@ class dm_listener(commands.Cog):
         for channel in config_manager.get_story_announcement_channels(guild_id):
             await self.bot.get_channel(channel).send(embed = emb)
     
+    @commands.guild_only()
+    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="story")
     async def story(self, ctx: commands.Context, archived_story_number:int = 0):
         """Sends a reply with the requested story
@@ -87,6 +85,8 @@ class dm_listener(commands.Cog):
             content=self.lastChars(await self.file_manager.getStory(guild_id = proper_guild_id, story_number = archived_story_number)),
             title=title, file = file, context=ctx, single_user=True)
 
+    @commands.guild_only()
+    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="turn")
     async def turn(self, ctx: commands.Context):
         """Sends a message with the current user's name"""
@@ -111,8 +111,12 @@ class dm_listener(commands.Cog):
             
     `/add` adds you to the authors, while `/remove` removes you
     `/story` displays the story so far - put a number afterwards to see a past story
-    `/turn` displays whose turn it is""", single_user=True)
+    `/turn` displays whose turn it is
+    
+    Note - these commands only work in servers""", single_user=True)
 
+    @commands.guild_only()
+    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="skip")
     async def skip(self, ctx: commands.Context):
         """Skips the current user"""
@@ -139,6 +143,8 @@ class dm_listener(commands.Cog):
         
         
 
+    @commands.guild_only()
+    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="notify")
     async def notify(self, ctx):
         """The command to notify users that it's their turn"""
@@ -151,11 +157,11 @@ class dm_listener(commands.Cog):
         
         await self.notify_people(self.get_proper_guild_id(ctx))
         
+    @commands.guild_only()
+    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="time_left")
     async def time_left_command(self, ctx: commands.Context):
         """Says how much time the current user has remaining"""
-        
-        await self.check_for_prefix_command(ctx)
         
         proper_guild_id = self.get_proper_guild_id(ctx)
         
@@ -288,6 +294,8 @@ class dm_listener(commands.Cog):
     def cog_unload(self):
         self.timeout_checker.cancel()
 
+    @commands.guild_only()
+    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="add")
     async def add(self, ctx: commands.Context):
         """Adds a user to the list of participants"""
@@ -303,6 +311,8 @@ class dm_listener(commands.Cog):
         await self.user_manager.add_user(guild_id, ctx.author.id)
         await self.reply_to_message(context=ctx, content="Done!")
 
+    @commands.guild_only()
+    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="remove")
     async def remove(self, ctx: commands.Context):
         """Removes a user from the list of participants. If it is their turn, it also skips them"""
@@ -397,6 +407,8 @@ class dm_listener(commands.Cog):
         
         return channel.guild.id
         
+    @commands.guild_only()
+    @commands.before_invoke(check_for_prefix_command)
     @commands.is_owner()
     @commands.hybrid_command(name="register_guild")
     async def register_guild(self, ctx: commands.Context):
