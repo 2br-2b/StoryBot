@@ -165,6 +165,10 @@ class dm_listener(commands.Cog):
         """Says how much time the current user has remaining"""
         
         proper_guild_id = self.get_proper_guild_id(ctx)
+        user_id = await self.user_manager.get_current_user(proper_guild_id)
+        if user_id == None:
+            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=True)
+            return
         
         seconds_per_turn = config_manager.get_timeout_days(ctx.guild.id) * 24 * 60 * 60
         timeout_timestamp = int(await self.file_manager.load_timestamp(proper_guild_id))
@@ -172,7 +176,7 @@ class dm_listener(commands.Cog):
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
         
-        current_user = await self.bot.fetch_user(int(await self.user_manager.get_current_user(proper_guild_id)))
+        current_user = await self.bot.fetch_user(int(user_id))
         
         await self.reply_to_message(context=ctx, content="Time remaining: " + dm_listener.print_time(seconds=seconds_remaining + 60) +"\nTime used: " + dm_listener.print_time(seconds=seconds_since_timestamp)+"", ephemeral=True, author=current_user)
         
@@ -416,7 +420,7 @@ class dm_listener(commands.Cog):
     def get_proper_guild_id(self, channel: discord.abc.Messageable) -> int:
         if channel.guild is None:
             # TODO: figure out how to implement this
-            return config_manager.get_default_guild_id()
+            return None
         
         return channel.guild.id
         
