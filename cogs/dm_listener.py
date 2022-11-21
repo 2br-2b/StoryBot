@@ -49,11 +49,9 @@ class dm_listener(commands.Cog):
         """Notifies the current user that it's their turn to add to the story"""
         
         file = await self.file_manager.get_story_file(guild_id)
-        await self.dm_current_user(guild_id, """Your turn.  Respond with a DM to continue the story!  Use a \ to create a line break.
-            
-            **MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.
-            
-            Here is the story so far:""", file = file, embed = create_embed(content=self.lastChars(await self.file_manager.getStory(guild_id)), author_name=None, author_icon_url=None))
+        await self.dm_current_user(guild_id,
+                                   "Your turn.  Respond with a DM to continue the story!  Use a \\ to create a line break.\n\n**MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.\n\nHere is the story so far:",
+                                   file = file, embed = create_embed(content=self.lastChars(await self.file_manager.getStory(guild_id)), author_name=None, author_icon_url=None))
         
         current_user = await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))
         
