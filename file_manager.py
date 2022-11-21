@@ -30,6 +30,8 @@ class file_manager():
         """Returns if a guild is currently participating in StoryBot"""
         return guild_id in await self.get_all_guild_ids()
     
+    async def add_guild(self, guild_id: int) -> None:
+        await self.db_connection.execute(f"INSERT INTO \"Guilds\" (guild_id, timeout_days) VALUES ('{guild_id}, {config_manager.get_timeout_days()}')")
     
     async def getStory(self, guild_id: int, story_number = 0) -> str:
         """Returns the story in the story.txt file"""
