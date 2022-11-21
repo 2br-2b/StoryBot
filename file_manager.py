@@ -148,12 +148,12 @@ class file_manager():
     async def add_user(self, user_id: int, guild_id: int):
         if not user_id in self.get_active_users(guild_id):
             await self.db_connection.execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {config_manager.get_default_reputation()}, False)")
-        await self.log_action(self, user_id=user_id, guild_id=guild_id, action="join")
+        await self.log_action(user_id=user_id, guild_id=guild_id, action="join")
     
     async def remove_user(self, user_id: int, guild_id: int):
         """Removes a user from a given server"""
         await self.db_connection.execute(f"delete from \"Users\" where user_id='{user_id}' and guild_id='{guild_id}'")
-        await self.log_action(self, user_id=user_id, guild_id=guild_id, action="leave")
+        await self.log_action(user_id=user_id, guild_id=guild_id, action="leave")
     
     async def get_reputation(self, user_id: int, guild_id: int) -> int:
         """Returns the reputation of a given user in a given server"""
