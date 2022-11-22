@@ -37,10 +37,25 @@ class dm_listener(commands.Cog):
 
     async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
         """Sends the given message to the current user"""
-        await (await (await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
-        if self._notif_line_cont:
-            self._notif_line_cont = False
-            await self.dm_current_user(guild_id, "**Please pick up the writing in the middle of the last sentence.**")
+        try:
+            await (await (await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
+            if self._notif_line_cont:
+                self._notif_line_cont = False
+                await self.dm_current_user(guild_id, "**Please pick up the writing in the middle of the last sentence.**")
+        except discord.ext.commands.errors.HybridCommandError:
+            
+            if await self.user_manager.get_current_user(guild_id) == await self.user_manager.get_current_user(guild_id):
+                skip_after = True
+            else:
+                skip_after = False
+            
+            await self.user_manager.remove_user(guild_id, int(await self.user_manager.get_current_user(guild_id)))
+        
+            if(skip_after):
+                try:
+                    await self.new_user(guild_id)
+                except ValueError: #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
+                    pass
             
 
     async def notify_people(self, guild_id: int):
@@ -245,7 +260,7 @@ class dm_listener(commands.Cog):
                 line=content_to_send
                 )
             
-            await self.file_manager.log_action(user_id=message.author.id, guild_id=proper_guild_id, action="add")
+            await self.file_manager.log_action(user_id=message.author.id, guild_id=proper_guild_id, action="write")
             
             # Mirror the messages to a Discord channel
             for channel in await self.config_manager.get_story_output_channels(proper_guild_id):
@@ -425,14 +440,7 @@ class dm_listener(commands.Cog):
             return None
         
         return channel.guild.id
-        
-    @commands.guild_only()
-    @commands.before_invoke(check_for_prefix_command)
-    @commands.is_owner()
-    @commands.hybrid_command(name="register_guild")
-    async def register_guild(self, ctx: commands.Context):
-        await self.file_manager.add_guild(ctx.guild.id)
-        
+
         
     async def request_guild_for_story_entry(self, message: discord.Message, user_current_turns: list[int]) -> int:
         server_json = []
