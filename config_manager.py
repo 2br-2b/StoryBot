@@ -18,68 +18,66 @@ except ModuleNotFoundError:
         
 from discord import Color
 
-def get_token() -> str:
-    if(config.TOKEN == 'xxxxxxxxxxxxx'):
-        raise RuntimeError("Please update config.py with your bot's token!")
-    return config.TOKEN
+class ConfigManager():
+    def __init__(self, file_manager) -> None:
+        self.set_file_manager(file_manager)
 
-def get_default_timeout_days() -> float:
-    return config.TIMEOUT_DAYS
+    def set_file_manager(self, file_manager) -> None:
+        self.file_manager = file_manager
 
-def get_timeout_days(guild_id: int) -> float:
-    return config.TIMEOUT_DAYS
+    def get_token(self) -> str:
+        if(config.TOKEN == 'xxxxxxxxxxxxx'):
+            raise RuntimeError("Please update config.py with your bot's token!")
+        return config.TOKEN
 
-def get_default_reputation() -> int:
-    return config.DEFAULT_REPUTATION
+    async def get_default_timeout_days(self) -> float:
+        return config.TIMEOUT_DAYS
 
-def get_max_reputation() -> int:
-    return config.MAX_REPUTATION
+    async def get_timeout_days(self, guild_id: int) -> float:
+        return config.TIMEOUT_DAYS
 
-def get_prefix() -> str:
-    # TODO: phase out along while adding slash commands
-    return config.PREFIX
+    async def get_default_reputation(self) -> int:
+        return config.DEFAULT_REPUTATION
 
-def get_story_announcement_channels(guild_id: int) -> list[int]:
-    return config.STORY_CHANNELS
+    async def get_max_reputation(self) -> int:
+        return config.MAX_REPUTATION
 
-def get_story_output_channels(guild_id: int) -> list[int]:
-    return config.STORY_OUTPUT_CHANNELS
+    def get_prefix(self) -> str:
+        # TODO: phase out along while adding slash commands
+        return config.PREFIX
 
-def is_admin(author_id: int, guild_id: int) -> bool:
-    return author_id in config.ADMIN_IDS
+    async def get_story_announcement_channels(self, guild_id: int) -> list[int]:
+        return [int(await self.file_manager.get_config_value(guild_id, "story_announcement_channel"))]
 
-def get_default_user_ids() -> list[int]:
-    # TODO: Phase out
-    return config.DEFAULT_USER_IDS
+    async def get_story_output_channels(self, guild_id: int) -> list[int]:
+        return [int(await self.file_manager.get_config_value(guild_id, "story_output_channel"))]
 
-def get_embed_color() -> Color:
-    return config.EMBED_COLOR
+    async def is_admin(self, author_id: int, guild_id: int) -> bool:
+        return author_id in await self.file_manager.get_admins(guild_id)
 
-def get_amount_to_not_repeat() -> int:
-    # TODO: Phase out
-    return config.LAST_N_PLAYERS_NO_REPEAT
+    async def get_embed_color(self) -> Color:
+        return config.EMBED_COLOR
 
-def get_default_guild_id() -> int:
-    return config.GUILD_ID
+    async def get_default_guild_id(self) -> int:
+        return config.GUILD_ID
 
-def is_debug_mode() -> bool:
-    try:
-        return config.DEBUG_MODE
-    except AttributeError:
-        return False
-    
+    async def is_debug_mode(self) -> bool:
+        try:
+            return config.DEBUG_MODE
+        except AttributeError:
+            return False
         
-def get_database_user() -> str:
-    return config.DATABASE_USER
+    async def get_database_user(self) -> str:
+        return config.DATABASE_USER
 
-def get_database_password() -> str:
-    return config.DATABASE_PASSWORD
+    async def get_database_password(self) -> str:
+        return config.DATABASE_PASSWORD
 
-def get_database_name() -> str:
-    return config.DATABASE_DB_NAME
+    async def get_database_name(self) -> str:
+        return config.DATABASE_DB_NAME
 
-def get_database_host() -> str:
-    return config.DATABASE_HOST
+    async def get_database_host(self) -> str:
+        return config.DATABASE_HOST
 
-def get_database_port() -> str:
-    return config.DATABASE_PORT
+    async def get_database_port(self) -> str:
+        return config.DATABASE_PORT

@@ -5,12 +5,13 @@ import random
 import os
 import collections
 import json
-import config_manager
+from config_manager import ConfigManager
 import asyncio
 
 class user_manager():
-    def __init__(self, bot):
+    def __init__(self, bot, config_manager: ConfigManager):
         self.bot = bot
+        self.config_manager = config_manager
     
     async def set_random_weighted_user(self, guild_id: int) -> int:
         """Sets a random user as the current user based on their reputation"""

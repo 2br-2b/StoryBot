@@ -2,7 +2,7 @@ import inspect
 
 import os
 import time
-import config_manager
+from config_manager import ConfigManager
 from pathlib import Path
 import discord.file
 import json
@@ -13,16 +13,18 @@ import uuid
 
 
 class file_manager():
-    
+    def __init__(self, config_manager: ConfigManager) -> None:
+        self.config_manager = config_manager
+        config_manager.set_file_manager(self)
     
     async def initialize_connection(self):
         """Initializes the database connection"""
         self.db_connection = await asyncpg.connect(
-            user=config_manager.get_database_user(),
-            password=config_manager.get_database_password(),
-            database=config_manager.get_database_name(),
-            host=config_manager.get_database_host(),
-            port=config_manager.get_database_port(),
+            user=await self.config_manager.get_database_user(),
+            password=await self.config_manager.get_database_password(),
+            database=await self.config_manager.get_database_name(),
+            host=await self.config_manager.get_database_host(),
+            port=await self.config_manager.get_database_port(),
         )
 
 
@@ -32,7 +34,7 @@ class file_manager():
     
     async def add_guild(self, guild_id: int) -> None:
         if not guild_id in await self.get_all_guild_ids():
-            await self.db_connection.execute(f"INSERT INTO \"Guilds\" (guild_id, timeout_days) VALUES ('{guild_id}', '{config_manager.get_default_timeout_days()}')")
+            await self.db_connection.execute(f"INSERT INTO \"Guilds\" (guild_id, timeout_days) VALUES ('{guild_id}', '{await self.config_manager.get_default_timeout_days()}')")
     
     async def getStory(self, guild_id: int, story_number = 0) -> str:
         """Returns the story in the story.txt file"""
@@ -72,7 +74,7 @@ class file_manager():
         
         # Makes sure the bot isn't trying to append a command onto the story
         # Since this is already checked in dm_listener, this throws an error when it detects a command
-        if line.startswith(config_manager.get_prefix()):
+        if line.startswith(self.config_manager.get_prefix()):
             raise RuntimeWarning("I was just told to add this to the story, but this is clearly a command:\n"+line)
         
         with open(_get_story_file_name(guild_id), "a+", encoding="utf8") as append_to:
@@ -148,7 +150,7 @@ class file_manager():
     
     async def add_user(self, user_id: int, guild_id: int):
         if not user_id in await self.get_active_users(guild_id):
-            await self.db_connection.execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {config_manager.get_default_reputation()}, False)")
+            await self.db_connection.execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()}, False)")
         await self.log_action(user_id=user_id, guild_id=guild_id, action="join")
     
     async def remove_user(self, user_id: int, guild_id: int):
@@ -165,8 +167,8 @@ class file_manager():
         current_reputation=await self.get_reputation(user_id=user_id, guild_id=guild_id)
         new_reputation = current_reputation + amount
         
-        if(new_reputation > config_manager.get_max_reputation()):
-            new_reputation = config_manager.get_max_reputation()
+        if(new_reputation > await self.config_manager.get_max_reputation()):
+            new_reputation = await self.config_manager.get_max_reputation()
         elif(new_reputation < 0):
             new_reputation = 0
         

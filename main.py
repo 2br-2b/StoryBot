@@ -2,12 +2,13 @@ import asyncio
 import discord
 
 # create the necessary files if they don't exist
-import config_manager
+
 
         
 import cogs.dm_listener as dm_listener
 from user_manager import user_manager
 from file_manager import file_manager
+from config_manager import ConfigManager
 from discord.ext import commands
 
 intents = discord.Intents.default()
@@ -31,13 +32,18 @@ class StoryBot(commands.Bot):
         await bot.file_manager.initialize_connection()
         
         
+cmgr = ConfigManager(None)
+fmgr = file_manager(cmgr)
+
+bot = StoryBot(cmgr.get_prefix(), help_command = None, intents=intents)
 
 
-bot = StoryBot(config_manager.get_prefix(), help_command = None, intents=intents)
+bot.config_manager = cmgr
 
-fmgr = file_manager()
-umgr = user_manager(bot)
+umgr = user_manager(bot, cmgr)
 dml = dm_listener.dm_listener(fmgr, umgr, bot)
+
+
 
 bot.file_manager = fmgr
 bot.user_manager = umgr
@@ -67,5 +73,5 @@ async def load_cogs(bot: commands.Bot, cog_list: list):
             print("Put the setup() function back in " + cog_name + " fool.")
 
 
-bot.run(config_manager.get_token())
+bot.run(cmgr.get_token())
 

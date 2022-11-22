@@ -7,7 +7,7 @@ from discord.ext import tasks, commands
 import re
 import json
 
-import config_manager
+from config_manager import ConfigManager
 import file_manager
 import user_manager
 
@@ -23,13 +23,15 @@ class dm_listener(commands.Cog):
         self._notif_line_cont = False
         
         self.CHARACTERS_TO_SHOW = 4096
+        
+        self.config_manager = bot.config_manager
 
 
     async def check_for_prefix_command(self, ctx: commands.Context):
-        if(config_manager.is_debug_mode() or ctx.author == self.bot.user):
+        if(await self.config_manager.is_debug_mode() or ctx.author == self.bot.user):
             return
         if(ctx.prefix != "/"):
-            msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but you'll want to switch over to slash commands soon.\n\nIn the future, you'll need to run that command by typing `/{ctx.message.content[len(config_manager.get_prefix()):]}`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
+            msg = f"Just a heads up: prefix commands (like what you just ran, `{ctx.message.content}`) work for now, but you'll want to switch over to slash commands soon.\n\nIn the future, you'll need to run that command by typing `/{ctx.message.content[len(self.config_manager.get_prefix()):]}`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
             await (await ctx.author.create_dm()).send(msg)
 
 
@@ -47,17 +49,17 @@ class dm_listener(commands.Cog):
         file = await self.file_manager.get_story_file(guild_id)
         await self.dm_current_user(guild_id,
                                    "Your turn.  Respond with a DM to continue the story!  Use a \\ to create a line break.\n\n**MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.\n\nHere is the story so far:",
-                                   file = file, embed = create_embed(content=self.lastChars(await self.file_manager.getStory(guild_id)), author_name=None, author_icon_url=None))
+                                   file = file, embed = await self.create_embed(content=self.lastChars(await self.file_manager.getStory(guild_id)), author_name=None, author_icon_url=None))
         
         current_user = await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))
         
-        emb = create_embed(
+        emb = await self.create_embed(
             author_icon_url=current_user.display_avatar.url,
             author_name=f"It's now {current_user.name}'s turn!"
             )
         
         # Send a message in the story chanel
-        for channel in config_manager.get_story_announcement_channels(guild_id):
+        for channel in await self.config_manager.get_story_announcement_channels(guild_id):
             await self.bot.get_channel(channel).send(embed = emb)
     
     @commands.guild_only()
@@ -127,7 +129,7 @@ class dm_listener(commands.Cog):
         proper_guild_id = self.get_proper_guild_id(ctx)
         current_user_id = await self.user_manager.get_current_user(proper_guild_id)
         
-        if str(ctx.author.id) != current_user_id and not config_manager.is_admin(ctx.author.id, proper_guild_id):
+        if str(ctx.author.id) != current_user_id and not await self.config_manager.is_admin(ctx.author.id, proper_guild_id):
             await self.reply_to_message(context=ctx, content="It's not your turn!")
             return
         
@@ -152,7 +154,7 @@ class dm_listener(commands.Cog):
         
         await self.check_for_prefix_command(ctx)
         
-        if not config_manager.is_admin(ctx.author.id, ctx.guild.id):
+        if not await self.config_manager.is_admin(ctx.author.id, ctx.guild.id):
             await self.reply_to_message(context=ctx, content="Only admins can use this command.", ephemeral=True)
             return
         
@@ -170,7 +172,7 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=True)
             return
         
-        seconds_per_turn = config_manager.get_timeout_days(ctx.guild.id) * 24 * 60 * 60
+        seconds_per_turn = await self.config_manager.get_timeout_days(ctx.guild.id) * 24 * 60 * 60
         timeout_timestamp = int(await self.file_manager.load_timestamp(proper_guild_id))
         current_time = int(time.time())
         seconds_since_timestamp = current_time - timeout_timestamp
@@ -218,7 +220,7 @@ class dm_listener(commands.Cog):
 
         if message.guild is None and message.author != self.bot.user:
             
-            if message.content.startswith("/") or message.content.startswith(config_manager.get_prefix()):
+            if message.content.startswith("/") or message.content.startswith(self.config_manager.get_prefix()):
                 return
             
             user_current_turns = await self.file_manager.get_current_turns_of_user(message.author.id)
@@ -235,7 +237,7 @@ class dm_listener(commands.Cog):
             # if await self.user_manager.get_current_user(proper_guild_id) == str(message.author.id)
                 
                 
-            content_to_send = self.format_story_addition(message.content)
+            content_to_send = await self.format_story_addition(message.content)
             
             # Add the given line to the story file
             await self.file_manager.addLine(
@@ -246,7 +248,7 @@ class dm_listener(commands.Cog):
             await self.file_manager.log_action(user_id=message.author.id, guild_id=proper_guild_id, action="add")
             
             # Mirror the messages to a Discord channel
-            for channel in config_manager.get_story_output_channels(proper_guild_id):
+            for channel in await self.config_manager.get_story_output_channels(proper_guild_id):
                 await self.bot.get_channel(channel).send(content_to_send)
             
             await self.reply_to_message(message, "Got it!  Thanks!")
@@ -294,7 +296,7 @@ class dm_listener(commands.Cog):
         
         for guild_id in await self.file_manager.get_all_guild_ids():
             
-            if len(await self.user_manager.get_unweighted_list(guild_id)) >= 2 and time.time() - await self.file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
+            if len(await self.user_manager.get_unweighted_list(guild_id)) >= 2 and time.time() - await self.file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * await self.config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
                 await self.timeout_happened(guild_id)
                 
 
@@ -353,8 +355,8 @@ class dm_listener(commands.Cog):
         
         await self.reply_to_message(context=ctx, content="Done!")
 
-    def format_story_addition(self, line:str) -> str:
-        if(line.startswith(config_manager.get_prefix())):
+    async def format_story_addition(self, line:str) -> str:
+        if(line.startswith(self.config_manager.get_prefix())):
             return None
         
         line = self.fix_line_ending(line)
@@ -394,7 +396,7 @@ class dm_listener(commands.Cog):
         if type(message) is "str":
             raise TypeError("`message` should be of type message, not a string! Maybe you meant to set `content`?")
         
-        embed = create_embed(content=content, title=title)
+        embed = await self.create_embed(content=content, title=title)
         
         if author is None and not message is None:
             author = message.author
@@ -447,6 +449,16 @@ class dm_listener(commands.Cog):
         await my_message.delete()
         
         return int(view.value)
+    
+    async def create_embed(self, content=None, color=None, title=None, author_name=None, author_icon_url=None) -> discord.Embed:
+        """Creates an embed with the given parameters. All values have defaults if not given."""
+        if color == None:
+            color = await self.config_manager.get_embed_color()
+        emb = discord.Embed(description=content, color=color, title=title)
+        if author_name != None or author_icon_url != None:
+            emb.set_author(name=author_name, icon_url=author_icon_url)
+        
+        return emb
         
 class DropdownView(discord.ui.View):
     def __init__(self, server_json):
@@ -475,15 +487,6 @@ class ServerChooser(discord.ui.Select):
         self.vv.guild_id = self.values[0]
         self.vv.stop()
 
-
-
-def create_embed(content=None, color=config_manager.get_embed_color(), title=None, author_name=None, author_icon_url=None) -> discord.Embed:
-    """Creates an embed with the given parameters. All values have defaults if not given."""
-    emb = discord.Embed(description=content, color=color, title=title)
-    if author_name != None or author_icon_url != None:
-        emb.set_author(name=author_name, icon_url=author_icon_url)
-    
-    return emb
 
 continuation_strings = ["...", "…"]
 
