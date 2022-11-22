@@ -58,9 +58,6 @@ class ConfigManager():
     async def get_embed_color(self) -> Color:
         return config.EMBED_COLOR
 
-    async def get_default_guild_id(self) -> int:
-        return config.GUILD_ID
-
     async def is_debug_mode(self) -> bool:
         try:
             return config.DEBUG_MODE
