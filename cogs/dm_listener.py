@@ -127,7 +127,7 @@ class dm_listener(commands.Cog):
         await self.reply_to_message(context=ctx, 
             content="""This bot is a story bot.  One user will write a part of the story (anywhere from a sentence or two to a couple of paragraphs - your choice!), then another, and so on until the story is complete!
             
-    `/add` adds you to the authors, while `/remove` removes you
+    `/join` adds you to the authors, while `/leave` removes you
     `/story` displays the story so far - put a number afterwards to see a past story
     `/turn` displays whose turn it is
     
@@ -137,7 +137,7 @@ class dm_listener(commands.Cog):
     @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="skip")
     async def skip(self, ctx: commands.Context):
-        """Skips the current user"""
+        """Skip your turn"""
         
         await self.check_for_prefix_command(ctx)
         
@@ -332,9 +332,9 @@ class dm_listener(commands.Cog):
 
     @commands.guild_only()
     @commands.before_invoke(check_for_prefix_command)
-    @commands.hybrid_command(name="add")
+    @commands.hybrid_command(name="join")
     async def add(self, ctx: commands.Context):
-        """Adds a user to the list of participants"""
+        """Adds you to the list of authors"""
         
         await self.check_for_prefix_command(ctx)
         guild_id = ctx.guild.id
@@ -349,9 +349,9 @@ class dm_listener(commands.Cog):
 
     @commands.guild_only()
     @commands.before_invoke(check_for_prefix_command)
-    @commands.hybrid_command(name="remove")
+    @commands.hybrid_command(name="leave")
     async def remove(self, ctx: commands.Context):
-        """Removes a user from the list of participants. If it is their turn, it also skips them"""
+        """Removes you from the list of authors"""
         
         await self.check_for_prefix_command(ctx)
         
