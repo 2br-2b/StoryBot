@@ -90,10 +90,11 @@ class file_manager():
         
     
     async def get_current_user_id(self,  guild_id: int) -> str:
-        result = (await self.db_connection.fetchrow(f"select current_user_id from \"Guilds\" where guild_id = '{guild_id}'")).get("current_user_id")
-        if result == "0":
+        """Gets the ID of the current user of a server"""
+        result = (await self.db_connection.fetchrow(f"select current_user_id from \"Guilds\" where guild_id = '{guild_id}'"))
+        if result == None or result == "0":
             return None
-        return result
+        return result.get("current_user_id")
     
 
     async def set_current_user_id(self,  guild_id: int, user_id: int) -> str:
