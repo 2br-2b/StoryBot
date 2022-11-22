@@ -250,7 +250,8 @@ class dm_listener(commands.Cog):
             #self.get_proper_guild_id(message.channel)
             
             if (await self.user_manager.get_current_user(proper_guild_id)) != str(message.author.id):
-                self.reply_to_message(message=message, content="It's not your turn here!", ephemeral=True)
+                await self.reply_to_message(message=message, content="It's not your turn here!", ephemeral=True)
+                return
                 
                 
             content_to_send = await self.format_story_addition(message.content)
