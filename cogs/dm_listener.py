@@ -146,7 +146,7 @@ class dm_listener(commands.Cog):
         current_user_id = await self.user_manager.get_current_user(proper_guild_id)
         
         if str(ctx.author.id) != current_user_id and not await self.config_manager.is_admin(ctx.author.id, proper_guild_id):
-            await self.reply_to_message(context=ctx, content="Nice try :stuck_out_tongue_winking_eye:")
+            await self.reply_to_message(context=ctx, content="It's not your turn here!")
             return
         
         try:
@@ -251,7 +251,7 @@ class dm_listener(commands.Cog):
             #self.get_proper_guild_id(message.channel)
             
             if (await self.user_manager.get_current_user(proper_guild_id)) != str(message.author.id):
-                await self.reply_to_message(message=message, content="It's not your turn here!", ephemeral=True)
+                await self.reply_to_message(message=message, content="Nice try :stuck_out_tongue_winking_eye:", ephemeral=True)
                 return
                 
                 
