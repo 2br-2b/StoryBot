@@ -52,7 +52,7 @@ class user_manager():
     async def get_current_user(self, guild_id: int) -> str:
         """Returns the current user's id as a string"""
         ret = await self.bot.file_manager.get_current_user_id(guild_id)
-        if ret == "":
+        if ret == "" or ret == "0":
             return None
         else:
             return ret
