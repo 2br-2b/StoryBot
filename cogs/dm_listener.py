@@ -29,7 +29,7 @@ class dm_listener(commands.Cog):
 
     async def check_for_prefix_command(self, ctx: commands.Context):
         if(await self.config_manager.is_debug_mode() or ctx.author == self.bot.user):
-            pass#return
+            return
         if(ctx.prefix != "/"):
             msg = f"Prefix commands (like what you just ran, `{ctx.message.content}`) no longer work. You'll have to run that as a slash command.\n\nTry running `/{ctx.message.content[len(self.config_manager.get_prefix()):]}`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
             await self.reply_to_message(context=ctx, content=msg, ephemeral=True)
