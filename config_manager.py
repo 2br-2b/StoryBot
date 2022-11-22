@@ -34,7 +34,7 @@ class ConfigManager():
         return config.TIMEOUT_DAYS
 
     async def get_timeout_days(self, guild_id: int) -> float:
-        return config.TIMEOUT_DAYS
+        return int(await self.file_manager.get_config_value(guild_id, "timeout_days"))
 
     async def get_default_reputation(self) -> int:
         return config.DEFAULT_REPUTATION
