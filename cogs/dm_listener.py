@@ -449,6 +449,8 @@ class dm_listener(commands.Cog):
             guild_name = self.bot.get_guild(guild_id).name
             server_json.append({"guild id": guild_id, "guild name": guild_name})
         
+        server_json.sort(key=lambda k: k["guild name"])
+        
         view = DropdownView(server_json)
         
         my_message = await self.reply_to_message(message = message, content="Which server should this be added to?", view=view, ephemeral= True)
