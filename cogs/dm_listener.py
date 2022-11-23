@@ -18,9 +18,6 @@ class dm_listener(commands.Cog):
         self.user_manager = user_manager
         
         self.bot = bot
-
-        # The timestamp keeps track of when the last user was notified, so that even if the bot goes down, it still knows how much longer the current user has to continue the story
-        self._notif_line_cont = False
         
         self.CHARACTERS_TO_SHOW = 4096
         
@@ -40,10 +37,8 @@ class dm_listener(commands.Cog):
         """Sends the given message to the current user"""
         try:
             await (await (await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
-            if self._notif_line_cont:
-                self._notif_line_cont = False
-                await self.dm_current_user(guild_id, "**Please pick up the writing in the middle of the last sentence.**")
-        except discord.ext.commands.errors.HybridCommandError:
+        
+        except discord.ext.commands.errors.HybridCommandError: # Means the user couldn't be DMed
             
             if await self.user_manager.get_current_user(guild_id) == await self.user_manager.get_current_user(guild_id):
                 skip_after = True
@@ -395,7 +390,6 @@ class dm_listener(commands.Cog):
         It also strips any extra spaces at the end of a line and replaces them with a single space"""
         
         if ends_with_continuation_string(line):
-            self._notif_line_cont = True
             return trim_ellipses(line)
         else:
             return add_period_if_missing(line)
