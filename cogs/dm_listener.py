@@ -472,6 +472,25 @@ class dm_listener(commands.Cog):
             emb.set_author(name=author_name, icon_url=author_icon_url)
         
         return emb
+    
+    @commands.before_invoke(check_for_prefix_command)
+    @commands.hybrid_command(name="my_turns")
+    async def my_turns(self, ctx: commands.Context):
+        """Lists all of the servers where it's currently your turn"""
+        user_current_turns = await self.file_manager.get_current_turns_of_user(ctx.author.id)
+        
+        if len(user_current_turns) < 1:
+            text = "It's not your turn in any servers!"
+        else:
+            text = ""
+            for guild_id in user_current_turns:
+                guild_name = self.bot.get_guild(guild_id).name
+                text += guild_name + "\n"
+            text = text[:-1]
+            
+        await self.reply_to_message(context=ctx, content=text, title=f"{ctx.author.name}'s current turns", ephemeral=True)
+            
+
         
 class DropdownView(discord.ui.View):
     def __init__(self, server_json):
