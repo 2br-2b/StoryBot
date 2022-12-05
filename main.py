@@ -18,13 +18,6 @@ intents.message_content = True
 class StoryBot(commands.Bot):
     async def setup_hook(self):
         
-        ### Notice: if the commands are showing up two times in your server but only once in DMs, uncomment these three lines for your first run ###
-        ### Then, comment them back out after this run ###
-        ### This is a fix for upgrading from v1.0.1 ###
-        #import config
-        #bot.tree.copy_global_to(guild=discord.Object(id=config.GUILD_ID))
-        #await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
-        
         await load_cogs(self, ["cogs.dm_listener"])
         # TODO: make this so it doesn't run every time (maybe make it a command)
         asyncio.create_task(bot.tree.sync())
