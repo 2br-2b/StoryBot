@@ -273,14 +273,14 @@ class dm_listener(commands.Cog):
     def pieMethod(self, story):
         """The all-powerful pieMethod
         Splits the story into a list of strings if it is too long"""
-        
-        if len(story) >= self.CHARACTERS_TO_SHOW:
+        MAX_MESSAGE_LENGTH = 1950
+        if len(story) >= MAX_MESSAGE_LENGTH:
             split = list()
-            for i in range(math.ceil(len(story) / self.CHARACTERS_TO_SHOW)):
-                if i == math.ceil(len(story) / self.CHARACTERS_TO_SHOW):
+            for i in range(math.ceil(len(story) / MAX_MESSAGE_LENGTH)):
+                if i == math.ceil(len(story) / MAX_MESSAGE_LENGTH):
                     split.append(story[i:len(story) -1])
                 else:
-                    split.append(story[i:i+self.CHARACTERS_TO_SHOW])
+                    split.append(story[i:i+MAX_MESSAGE_LENGTH])
             return split
         else:
             return [story]
