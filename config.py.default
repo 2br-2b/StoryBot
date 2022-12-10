@@ -24,3 +24,6 @@ MAX_REPUTATION = 20
 
 # The color to show next to messages the bot sends
 EMBED_COLOR = Color.from_str("0x00ff00")
+
+# The maximum number of archived stories to let a server have
+MAX_ARCHIVED_STORIES = 10
