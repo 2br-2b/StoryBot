@@ -1,15 +1,11 @@
 import asyncio
-import discord
-
-# create the necessary files if they don't exist
-
-
-        
+import discord    
 import cogs.dm_listener as dm_listener
 from user_manager import user_manager
 from file_manager import file_manager
 from config_manager import ConfigManager
 from discord.ext import commands
+import logging
 
 intents = discord.Intents.default()
 intents.guilds = True
@@ -70,6 +66,6 @@ async def load_cogs(bot: commands.Bot, cog_list: list):
         except commands.errors.NoEntryPointError:
             print("Put the setup() function back in " + cog_name + " fool.")
 
-
-bot.run(cmgr.get_token())
+handler = logging.FileHandler(filename='logs/discord.log', encoding='utf-8', mode='w')
+bot.run(cmgr.get_token(), log_handler=handler)
 
