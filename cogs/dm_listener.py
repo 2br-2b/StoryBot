@@ -70,8 +70,15 @@ class dm_listener(commands.Cog):
             )
         
         # Send a message in the story chanel
-        for channel in await self.config_manager.get_story_announcement_channels(guild_id):
-            await self.bot.get_channel(channel).send(embed = emb)
+        channel_int = await self.config_manager.get_story_announcement_channel(guild_id)
+        if channel_int != None:
+            channel = self.bot.get_channel(channel_int)
+            if channel != None:
+                try:
+                    await channel.send(embed = emb)
+                except discord.errors.Forbidden:
+                    # TODO: Check for this perm properly
+                    pass
     
     @commands.guild_only()
     @commands.before_invoke(check_for_prefix_command)
@@ -261,8 +268,15 @@ class dm_listener(commands.Cog):
             await self.file_manager.log_action(user_id=message.author.id, guild_id=proper_guild_id, action="write")
             
             # Mirror the messages to a Discord channel
-            for channel in await self.config_manager.get_story_output_channels(proper_guild_id):
-                await self.bot.get_channel(channel).send(content_to_send)
+            channel_int = await self.config_manager.get_story_output_channel(proper_guild_id)
+            if channel_int != None:
+                channel = self.bot.get_channel(channel_int)
+                if channel != None:
+                    try:
+                        await channel.send(content_to_send)
+                    except discord.errors.Forbidden:
+                        # TODO: Check for this perm properly
+                        pass
             
             await self.reply_to_message(message, "Got it!  Thanks!")
             

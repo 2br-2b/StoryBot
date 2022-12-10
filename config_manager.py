@@ -46,11 +46,19 @@ class ConfigManager():
         # TODO: phase out along while adding slash commands
         return config.PREFIX
 
-    async def get_story_announcement_channels(self, guild_id: int) -> list[int]:
-        return [int(await self.file_manager.get_config_value(guild_id, "story_announcement_channel"))]
+    async def get_story_announcement_channel(self, guild_id: int) -> int:
+        channel_id_string = await self.file_manager.get_config_value(guild_id, "story_announcement_channel")
+        if channel_id_string != None:
+            return int(channel_id_string)
+        else:
+            return None
 
-    async def get_story_output_channels(self, guild_id: int) -> list[int]:
-        return [int(await self.file_manager.get_config_value(guild_id, "story_output_channel"))]
+    async def get_story_output_channel(self, guild_id: int) -> int:
+        channel_id_string = await self.file_manager.get_config_value(guild_id, "story_output_channel")
+        if channel_id_string != None:
+            return int(channel_id_string)
+        else:
+            return None
 
     async def is_admin(self, author_id: int, guild_id: int) -> bool:
         return author_id in await self.file_manager.get_admins(guild_id)
