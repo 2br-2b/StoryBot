@@ -1,56 +1,38 @@
-import discord
-from pathlib import Path
-
-# create the necessary files if they don't exist
-try:
-    import config
-except ModuleNotFoundError:
-    # Check if the file exists
-    # If it doesn't, copy the example file
-    from os.path import exists
-    if not exists("config.py"):
-        import shutil
-        shutil.copyfile("config.py.default", "config.py")
-        print("Please edit your config file (config.py) and then restart the bot.")
-        exit()
-    else:
-        print("Something went wrong importing the config file. Check your config file for any errors, then restart the bot.")
-        exit()
-
-
-if not Path("story.txt").is_file():
-    print("Created story.txt")
-    open("story.txt", "x").close()
-
-if not Path("user.txt").is_file():
-    print("Created user.txt")
-    with open("user.txt", "w") as f:
-        f.write(str(config.DEFAULT_USER_IDS[0]))
-        
+import asyncio
+import discord    
 import cogs.dm_listener as dm_listener
 from user_manager import user_manager
 from file_manager import file_manager
+from config_manager import ConfigManager
 from discord.ext import commands
+import logging
 
 intents = discord.Intents.default()
+intents.guilds = True
 intents.message_content = True
 
 class StoryBot(commands.Bot):
     async def setup_hook(self):
         
-        ### Notice: if the commands are showing up two times in your server but only once in DMs, uncomment these two lines for your first run ###
-        #bot.tree.copy_global_to(guild=discord.Object(id=config.GUILD_ID))
-        #await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
-        
         await load_cogs(self, ["cogs.dm_listener"])
-        await bot.tree.sync()
+        # TODO: make this so it doesn't run every time (maybe make it a command)
+        asyncio.create_task(bot.tree.sync())
+        
+        await bot.file_manager.initialize_connection()
+        
+        
+cmgr = ConfigManager(None)
+fmgr = file_manager(cmgr)
+
+bot = StoryBot(cmgr.get_prefix(), help_command = None, intents=intents)
 
 
-bot = StoryBot(config.PREFIX, help_command = None, intents=intents)
+bot.config_manager = cmgr
 
-fmgr = file_manager()
-umgr = user_manager(bot)
+umgr = user_manager(bot, cmgr)
 dml = dm_listener.dm_listener(fmgr, umgr, bot)
+
+
 
 bot.file_manager = fmgr
 bot.user_manager = umgr
@@ -60,10 +42,18 @@ bot.user_manager = umgr
 async def on_ready():
     print("Bot started!")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=" for `/help`"))
+    
+@bot.event
+async def on_guild_join(guild_joined: discord.Guild):
+    await bot.file_manager.add_guild(guild_joined.id)
+    print(f"added guild {guild_joined.id}")
 
-if(config.TOKEN == 'xxxxxxxxxxxxx'):
-    raise RuntimeError("Please update config.py with your bot's token!")
-
+@bot.event
+async def on_guild_remove(guild_left: discord.Guild):
+    await bot.file_manager.remove_guild(guild_left.id)
+    print(f"left guild {guild_left.id}")
+    
+    
 
 async def load_cogs(bot: commands.Bot, cog_list: list):
     for cog_name in cog_list:
@@ -76,6 +66,6 @@ async def load_cogs(bot: commands.Bot, cog_list: list):
         except commands.errors.NoEntryPointError:
             print("Put the setup() function back in " + cog_name + " fool.")
 
-
-bot.run(config.TOKEN)
+handler = logging.FileHandler(filename='logs/discord.log', encoding='utf-8', mode='w')
+bot.run(cmgr.get_token(), log_handler=handler)
 

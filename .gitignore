@@ -3,10 +3,9 @@ token_manager.py
 .vscode/
 
 config.py
+SQL scripts/
 
-story*
-
-user.txt
-timestamp.txt
 weighted\ list\ of\ users.json
 recent_users.json
+
+storage/*

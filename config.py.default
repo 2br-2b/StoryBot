@@ -3,6 +3,14 @@ from discord import Color
 # The bot's Discord token
 TOKEN = 'xxxxxxxxxxxxx'
 
+# Database info
+# This info should point to a PostgreSQL database
+DATABASE_USER="username"
+DATABASE_PASSWORD="password"
+DATABASE_DB_NAME="storybot"
+DATABASE_HOST="0.0.0.0"
+DATABASE_PORT="0000"
+
 # The bot's command prefix
 # Will be phased out eventually in favor of slash commands
 PREFIX = "s."
@@ -14,35 +22,9 @@ TIMEOUT_DAYS = 1
 DEFAULT_REPUTATION = 20
 MAX_REPUTATION = 20
 
-# The ID(s) of the channels you want the bot to notify when it's a new player's turn
-# I only use one channel myself, but if you want to use more or split one story across multiple servers, feel free to!
-STORY_CHANNELS = [
-    
-]
-
-# The channels to mirror the story to. Whenever an addition is made to the story, the same text will be mirrored into this channel for easier viewing.
-STORY_OUTPUT_CHANNELS=[
-    
-]
-
-# Whether the story, when sent in STORY_OUTPUT_CHANNELS, should be sent as an embed. If it is sent as an embed, the authors' names will be listed alongside their contributions
-SEND_STORY_AS_EMBED_IN_CHANNEL = False
-
-# The ID(s) of the bot's admin(s)
-ADMIN_IDS = [
-    
-]
-
-# The userIDs to include in the list on the first run
-DEFAULT_USER_IDS = [
-    
-]
 
 # The color to show next to messages the bot sends
 EMBED_COLOR = Color.from_str("0x00ff00")
 
-# The guild the bot will be run in. Will be phased out in the future once multi-server support is added
-GUILD_ID = 0
-
-# The last N people won't be chosen to add to the story again
-LAST_N_PLAYERS_NO_REPEAT = 1
+# The maximum number of archived stories to let a server have
+MAX_ARCHIVED_STORIES = 10
