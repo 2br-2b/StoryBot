@@ -428,13 +428,17 @@ class dm_listener(commands.Cog):
             author = message.author
         if not author is None:
             embed.set_author(name=author.name, icon_url=author.display_avatar.url)
-            
-        if not context is None:
-            return await context.send(embed = embed, file = file, mention_author = False, ephemeral=ephemeral, view=view)
-        elif not message is None:
-            return await message.reply(embed = embed, file = file, mention_author = False, view=view)
-        else:
-            raise ValueError("Both ctx and message passed to reply_to_message are None")
+        
+        try:
+            if not context is None:
+                return await context.send(embed = embed, file = file, mention_author = False, ephemeral=ephemeral, view=view)
+            elif not message is None:
+                return await message.reply(embed = embed, file = file, mention_author = False, view=view)
+            else:
+                raise ValueError("Both ctx and message passed to reply_to_message are None")
+        except discord.errors.Forbidden:
+            # TODO: Check for this perm properly
+            pass
           
           
     async def new_user(self, guild_id: int):
@@ -447,7 +451,7 @@ class dm_listener(commands.Cog):
 
     def get_proper_guild_id(self, channel: discord.abc.Messageable) -> int:
         if channel.guild is None:
-            # TODO: figure out how to implement this
+            # TODO: figure out how to implement get_proper_guild_id
             return None
         
         return channel.guild.id
