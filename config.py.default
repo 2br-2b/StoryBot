@@ -22,6 +22,7 @@ TIMEOUT_DAYS = 1
 DEFAULT_REPUTATION = 20
 MAX_REPUTATION = 20
 
+
 # The color to show next to messages the bot sends
 EMBED_COLOR = Color.from_str("0x00ff00")
 
