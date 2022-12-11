@@ -41,6 +41,7 @@ bot.user_manager = umgr
 @bot.event
 async def on_ready():
     print("Bot started!")
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f" {len(await bot.file_manager.get_all_guild_ids())} stories unfold"))
     
 @bot.event
 async def on_guild_join(guild_joined: discord.Guild):
