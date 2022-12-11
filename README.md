@@ -13,11 +13,12 @@ This Discord bot is called StoryBot. After it is given a list of users, it will 
 In order to make sure the story progresses regularly, the bot implements a timeout system. After you are chosen as the active user, you have a set period of time (24 hours by default, but this can be changed by the server admin) to add onto the story. If you do not write within this given amount of time, your turn is automatically skipped. You also lose a [reputation point](#reputation), making you slightly less likely to chosen again in the future. This reputation can be regained by actively contributing to the story on future turns.
 
 ## Setting up the bot
-1. Clone the repository (unstable) or [download the latest release (stable)](https://github.com/2br-2b/StoryBot/releases)
-2. Navigate into the directory
-3. Run `pip3 install -r requirements.txt`
-4. Copy `config.py.default` to `config.py` and modify the values as needed
-5. Run `python3 main.py` to start the bot running!
+1. Set up a Postgres database and store the credentials/port
+2. Clone the repository (unstable) or [download the latest release (stable)](https://github.com/2br-2b/StoryBot/releases)
+3. Navigate into the directory
+4. Run `pip3 install -r requirements.txt`
+5. Copy `config.py.default` to `config.py` and modify the values as needed
+6. Run `python3 main.py` to start the bot running!
 
 If you have any problems while setting up the bot, feel free to [start a discussion](https://github.com/2br-2b/StoryBot/discussions) or [open an issue](https://github.com/2br-2b/StoryBot/issues).
 
