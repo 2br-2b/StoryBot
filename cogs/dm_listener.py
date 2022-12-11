@@ -335,10 +335,28 @@ class dm_listener(commands.Cog):
         except RuntimeError as e:
             if not str(e) == "Task is already launched and is not completed.":
                 raise RuntimeError(str(e))
+            
+        try:
+            self.update_status.start()
+        except RuntimeError as e:
+            if not str(e) == "Task is already launched and is not completed.":
+                raise RuntimeError(str(e))
 
 
     def cog_unload(self):
         self.timeout_checker.cancel()
+        self.update_status.stop()
+        
+        
+    @tasks.loop(hours = 24) # Check back every 24 hours
+    async def update_status(self):
+        """Updates the bot's status every 24 hours"""
+        
+        s = f" {len(await self.bot.file_manager.get_all_guild_ids())} stories unfold"
+        
+        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=s))
+        print("Status updated to `watching" + s + "`")
+        
 
     @commands.guild_only()
     @commands.before_invoke(check_for_prefix_command)
