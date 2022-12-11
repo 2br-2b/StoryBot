@@ -29,7 +29,10 @@ class dm_listener(commands.Cog):
             return
         if(ctx.prefix != "/"):
             msg = f"Prefix commands (like what you just ran, `{ctx.message.content}`) no longer work. You'll have to run that as a slash command.\n\nTry running `/{ctx.message.content[len(self.config_manager.get_prefix()):]}`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
-            await self.reply_to_message(context=ctx, content=msg, ephemeral=True)
+            
+            await (await (await self.bot.fetch_user(ctx.author.id)).create_dm()).send(msg)
+            
+            print("Prefix command sent")
             raise Exception("Prefixed command")
 
 
