@@ -518,7 +518,8 @@ class dm_listener(commands.Cog):
         await self.reply_to_message(context=ctx, content=text, title=f"{ctx.author.name}'s current turns", ephemeral=True)
         
     async def update_status(self):
-        s=f" {len(await self.file_manager.get_all_guild_ids())} stories unfold"
+        # The `- 1` is needed since when adding the bot to a guild, it says the bot is in one less guild than it actually is in (probably since it doesn't count the bot's support server towards the count). The -1 corrects this to make the number seem more accurate.
+        s=f" {len(await self.file_manager.get_all_guild_ids()) - 1} stories unfold"
         await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=s))
         print("Status updated to `watching" + s + "`")
             
