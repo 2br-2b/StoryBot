@@ -313,7 +313,7 @@ class dm_listener(commands.Cog):
         """Skips the current user's turn if they don't respond in the specified amount of time"""
         
         print('Timing out...') 
-        await self.dm_current_user(guild_id, 'You took too long!  You\'ll have a chance to add to the story later - don\'t worry!')
+        await self.dm_current_user(guild_id, f"You took too long! Your turn was skipped in {self.bot.get_guild(guild_id).name}. You\'ll have a chance to add to the story later - don\'t worry!")
         current_user_id = int(await self.user_manager.get_current_user(guild_id))
         await self.user_manager.unboost_user(guild_id, current_user_id)
         await self.file_manager.log_action(user_id=current_user_id, guild_id=guild_id, action="timeout")
