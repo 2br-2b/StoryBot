@@ -476,9 +476,9 @@ class dm_listener(commands.Cog):
         server_json = []
         for guild_id in user_current_turns:
             guild_name = self.bot.get_guild(guild_id).name
-            server_json.append({"guild id": guild_id, "guild name": guild_name})
+            server_json.append({"id": guild_id, "name": guild_name})
         
-        server_json.sort(key=lambda k: k["guild name"])
+        server_json.sort(key=lambda k: k["name"])
         
         view = DropdownView(server_json)
         
@@ -538,8 +538,8 @@ class ServerChooser(discord.ui.Select):
         guilds = []
 
         for item in guild_json:
-            option = discord.SelectOption(label=item["guild name"],
-                                          value=item["guild id"])
+            option = discord.SelectOption(label=item["name"],
+                                          value=item["id"])
             
             guilds.append(option)
             
