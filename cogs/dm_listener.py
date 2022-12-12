@@ -120,7 +120,7 @@ class dm_listener(commands.Cog):
         current_user_id = await self.user_manager.get_current_user(self.get_proper_guild_id(ctx))
         if current_user_id != None:
             current_user = await self.bot.fetch_user(int(current_user_id))
-            await self.reply_to_message(author=current_user, context=ctx, ephemeral=True)
+            await self.reply_to_message(author_name=current_user.name, author_icon_url=current_user.display_avatar.url, context=ctx, ephemeral=True)
         else:
             await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=True)
 
@@ -201,7 +201,7 @@ class dm_listener(commands.Cog):
         
         current_user = await self.bot.fetch_user(int(user_id))
         
-        await self.reply_to_message(context=ctx, content="Time remaining: " + dm_listener.print_time(seconds=seconds_remaining + 60) +"\nTime used: " + dm_listener.print_time(seconds=seconds_since_timestamp)+"", ephemeral=True, author=current_user)
+        await self.reply_to_message(context=ctx, content=f"Time remaining: {dm_listener.print_time(seconds=seconds_remaining + 60)}\nTime used: {dm_listener.print_time(seconds=seconds_since_timestamp)}", ephemeral=True, author_name=current_user.name, author_icon_url=current_user.display_avatar.url)
         
     @staticmethod
     def print_time(seconds:int, include_seconds: bool = False) -> str:
@@ -423,7 +423,7 @@ class dm_listener(commands.Cog):
             return add_period_if_missing(line)
         
         
-    async def reply_to_message(self, message: discord.Message = None, content: str = "", context: commands.Context = None, file: discord.File = None, author: discord.User = None, title: str = None, ephemeral = False, view=None) -> discord.Message:
+    async def reply_to_message(self, message: discord.Message = None, content: str = "", context: commands.Context = None, file: discord.File = None, author_name: str = None, author_icon_url: str = None, title: str = None, ephemeral = False, view=None) -> discord.Message:
         """Replies the given message
 
         Args:
@@ -438,10 +438,8 @@ class dm_listener(commands.Cog):
         
         embed = await self.create_embed(content=content, title=title)
         
-        if author is None and not message is None:
-            author = message.author
-        if not author is None:
-            embed.set_author(name=author.name, icon_url=author.display_avatar.url)
+        if author_icon_url != None:
+            embed.set_author(name=author_name, icon_url=author_icon_url)
         
         try:
             if not context is None:
