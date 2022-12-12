@@ -337,7 +337,7 @@ class dm_listener(commands.Cog):
                 raise RuntimeError(str(e))
             
         try:
-            self.update_status.start()
+            self._update_status_loop.start()
         except RuntimeError as e:
             if not str(e) == "Task is already launched and is not completed.":
                 raise RuntimeError(str(e))
@@ -345,17 +345,13 @@ class dm_listener(commands.Cog):
 
     def cog_unload(self):
         self.timeout_checker.cancel()
-        self.update_status.stop()
+        self._update_status_loop.stop()
         
         
     @tasks.loop(hours = 24) # Check back every 24 hours
-    async def update_status(self):
+    async def _update_status_loop(self):
         """Updates the bot's status every 24 hours"""
-        
-        s = f" {len(await self.bot.file_manager.get_all_guild_ids())} stories unfold"
-        
-        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=s))
-        print("Status updated to `watching" + s + "`")
+        await self.update_status()
         
 
     @commands.guild_only()
@@ -520,6 +516,11 @@ class dm_listener(commands.Cog):
             text = text[:-1]
             
         await self.reply_to_message(context=ctx, content=text, title=f"{ctx.author.name}'s current turns", ephemeral=True)
+        
+    async def update_status(self):
+        s=f" {len(await self.file_manager.get_all_guild_ids())} stories unfold"
+        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=s))
+        print("Status updated to `watching" + s + "`")
             
 
         
