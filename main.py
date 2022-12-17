@@ -42,7 +42,6 @@ bot.user_manager = umgr
 @bot.event
 async def on_ready():
     print("Bot started!")
-    await dml.update_status()
     
 @bot.event
 async def on_guild_join(guild_joined: discord.Guild):
