@@ -6,6 +6,7 @@ from file_manager import file_manager
 from config_manager import ConfigManager
 from discord.ext import commands
 import logging
+import time
 
 intents = discord.Intents.default()
 intents.guilds = True
@@ -68,6 +69,6 @@ async def load_cogs(bot: commands.Bot, cog_list: list):
         except commands.errors.NoEntryPointError:
             print("Put the setup() function back in " + cog_name + " fool.")
 
-handler = logging.FileHandler(filename='logs/discord.log', encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename=f'logs/{int(time.time())} discord.log', encoding='utf-8', mode='w')
 bot.run(cmgr.get_token(), log_handler=handler)
 
