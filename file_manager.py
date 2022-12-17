@@ -35,7 +35,7 @@ class file_manager():
         port=await self.config_manager.get_database_port()
         
         
-        for i in range(1, await self.config_manager._get_db_connection_count()):
+        for i in range(1, await self.config_manager.get_db_connection_count()):
             self.connections.append(
                 await asyncpg.connect(
                     user=user,
@@ -45,7 +45,7 @@ class file_manager():
                     port=port
                 )
             )
-            OPEN_DB_CONNECTIONS += 1
+            self.OPEN_DB_CONNECTIONS += 1
         
     def _get_db_connection(self) -> asyncpg.Connection:
         """Returns an active connection to a database"""
