@@ -8,6 +8,7 @@ import discord.file
 import json
 import asyncio
 import asyncpg
+from asyncpg import exceptions as db_exceptions
 from datetime import datetime
 import uuid
 
@@ -161,9 +162,15 @@ class file_manager():
         return result
     
     async def add_user(self, user_id: int, guild_id: int):
-        if not user_id in await self.get_active_users(guild_id):
-            await self.db_connection.execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()}, False)")
-        await self.log_action(user_id=user_id, guild_id=guild_id, action="join")
+        try:
+            if not user_id in await self.get_active_users(guild_id):
+                await self.db_connection.execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()}, False)")
+                await self.log_action(user_id=user_id, guild_id=guild_id, action="join")
+        except db_exceptions.DataError:
+            print(f"Unknown guild found: {guild_id}; user_id: {user_id}")
+            await self.add_guild(guild_id=guild_id)
+            await self.add_user(user_id=user_id, guild_id=guild_id)
+        
     
     async def remove_user(self, user_id: int, guild_id: int):
         """Removes a user from a given server"""
