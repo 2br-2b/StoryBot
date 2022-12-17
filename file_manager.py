@@ -17,16 +17,42 @@ class file_manager():
     def __init__(self, config_manager: ConfigManager) -> None:
         self.config_manager = config_manager
         config_manager.set_file_manager(self)
+        self.OPEN_DB_CONNECTIONS = 0
+        self.next_connection_to_use = 0
     
     async def initialize_connection(self):
         """Initializes the database connection"""
-        self.db_connection = await asyncpg.connect(
-            user=await self.config_manager.get_database_user(),
-            password=await self.config_manager.get_database_password(),
-            database=await self.config_manager.get_database_name(),
-            host=await self.config_manager.get_database_host(),
-            port=await self.config_manager.get_database_port(),
-        )
+        
+        # As a temporary fix, the bot opens a few connections to the database at once to prevent `asyncpg.exceptions._base.InterfaceError: cannot perform operation: another operation is in progress`.
+        # My temporary solution is to have multiple connections open at once and to have the bot cycle thru them. That way, the same connection won't be used for multiple commands at once.
+         
+        self.connections = []
+        
+        user=await self.config_manager.get_database_user()
+        password=await self.config_manager.get_database_password()
+        database=await self.config_manager.get_database_name()
+        host=await self.config_manager.get_database_host()
+        port=await self.config_manager.get_database_port()
+        
+        
+        for i in range(1, await self.config_manager._get_db_connection_count()):
+            self.connections.append(
+                await asyncpg.connect(
+                    user=user,
+                    password=password,
+                    database=database,
+                    host=host,
+                    port=port
+                )
+            )
+            OPEN_DB_CONNECTIONS += 1
+        
+    def _get_db_connection(self) -> asyncpg.Connection:
+        """Returns an active connection to a database"""
+        connection_to_return = self.next_connection_to_use
+        self.next_connection_to_use = (self.next_connection_to_use + 1) % self.OPEN_DB_CONNECTIONS
+        
+        return self.connections[connection_to_return]
 
 
     async def is_active_server(self, guild_id: int) -> bool:
@@ -35,12 +61,12 @@ class file_manager():
     
     async def add_guild(self, guild_id: int) -> None:
         if not guild_id in await self.get_all_guild_ids():
-            await self.db_connection.execute(f"INSERT INTO \"Guilds\" (guild_id, timeout_days) VALUES ('{guild_id}', {await self.config_manager.get_default_timeout_days()})")
+            await self._get_db_connection().execute(f"INSERT INTO \"Guilds\" (guild_id, timeout_days) VALUES ('{guild_id}', {await self.config_manager.get_default_timeout_days()})")
             
     async def remove_guild(self, guild_id: int) -> None:
-        await self.db_connection.execute(f"delete from \"Users\" where guild_id = '{guild_id}'")
-        await self.db_connection.execute(f"delete from \"Logs\" where guild_id = '{guild_id}'")
-        await self.db_connection.execute(f"delete from \"Guilds\" where guild_id = '{guild_id}'")
+        await self._get_db_connection().execute(f"delete from \"Users\" where guild_id = '{guild_id}'")
+        await self._get_db_connection().execute(f"delete from \"Logs\" where guild_id = '{guild_id}'")
+        await self._get_db_connection().execute(f"delete from \"Guilds\" where guild_id = '{guild_id}'")
         try:
             for i in range(0, await self.config_manager.get_max_archived_stories()):
                 os.remove(_get_story_file_name(guild_id, i))
@@ -95,7 +121,7 @@ class file_manager():
 
     async def get_all_guild_ids(self) -> list[int]:
         """Returns a list of all the guild ids"""
-        result = await self.db_connection.fetch(f"select guild_id from \"Guilds\"")
+        result = await self._get_db_connection().fetch(f"select guild_id from \"Guilds\"")
         result = [ int(r.get("guild_id")) for r in result ]
         return result
         
@@ -103,7 +129,7 @@ class file_manager():
     
     async def get_current_user_id(self,  guild_id: int) -> str:
         """Gets the ID of the current user of a server"""
-        result = (await self.db_connection.fetchrow(f"select current_user_id from \"Guilds\" where guild_id = '{guild_id}'"))
+        result = (await self._get_db_connection().fetchrow(f"select current_user_id from \"Guilds\" where guild_id = '{guild_id}'"))
         if result == None or result == "0":
             return None
         return result.get("current_user_id")
@@ -113,14 +139,14 @@ class file_manager():
         """Sets the current user for a given guild"""
         if user_id == None:
             user_id = 0
-        await self.db_connection.execute(f"UPDATE \"Guilds\" SET current_user_id='{user_id}' WHERE guild_id='{guild_id}'")
+        await self._get_db_connection().execute(f"UPDATE \"Guilds\" SET current_user_id='{user_id}' WHERE guild_id='{guild_id}'")
         return str(user_id)
         
         
     async def load_timestamp(self,  guild_id: int) -> float:
         """Returns the timestamp if it exists. If it doesn't, it'll reset the timestamp and return the new one."""
 
-        result = (await self.db_connection.fetchrow(f"select timestamp from \"Guilds\" where guild_id = '{guild_id}'")).get("timestamp")
+        result = (await self._get_db_connection().fetchrow(f"select timestamp from \"Guilds\" where guild_id = '{guild_id}'")).get("timestamp")
         
         if result == None:
             await self.reset_timestamp(guild_id)
@@ -133,7 +159,7 @@ class file_manager():
         """Resets the timestamp to the current time"""
         q=datetime.now().isoformat(sep=" ", timespec="seconds")
         
-        await self.db_connection.execute(f"UPDATE \"Guilds\" SET timestamp='{q}' WHERE guild_id='{guild_id}'")
+        await self._get_db_connection().execute(f"UPDATE \"Guilds\" SET timestamp='{q}' WHERE guild_id='{guild_id}'")
         
     async def get_current_turns_of_user(self, user_id: int) -> list[int]:
         """Returns all servers where it is a user's turn
@@ -144,7 +170,7 @@ class file_manager():
         Returns:
             list[int]: a list with all of the user's current turns
         """
-        result = (await self.db_connection.fetch(f"select guild_id from \"Guilds\" where current_user_id = '{user_id}'"))
+        result = (await self._get_db_connection().fetch(f"select guild_id from \"Guilds\" where current_user_id = '{user_id}'"))
         result = [int(i.get("guild_id")) for i in result]
         return result
     
@@ -157,14 +183,14 @@ class file_manager():
         Returns:
             list[int]: a list with all of the user's servers
         """
-        result = (await self.db_connection.fetch(f"select guild_id from \"Users\" where user_id = '{user_id}'"))
+        result = (await self._get_db_connection().fetch(f"select guild_id from \"Users\" where user_id = '{user_id}'"))
         result = [int(i.get("guild_id")) for i in result]
         return result
     
     async def add_user(self, user_id: int, guild_id: int):
         try:
             if not user_id in await self.get_active_users(guild_id):
-                await self.db_connection.execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()}, False)")
+                await self._get_db_connection().execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()}, False)")
                 await self.log_action(user_id=user_id, guild_id=guild_id, action="join")
         except db_exceptions.DataError:
             print(f"Unknown guild found: {guild_id}; user_id: {user_id}")
@@ -174,12 +200,12 @@ class file_manager():
     
     async def remove_user(self, user_id: int, guild_id: int):
         """Removes a user from a given server"""
-        await self.db_connection.execute(f"delete from \"Users\" where user_id='{user_id}' and guild_id='{guild_id}'")
+        await self._get_db_connection().execute(f"delete from \"Users\" where user_id='{user_id}' and guild_id='{guild_id}'")
         await self.log_action(user_id=user_id, guild_id=guild_id, action="leave")
     
     async def get_reputation(self, user_id: int, guild_id: int) -> int:
         """Returns the reputation of a given user in a given server"""
-        return (await self.db_connection.fetchrow(f"select reputation from \"Users\" where user_id='{user_id}' and guild_id='{guild_id}'")).get("reputation")
+        return (await self._get_db_connection().fetchrow(f"select reputation from \"Users\" where user_id='{user_id}' and guild_id='{guild_id}'")).get("reputation")
     
     async def alter_reputation(self, user_id: int, guild_id: int, amount: int):
         """Changes a user's reputation by a given amount"""
@@ -191,22 +217,22 @@ class file_manager():
         elif(new_reputation < 0):
             new_reputation = 0
         
-        await self.db_connection.execute(f"UPDATE \"Users\" SET reputation = {new_reputation} WHERE user_id='{user_id}' AND guild_id='{guild_id}'")
+        await self._get_db_connection().execute(f"UPDATE \"Users\" SET reputation = {new_reputation} WHERE user_id='{user_id}' AND guild_id='{guild_id}'")
         
     
     async def get_admins(self, guild_id: int) -> list[int]:
         """Returns all the admins of a given guild"""
-        responses = await self.db_connection.fetch(f"select user_id from \"Users\" where guild_id='{guild_id}' and is_admin=True")
+        responses = await self._get_db_connection().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}' and is_admin=True")
         return [int(i.get("user_id")) for i in responses]
     
     async def get_config_value(self, guild_id: int, config_value: str):
         """Returns a given config value for a server"""
-        response = await self.db_connection.fetchrow(f"select {config_value} from \"Guilds\" where guild_id='{guild_id}'")
+        response = await self._get_db_connection().fetchrow(f"select {config_value} from \"Guilds\" where guild_id='{guild_id}'")
         return response.get(f"{config_value}")
     
     async def get_active_users(self, guild_id: int) -> list[int]:
         """Returns the user ids of all users in a guild"""
-        responses = await self.db_connection.fetch(f"select user_id from \"Users\" where guild_id='{guild_id}'")
+        responses = await self._get_db_connection().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}'")
         return [int(i.get("user_id")) for i in responses]
     
     async def get_users_and_reputations(self, guild_id: int) -> json:
@@ -218,7 +244,7 @@ class file_manager():
         Returns:
             json: the users in a server in a {userid (str): reputation (int)} format
         """
-        responses = await self.db_connection.fetch(f"select user_id, reputation from \"Users\" where guild_id='{guild_id}'")
+        responses = await self._get_db_connection().fetch(f"select user_id, reputation from \"Users\" where guild_id='{guild_id}'")
         
         ret = {}
         for user in responses:
@@ -232,17 +258,16 @@ class file_manager():
         # - Adding to the story (`add`)
         # - Manually skipping (`skip`)
         # - Timing out (`timeout`)
-        await self.db_connection.execute(f"INSERT INTO \"Logs\" (user_id, guild_id, action) VALUES ('{user_id}', '{guild_id}', '{action}')")
+        await self._get_db_connection().execute(f"INSERT INTO \"Logs\" (user_id, guild_id, action) VALUES ('{user_id}', '{guild_id}', '{action}')")
         
         
     async def get_recent_users_queue(self, guild_id: int) -> list[int]:
         user_count = len(await self.get_active_users(guild_id))
         recent_users_to_skip = user_count // 2
-        results = await self.db_connection.fetch(f"select user_id from \"Logs\" where guild_id = '{guild_id}' order by timestamp DESC limit {recent_users_to_skip}")
+        results = await self._get_db_connection().fetch(f"select user_id from \"Logs\" where guild_id = '{guild_id}' order by timestamp DESC limit {recent_users_to_skip}")
         
         return [int(i.get("user_id")) for i in results]
-        
-        
+
         
 
 @staticmethod

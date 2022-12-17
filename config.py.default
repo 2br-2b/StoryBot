@@ -11,6 +11,9 @@ DATABASE_DB_NAME="storybot"
 DATABASE_HOST="0.0.0.0"
 DATABASE_PORT="0000"
 
+# As a temporary fix, the bot opens a few connections to the database at once to prevent `asyncpg.exceptions._base.InterfaceError: cannot perform operation: another operation is in progress`. This gives the number of connections to open
+COUNT_OF_DATABASE_CONNECTIONS_TO_OPEN = 10
+
 # The bot's command prefix
 # Will be phased out eventually in favor of slash commands
 PREFIX = "s."

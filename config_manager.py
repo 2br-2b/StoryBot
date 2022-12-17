@@ -92,3 +92,9 @@ class ConfigManager():
             return config.MAX_ARCHIVED_STORIES
         except AttributeError:
             return 10
+        
+    async def get_db_connection_count(self) -> int:
+        try:
+            return config.COUNT_OF_DATABASE_CONNECTIONS_TO_OPEN
+        except AttributeError:
+            return 10
