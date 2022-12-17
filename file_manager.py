@@ -192,7 +192,7 @@ class file_manager():
             if not user_id in await self.get_active_users(guild_id):
                 await self._get_db_connection().execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()}, False)")
                 await self.log_action(user_id=user_id, guild_id=guild_id, action="join")
-        except db_exceptions.DataError:
+        except asyncpg.exceptions.ForeignKeyViolationError:
             print(f"Unknown guild found: {guild_id}; user_id: {user_id}")
             await self.add_guild(guild_id=guild_id)
             await self.add_user(user_id=user_id, guild_id=guild_id)

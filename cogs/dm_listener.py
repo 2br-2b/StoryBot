@@ -363,13 +363,13 @@ class dm_listener(commands.Cog):
         await self.check_for_prefix_command(ctx)
         guild_id = ctx.guild.id
         
+        await self.user_manager.add_user(guild_id, ctx.author.id)
+        await self.reply_to_message(context=ctx, content="Done!")
+        
         if(await self.user_manager.get_current_user(guild_id) == None):
             await self.file_manager.set_current_user_id(guild_id, ctx.author.id)
             await self.notify_people(guild_id)
             await self.file_manager.reset_timestamp(guild_id)
-        
-        await self.user_manager.add_user(guild_id, ctx.author.id)
-        await self.reply_to_message(context=ctx, content="Done!")
 
     @commands.guild_only()
     @commands.before_invoke(check_for_prefix_command)
