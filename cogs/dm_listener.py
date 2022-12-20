@@ -61,9 +61,16 @@ class dm_listener(commands.Cog):
         """Notifies the current user that it's their turn to add to the story"""
         
         file = await self.file_manager.get_story_file(guild_id)
-        await self.dm_current_user(guild_id,
+        try:
+            await self.dm_current_user(guild_id,
                                    "Your turn.  Respond with a DM to continue the story!  Use a \\ to create a line break.\n\nIf you want the next user to continue your sentence, end your story segment with `...`.\n\n**MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.\n\nHere is the story so far:",
                                    file = file, embed = await self.create_embed(content=self.lastChars(await self.file_manager.getStory(guild_id)), author_name=None, author_icon_url=None))
+        except discord.errors.Forbidden:
+            # Can't DM the user
+            user_id = await self.user_manager.get_current_user(guild_id=guild_id)
+            print(f"Kicking {user_id} from {guild_id} because I can't DM them")
+            await self.user_manager.remove_user(guild_id, user_id=user_id)
+            await self.new_user(guild_id=guild_id)
         
         current_user = await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))
         
