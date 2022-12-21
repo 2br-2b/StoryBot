@@ -261,7 +261,10 @@ class dm_listener(commands.Cog):
                 channel = self.bot.get_channel(channel_int)
                 if channel != None:
                     try:
-                        await channel.send(content_to_send)
+                        # Makes sure that if someone sends a longer message because they have Discord Nitro, the bot will still send the entire story
+                        for story_chunk in pieMethod(content_to_send):
+                            await channel.send(story_chunk)
+                    
                     except discord.errors.Forbidden:
                         # TODO: Check for this perm properly
                         pass
@@ -272,20 +275,22 @@ class dm_listener(commands.Cog):
             
             await self.new_user(proper_guild_id)
 
-    def pieMethod(self, story):
-        """The all-powerful pieMethod
-        Splits the story into a list of strings if it is too long"""
-        MAX_MESSAGE_LENGTH = 1950
-        if len(story) >= MAX_MESSAGE_LENGTH:
-            split = list()
-            for i in range(math.ceil(len(story) / MAX_MESSAGE_LENGTH)):
-                if i == math.ceil(len(story) / MAX_MESSAGE_LENGTH):
-                    split.append(story[i:len(story) -1])
+        @staticmethod
+        def pieMethod(story):
+            """The all-powerful pieMethod
+            Splits the story into a list of strings if it is too long"""
+            MAX_MESSAGE_LENGTH = 1950
+            if len(story) <= MAX_MESSAGE_LENGTH:
+                return [story]
+            list = []
+            count = math.ceil(len(story) / MAX_MESSAGE_LENGTH)
+            for i in range(0, count):
+                if i == count:
+                    list.append(story[i*MAX_MESSAGE_LENGTH:])
                 else:
-                    split.append(story[i:i+MAX_MESSAGE_LENGTH])
-            return split
-        else:
-            return [story]
+                    list.append(story[i*MAX_MESSAGE_LENGTH:(i+1)*MAX_MESSAGE_LENGTH])
+            return list
+        
 
     def lastChars(self, story):
         """Returns the last self.CHARACTERS_TO_SHOW characters of the story"""
