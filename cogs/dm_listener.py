@@ -168,7 +168,7 @@ class dm_listener(commands.Cog):
         proper_guild_id = self.get_proper_guild_id(ctx)
         current_user_id = await self.user_manager.get_current_user(proper_guild_id)
         
-        if str(ctx.author.id) != current_user_id:
+        if str(ctx.author.id) != current_user_id and not await self.is_moderator(ctx.author.id, ctx.channel):
             await self.reply_to_message(context=ctx, content="It's not your turn here!", error=True)
             return
         
@@ -183,35 +183,6 @@ class dm_listener(commands.Cog):
         except ValueError:
             await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!", error=True)
         
-        
-    @commands.guild_only()
-    @commands.before_invoke(check_for_prefix_command)
-    @commands.hybrid_command(name="force_skip")
-    #@commands.has_permissions(moderate_members=True)
-    async def force_skip(self, ctx: commands.Context):
-        """Skips the current player's turn. Can only be run by an admin"""
-        
-        if not await self.is_moderator(ctx.author.id, ctx.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", context=ctx, error=True, ephemeral=True)
-            return
-        
-        await self.check_for_prefix_command(ctx)
-        
-        proper_guild_id = self.get_proper_guild_id(ctx)
-        current_user_id = await self.user_manager.get_current_user(proper_guild_id)
-        
-        try:
-            if(current_user_id != None):
-                await self.file_manager.log_action(user_id=int(current_user_id), guild_id=proper_guild_id, action="skip")
-            else:
-                await self.file_manager.log_action(user_id=0, guild_id=proper_guild_id, action="skip")
-            
-            await self.new_user(proper_guild_id)
-            await self.reply_to_message(context=ctx, content="Skipping", ephemeral=True)
-        except ValueError:
-            await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!", error=True, ephemeral=True)    
-        
-
     @commands.guild_only()
     @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="notify")
