@@ -4,12 +4,22 @@ import discord
 import math
 import time
 from discord.ext import tasks, commands
+from discord import app_commands
 import re
 import json
+from enum import Enum
 
 from config_manager import ConfigManager
 import file_manager
 import user_manager
+from discord.ext.commands import MissingPermissions
+
+
+class AvailableSettingsToModify(Enum):
+    AnnouncementChannel=1
+    StoryOutputChannel=2
+    TimeoutDays=3
+    ResetCurrentPlayerTimeRemaining=4
 
 # Listens for DMs to add to the story
 class dm_listener(commands.Cog):
@@ -61,6 +71,7 @@ class dm_listener(commands.Cog):
         """Notifies the current user that it's their turn to add to the story"""
         
         file = await self.file_manager.get_story_file(guild_id)
+
         try:
             await self.dm_current_user(guild_id,
                                    "Your turn.  Respond with a DM to continue the story!  Use a \\ to create a line break.\n\nIf you want the next user to continue your sentence, end your story segment with `...`.\n\n**MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.\n\nHere is the story so far:",
@@ -157,8 +168,8 @@ class dm_listener(commands.Cog):
         proper_guild_id = self.get_proper_guild_id(ctx)
         current_user_id = await self.user_manager.get_current_user(proper_guild_id)
         
-        if str(ctx.author.id) != current_user_id and not await self.config_manager.is_admin(ctx.author.id, proper_guild_id):
-            await self.reply_to_message(context=ctx, content="It's not your turn here!")
+        if str(ctx.author.id) != current_user_id:
+            await self.reply_to_message(context=ctx, content="It's not your turn here!", error=True)
             return
         
         try:
@@ -170,21 +181,47 @@ class dm_listener(commands.Cog):
             await self.new_user(proper_guild_id)
             await self.reply_to_message(context=ctx, content="Skipping :(")
         except ValueError:
-            await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!")
+            await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!", error=True)
         
+        
+    @commands.guild_only()
+    @commands.before_invoke(check_for_prefix_command)
+    @commands.hybrid_command(name="force_skip")
+    #@commands.has_permissions(moderate_members=True)
+    async def force_skip(self, ctx: commands.Context):
+        """Skips the current player's turn. Can only be run by an admin"""
+        
+        if not await self.is_moderator(ctx.author.id, ctx.channel):
+            await self.reply_to_message(content=f"Only an admin can run this command!", context=ctx, error=True, ephemeral=True)
+            return
+        
+        await self.check_for_prefix_command(ctx)
+        
+        proper_guild_id = self.get_proper_guild_id(ctx)
+        current_user_id = await self.user_manager.get_current_user(proper_guild_id)
+        
+        try:
+            if(current_user_id != None):
+                await self.file_manager.log_action(user_id=int(current_user_id), guild_id=proper_guild_id, action="skip")
+            else:
+                await self.file_manager.log_action(user_id=0, guild_id=proper_guild_id, action="skip")
+            
+            await self.new_user(proper_guild_id)
+            await self.reply_to_message(context=ctx, content="Skipping", ephemeral=True)
+        except ValueError:
+            await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!", error=True, ephemeral=True)    
         
 
     @commands.guild_only()
     @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="notify")
+    #@commands.has_permissions(moderate_members=True)
     async def notify(self, ctx):
         """The command to notify users that it's their turn"""
-        
-        await self.check_for_prefix_command(ctx)
-        
-        if not await self.config_manager.is_admin(ctx.author.id, ctx.guild.id):
-            await self.reply_to_message(context=ctx, content="Only admins can use this command.", ephemeral=True)
+        if not await self.is_moderator(ctx.author.id, ctx.channel):
+            await self.reply_to_message(content=f"Only an admin can run this command!", context=ctx, error=True, ephemeral=True)
             return
+        await self.check_for_prefix_command(ctx)
         
         await self.notify_people(self.get_proper_guild_id(ctx))
         
@@ -430,7 +467,7 @@ class dm_listener(commands.Cog):
             return add_period_if_missing(line)
         
         
-    async def reply_to_message(self, message: discord.Message = None, content: str = "", context: commands.Context = None, file: discord.File = None, author_name: str = None, author_icon_url: str = None, title: str = None, ephemeral = False, view=None) -> discord.Message:
+    async def reply_to_message(self, message: discord.Message = None, content: str = "", context: commands.Context = None, file: discord.File = None, author_name: str = None, author_icon_url: str = None, title: str = None, ephemeral = False, view=None, interaction: discord.Interaction=None, error=False, followup=False) -> discord.Message:
         """Replies the given message
 
         Args:
@@ -453,6 +490,19 @@ class dm_listener(commands.Cog):
                 return await context.send(embed = embed, file = file, mention_author = False, ephemeral=ephemeral, view=view)
             elif not message is None:
                 return await message.reply(embed = embed, file = file, mention_author = False, view=view)
+            elif not interaction is None:
+                if followup == True:
+                    eee = await interaction.followup.send(embed=embed) #, ephemeral=ephemeral)
+                else:
+                    if view == None:
+                        eee = await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+                    else:
+                        eee = await interaction.response.send_message(embed=embed, view=view, ephemeral=ephemeral)
+                
+                # if file == None:
+                #     return await eee.send_message(embed=embed, view=view, ephemeral=True)
+                # else:
+                #     return await eee.send_message(embed=embed, view=view, ephemeral=True, file=file)
             else:
                 raise ValueError("Both ctx and message passed to reply_to_message are None")
         except discord.errors.Forbidden:
@@ -526,20 +576,151 @@ class dm_listener(commands.Cog):
         s=f" {len(await self.file_manager.get_all_guild_ids())} stories unfold"
         await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=s))
         print("Status updated to `watching" + s + "`")
+        
+        
+        
+    @app_commands.guild_only()
+    @app_commands.command(name="configure")
+    #@app_commands.checks.has_permissions(moderate_members=True)
+    async def configure(self, interaction: discord.Interaction, setting: AvailableSettingsToModify, value: str = None):
+        """Allows an admin to change some of the bot's configuration"""
+        if not await self.is_moderator(interaction.user.id, interaction.channel):
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            return
+        
+        proper_guild_id = self.get_proper_guild_id(interaction.channel)
+        
+        match setting:
+            case AvailableSettingsToModify.StoryOutputChannel:
+                if value == None:
+                    new_story_output_channel = await self.choose_a_channel_in_a_server(guild_id=proper_guild_id, interaction=interaction, message="Choose a channel to output the story in!")
+                    if new_story_output_channel == None: return
+                    followup = True
+                else:
+                    new_story_output_channel = re.sub(r'[^0-9]', '', value)
+                    if new_story_output_channel == '':
+                        return
+                    
+                    new_story_output_channel = int(new_story_output_channel)
+                    followup = False
+                    
+                    try:
+                        channel = await interaction.guild.fetch_channel(new_story_output_channel)
+                    except (discord.errors.Forbidden, discord.errors.NotFound):
+                        await self.reply_to_message(content=f"Hmm... I can't see that channel for some reason. Check my permissions, then try again.", interaction=interaction, error=True)
+                        return
+                    if not channel.permissions_for(await channel.guild.fetch_member(self.bot.user.id)).send_messages:
+                        await self.reply_to_message(content=f"I can see that channel, but I can't send messages in it. Check my permissions, then try again.", interaction=interaction, error=True)
+                        return
+                
+                await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='story_output_channel', new_value=new_story_output_channel)
+                await self.reply_to_message(content=f"Finished changing the story output channel!", interaction=interaction, followup=followup)
             
+            case AvailableSettingsToModify.AnnouncementChannel:
+                if value == None:
+                    new_story_announcement_channel = await self.choose_a_channel_in_a_server(guild_id=proper_guild_id, interaction=interaction, message="Choose a channel to announce the current user in!")
+                    if new_story_announcement_channel == None: return
+                    followup = True
+                else:
+                    new_story_announcement_channel = re.sub(r'[^0-9]', '', value)
+                    if new_story_announcement_channel == '':
+                        return
+                    
+                    new_story_announcement_channel = int(new_story_announcement_channel)
+                    followup = False
+                    
+                    try:
+                        channel = await interaction.guild.fetch_channel(new_story_announcement_channel)
+                    except (discord.errors.Forbidden, discord.errors.NotFound):
+                        await self.reply_to_message(content=f"Hmm... I can't see that channel for some reason. Check my permissions, then try again.", interaction=interaction, error=True)
+                        return
+                    if not channel.permissions_for(await channel.guild.fetch_member(self.bot.user.id)).send_messages:
+                        await self.reply_to_message(content=f"I can see that channel, but I can't send messages in it. Check my permissions, then try again.", interaction=interaction, error=True)
+                        return
+                
+                await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='story_announcement_channel', new_value=new_story_announcement_channel)
+                await self.reply_to_message(content=f"Finished changing the story announcement channel!", interaction=interaction, followup=followup)
+            
+            case AvailableSettingsToModify.TimeoutDays:
+                try:
+                    new_timeout_days=int(value)
+                except ValueError:
+                    # They didn't enter a number
+                    await self.reply_to_message(content=f"Please enter a valid integer (whole number) for the `value`!", interaction=interaction, error=True)
+                    return
+                except TypeError:
+                    # They didn't enter anything
+                    await self.reply_to_message(content=f"Please enter a number into the `value` field!", interaction=interaction, error=True)
+                    return
+                
+                max_timeout_days = await self.config_manager.get_max_timeout_days_configurable()
+                
+                if new_timeout_days <= 0:
+                    await self.reply_to_message(content=f"Please choose a number of days greater than 0!", interaction=interaction, error=True)
+                    return
+                elif max_timeout_days > 0 and new_timeout_days > max_timeout_days:
+                    await self.reply_to_message(content=f"Timeout lengths greater than {max_timeout_days} are not supported by the bot right now. If you would like a longer timeout length, join my support server and let me know!", interaction=interaction, error=True)
+                    return
+                
+                await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='timeout_days', new_value=new_timeout_days)
+                await self.reply_to_message(content=f"Finished setting the timeout days to **{new_timeout_days}**!", interaction=interaction)
+            
+            case AvailableSettingsToModify.ResetCurrentPlayerTimeRemaining:
+                await self.file_manager.reset_timestamp(proper_guild_id)
+                await self.reply_to_message(content=f"Timestamp has been reset!", interaction=interaction, followup=False)
+            
+            
+    async def is_moderator(self, user_id: int, guild_channel: discord.abc.GuildChannel):
+        user = await guild_channel.guild.fetch_member(user_id)
+        if user == None:
+            print(f"No user found: {user_id} {guild_channel}")
+            return False
+        return guild_channel.permissions_for(user).moderate_members
+            
+                
+    async def choose_a_channel_in_a_server(self, guild_id: int, interaction: discord.Interaction, message=None) -> int:
+        server_json = []
+        self_member = self.bot.get_guild(guild_id).get_member(self.bot.user.id)
+        
+        for channel in self.bot.get_guild(guild_id).text_channels:
+            if channel.permissions_for(self_member).send_messages == True:
+                server_json.append({"id": channel.id, "name": channel.name})
+        
+        server_json.append({"id": -1, "name": "<Disabled>"})
+        server_json.append({"id": 0, "name": "<Cancel>"})
+        
+        view = DropdownView(server_json, "Choose a channel")
+        
+        if message == None:
+            message = "Which channel would you like to choose?"
+        
+        my_message = await self.reply_to_message(interaction=interaction, content=message, view=view, ephemeral= True)
+        
+        await view.wait()
+        
+        await interaction.delete_original_response()
+        
+        if view.value == None:
+            return None
+        else:
+            return int(view.value)
+
+
+        
+    
 
         
 class DropdownView(discord.ui.View):
-    def __init__(self, server_json):
+    def __init__(self, server_json, dropdown_placeholder='Which server is this story for?'):
         super().__init__()
 
         # Adds the dropdown to our view object.
-        self.add_item(ServerChooser(server_json, self))
+        self.add_item(ServerChooser(server_json, self, dropdown_placeholder))
         self.guild_id = None
         self.value = None
 
 class ServerChooser(discord.ui.Select):
-    def __init__(self, guild_json, view):
+    def __init__(self, guild_json, view, dropdown_placeholder):
         guilds = []
 
         for item in guild_json:
@@ -549,7 +730,7 @@ class ServerChooser(discord.ui.Select):
             guilds.append(option)
             
         self.vv = view
-        super().__init__(placeholder='Which server is this story for?', min_values=1, max_values=1, options=guilds)
+        super().__init__(placeholder=dropdown_placeholder, min_values=1, max_values=1, options=guilds)
         
     async def callback(self, interaction: discord.Interaction):
         self.vv.value = self.values[0]

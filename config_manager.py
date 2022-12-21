@@ -98,3 +98,9 @@ class ConfigManager():
             return config.COUNT_OF_DATABASE_CONNECTIONS_TO_OPEN
         except AttributeError:
             return 10
+        
+    async def get_max_timeout_days_configurable(self) -> int:
+        try:
+            return config.MAX_TIMEOUT_DAYS_CONFIGURABLE
+        except AttributeError:
+            return 30
