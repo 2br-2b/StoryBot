@@ -64,15 +64,15 @@ class dm_listener(commands.Cog):
         except discord.errors.Forbidden:
             # Can't DM the user
             user_id = await self.user_manager.get_current_user(guild_id=guild_id)
-            print(f"Kicking {user_id} from {guild_id} because I can't DM them")
+            print(f"Kicking {user_id} from {guild_id} because I can't DM them while running notify_people")
             await self.user_manager.remove_user(guild_id, user_id=user_id)
             await self.new_user(guild_id=guild_id)
         
-        current_user = await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))
+        current_user = await (await self.bot.fetch_guild(guild_id)).fetch_member(int(await self.user_manager.get_current_user(guild_id)))
         
         emb = await self.create_embed(
             author_icon_url=current_user.display_avatar.url,
-            author_name=f"It's now {current_user.name}'s turn!"
+            author_name=f"It's now {current_user.display_name}'s turn!"
             )
         
         # Send a message in the story chanel
@@ -116,8 +116,8 @@ class dm_listener(commands.Cog):
         
         current_user_id = await self.user_manager.get_current_user(self.get_proper_guild_id(ctx))
         if current_user_id != None:
-            current_user = await self.bot.fetch_user(int(current_user_id))
-            await self.reply_to_message(author_name=current_user.name, author_icon_url=current_user.display_avatar.url, context=ctx, ephemeral=True)
+            current_user = await ctx.guild.fetch_member(int(current_user_id))
+            await self.reply_to_message(author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url, context=ctx, ephemeral=True)
         else:
             await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=True)
 
@@ -185,9 +185,9 @@ class dm_listener(commands.Cog):
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
         
-        current_user = await self.bot.fetch_user(int(user_id))
+        current_user = await ctx.guild.fetch_member(int(user_id))
         
-        await self.reply_to_message(context=ctx, content=f"Time remaining: {dm_listener.print_time(seconds=seconds_remaining + 60)}\nTime used: {dm_listener.print_time(seconds=seconds_since_timestamp)}", ephemeral=True, author_name=current_user.name, author_icon_url=current_user.display_avatar.url)
+        await self.reply_to_message(context=ctx, content=f"Time remaining: {dm_listener.print_time(seconds=seconds_remaining + 60)}\nTime used: {dm_listener.print_time(seconds=seconds_since_timestamp)}", ephemeral=True, author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url)
         
     @staticmethod
     def print_time(seconds:int, include_seconds: bool = False) -> str:
