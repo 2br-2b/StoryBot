@@ -286,6 +286,7 @@ class file_manager():
         while i <= await self.config_manager.get_max_archived_stories(guild_id=guild_id):
             if not os.path.isfile(_get_story_file_name(guild_id, i)):
                 break
+            i += 1
             
         return i - 1
     
@@ -302,6 +303,7 @@ class file_manager():
             
         # Add the current story as the last story
         os.replace(_get_story_file_name(guild_id), _get_story_file_name(guild_id, existing_count + 1))
+        Path(_get_story_file_name(guild_id)).touch()
         
         
 
