@@ -334,9 +334,10 @@ class dm_listener(commands.Cog):
                 elif timeout_days >= 3 and now - current_timestamp >= 60 * 60 * 24 * (timeout_days - 1) and not await self.file_manager.get_notified(guild_id):
                     print("oy!")
                     guild_name = self.bot.get_guild(guild_id).name
-                    
-                    await self.dm_current_user(guild_id=guild_id, message=f"Heads up - you're about to time out in **{guild_name}**! You have around a day left before your turn is automatically skipped.\n\nIf you want to pass on this turn, go to {guild_name} and run `/skip`.")
-                    
+                    try:
+                        await self.dm_current_user(guild_id=guild_id, message=f"Heads up - you're about to time out in **{guild_name}**! You have around a day left before your turn is automatically skipped.\n\nIf you want to pass on this turn, go to {guild_name} and run `/skip`.")
+                    except discord.errors.Forbidden:
+                        pass
                     await self.file_manager.set_notified(guild_id, True)
                     
 
@@ -719,7 +720,7 @@ class dm_listener(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.command(name="archive_story", description="Archives your current story and starts a new story.")
-    #@app_commands.checks.cooldown(1, 24 * 60 * 60) # Makes sure this can only be run once a day
+    @app_commands.checks.cooldown(1, 24 * 60 * 60) # Makes sure this can only be run once a day
     #@app_commands.checks.has_permissions(moderate_members=True)
     async def new_story(self, interaction: discord.Interaction, confirm: bool, delete_old_story:bool = False):
         
