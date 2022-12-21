@@ -700,7 +700,28 @@ class dm_listener(commands.Cog):
         else:
             return int(view.value)
 
-
+    @app_commands.guild_only()
+    @app_commands.command(name="archive_story", description="Archives your current story and starts a new story. Note - you are limited in the number of archived stories per server, but the bot will warn you if you exceed that limit.")
+    @app_commands.Cooldown(1, 24 * 60 * 60) # Makes sure this can only be run once a day
+    #@app_commands.checks.has_permissions(moderate_members=True)
+    async def new_story(self, interaction: discord.Interaction, confirm: bool, delete_old_story:bool = False):
+        
+        if not confirm:
+            await self.reply_to_message(content=f"Just to be sure no one accidentally types this command, you need to set the `confirm` parameter to True to create a new story. If that was your goal, try running this command again with that parameter changed. If not, feel free to ignore this!", interaction=interaction, ephemeral=True)
+            return
+            
+        if not await self.is_moderator(interaction.user.id, interaction.channel):
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            return
+        
+        try:
+            await self.file_manager.new_story(interaction.guild_id, forced = delete_old_story)
+            await self.reply_to_message(content=f"Your old story has been archived, and a new story has been created! Run `/story {await self.file_manager.get_archived_story_count(interaction.guild_id)}` to see your last story, and feel free to start your storywriting. Have fun!", interaction=interaction)
+            await self.new_user(guild_id=interaction.guild_id)
+            
+        except storybot_exceptions.TooManyArchivedStoriesException:
+            await self.reply_to_message(content=f"Unfortunately, you've reached the limit for stories archived, {await self.file_manager.get_archived_story_count(interaction.guild_id)}. If you'd like to delete your first stored story, you can replace it with this story. Make sure to set the `delete_old_story` tag to true, then run this command again.\n\nYou can run `/story 1` and pin that message before resetting the story to make sure everyone still has access to it; I just need to make sure I have enough space on my hard drive to store everyone's stories. Thanks for understanding!\n\nIf you have any questions or complaints, feel free to bring them up in my Discord server! The link is in my bio.", interaction=interaction)
+            
         
     
 

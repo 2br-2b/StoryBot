@@ -284,6 +284,29 @@ class file_manager():
     async def get_notified(self, guild_id: int) -> bool:
         result = await self._get_db_connection().fetch(f"SELECT notified FROM \"Guilds\" WHERE guild_id='{guild_id}'")
         return result[0].get("notified")
+    
+    
+    async def get_archived_story_count(self, guild_id: int) -> int:
+        i = 1
+        while i <= await self.config_manager.get_max_archived_stories():
+            if not os.path.isfile(_get_story_file_name(guild_id, i)):
+                break
+            
+        return i - 1
+    
+    
+    async def new_story(self, guild_id: int, forced: bool = False) -> None:
+        existing_count = await self.get_archived_story_count(guild_id)
+        if existing_count >= await self.config_manager.get_max_archived_stories():
+            if not forced: raise storybot_exceptions.TooManyArchivedStoriesException(f"Guild id {guild_id} already has the maximum number of stories allotted!")
+            
+            # Reduce all the story counts by 1
+            for i in range(2, existing_count + 1):
+                os.replace(_get_story_file_name(guild_id, i), _get_story_file_name(guild_id, i - 1))
+            existing_count -= 1
+            
+        # Add the current story as the last story
+        os.replace(_get_story_file_name(guild_id), _get_story_file_name(guild_id, existing_count + 1))
         
         
 
