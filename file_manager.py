@@ -160,6 +160,7 @@ class file_manager():
         q=datetime.now().isoformat(sep=" ", timespec="seconds")
         
         await self._get_db_connection().execute(f"UPDATE \"Guilds\" SET timestamp='{q}' WHERE guild_id='{guild_id}'")
+        await self.set_notified(guild_id, False)
         
     async def get_current_turns_of_user(self, user_id: int) -> list[int]:
         """Returns all servers where it is a user's turn
@@ -274,7 +275,15 @@ class file_manager():
         results = await self._get_db_connection().fetch(f"select user_id from \"Logs\" where guild_id = '{guild_id}' order by timestamp DESC limit {recent_users_to_skip}")
         
         return [int(i.get("user_id")) for i in results]
-
+    
+    
+    async def set_notified(self, guild_id: int, notified: bool) -> None:
+        await self._get_db_connection().execute(f"UPDATE \"Guilds\" SET notified={notified} WHERE guild_id='{guild_id}'")
+        
+    async def get_notified(self, guild_id: int) -> bool:
+        result = await self._get_db_connection().fetch(f"SELECT notified FROM \"Guilds\" WHERE guild_id='{guild_id}'")
+        return result[0].get("notified")
+        
         
 
 @staticmethod

@@ -342,10 +342,28 @@ class dm_listener(commands.Cog):
     @tasks.loop(seconds=60 * 60) # Check back every hour
     async def timeout_checker(self):
         """Will skip the current user's turn if they don't respond in the specified amount of time"""
+        now = time.time()
         
         for guild_id in await self.file_manager.get_all_guild_ids():
-            if len(await self.user_manager.get_unweighted_list(guild_id)) >= 2 and time.time() - await self.file_manager.load_timestamp(guild_id) >= 60 * 60 * 24 * await self.config_manager.get_timeout_days(guild_id): # if the time is over the allotted time
-                await self.timeout_happened(guild_id)
+            
+            # Make sure there's more than one user in the server before timing anyone out
+            if len(await self.user_manager.get_unweighted_list(guild_id)) >= 2:
+                timeout_days = await self.config_manager.get_timeout_days(guild_id)
+                current_timestamp = await self.file_manager.load_timestamp(guild_id)
+                
+                # Check if their time is over the allotted time
+                if now - current_timestamp >= 60 * 60 * 24 * timeout_days:
+                    await self.timeout_happened(guild_id)
+                    
+                # Give people a warning that they're about to time out
+                elif timeout_days >= 3 and now - current_timestamp >= 60 * 60 * 24 * (timeout_days - 1) and not self.file_manager.get_notified(guild_id):
+                    
+                    guild_name = self.bot.get_guild(guild_id).name
+                    
+                    await self.dm_current_user(guild_id=guild_id, message=f"Heads up - you're about to time out in **{guild_name}**! You have around a day left before your turn is automatically skipped.\n\nIf you want to pass on this turn, go to {guild_name} and run `/skip`.")
+                    
+                    self.file_manager.set_notified(guild_id, True)
+                    
 
 
     @commands.Cog.listener()
