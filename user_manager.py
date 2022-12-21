@@ -1,12 +1,5 @@
-import inspect
-
-import secrets
 import random
-import os
-import collections
-import json
 from config_manager import ConfigManager
-import asyncio
 
 class user_manager():
     def __init__(self, bot, config_manager: ConfigManager):

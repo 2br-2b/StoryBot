@@ -1,12 +1,9 @@
-import inspect
-
 import discord
 import math
 import time
 from discord.ext import tasks, commands
 from discord import app_commands
 import re
-import json
 from enum import Enum
 
 from config_manager import ConfigManager

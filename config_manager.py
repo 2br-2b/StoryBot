@@ -1,4 +1,3 @@
-import inspect
 import storybot_exceptions
 
 try:
