@@ -1,4 +1,5 @@
 import inspect
+import storybot_exceptions
 
 try:
     import config

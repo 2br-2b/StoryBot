@@ -8,6 +8,7 @@ from discord.ext import commands
 from discord import app_commands
 import logging
 import time
+import storybot_exceptions
 
 intents = discord.Intents.default()
 intents.guilds = True

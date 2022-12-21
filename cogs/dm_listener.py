@@ -13,6 +13,7 @@ from config_manager import ConfigManager
 import file_manager
 import user_manager
 from discord.ext.commands import MissingPermissions
+import storybot_exceptions
 
 
 class AvailableSettingsToModify(Enum):

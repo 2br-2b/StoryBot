@@ -11,6 +11,7 @@ import asyncpg
 from asyncpg import exceptions as db_exceptions
 from datetime import datetime
 import uuid
+import storybot_exceptions
 
 
 class file_manager():
