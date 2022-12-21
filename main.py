@@ -12,7 +12,6 @@ import storybot_exceptions
 
 intents = discord.Intents.default()
 intents.guilds = True
-intents.message_content = True
 
 class StoryBot(commands.Bot):
     async def setup_hook(self):

@@ -31,19 +31,6 @@ class dm_listener(commands.Cog):
         
         self.config_manager = bot.config_manager
 
-
-    async def check_for_prefix_command(self, ctx: commands.Context):
-        if(await self.config_manager.is_debug_mode() or ctx.author == self.bot.user):
-            return
-        if(ctx.prefix != "/"):
-            msg = f"Prefix commands (like what you just ran, `{ctx.message.content}`) no longer work. You'll have to run that as a slash command.\n\nTry running `/{ctx.message.content[len(self.config_manager.get_prefix()):]}`.\n\nSee https://github.com/2br-2b/StoryBot/issues/31 to learn more, and thank you for your patience during this transition!"
-            
-            await (await (await self.bot.fetch_user(ctx.author.id)).create_dm()).send(msg)
-            
-            print("Prefix command sent")
-            raise Exception("Prefixed command")
-
-
     async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
         """Sends the given message to the current user"""
         try:
@@ -100,13 +87,10 @@ class dm_listener(commands.Cog):
                     pass
     
     @commands.guild_only()
-    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="story")
     async def story(self, ctx: commands.Context, archived_story_number:int = 0):
         """Sends a reply with the requested story
         If there is a number, the given story number will be returned"""
-        
-        await self.check_for_prefix_command(ctx)
         
         proper_guild_id = self.get_proper_guild_id(ctx)
         
@@ -126,12 +110,9 @@ class dm_listener(commands.Cog):
             title=title, file = file, context=ctx, ephemeral=True)
 
     @commands.guild_only()
-    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="turn")
     async def turn(self, ctx: commands.Context):
         """Sends a message with the current user's name"""
-        
-        await self.check_for_prefix_command(ctx)
         
         current_user_id = await self.user_manager.get_current_user(self.get_proper_guild_id(ctx))
         if current_user_id != None:
@@ -144,8 +125,6 @@ class dm_listener(commands.Cog):
     async def help(self, ctx):
         """The help command"""
         
-        await self.check_for_prefix_command(ctx)
-        
         await self.reply_to_message(context=ctx, 
             content="""This bot is a story bot.  One user will write a part of the story (anywhere from a sentence or two to a couple of paragraphs - your choice!), then another, and so on until the story is complete!
             
@@ -156,12 +135,9 @@ class dm_listener(commands.Cog):
     Note - these commands only work in servers""", ephemeral=True)
 
     @commands.guild_only()
-    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="skip")
     async def skip(self, ctx: commands.Context):
         """Skip your turn"""
-        
-        await self.check_for_prefix_command(ctx)
         
         proper_guild_id = self.get_proper_guild_id(ctx)
         current_user_id = await self.user_manager.get_current_user(proper_guild_id)
@@ -182,7 +158,6 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!", error=True)
         
     @commands.guild_only()
-    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="notify")
     #@commands.has_permissions(moderate_members=True)
     async def notify(self, ctx):
@@ -190,12 +165,10 @@ class dm_listener(commands.Cog):
         if not await self.is_moderator(ctx.author.id, ctx.channel):
             await self.reply_to_message(content=f"Only an admin can run this command!", context=ctx, error=True, ephemeral=True)
             return
-        await self.check_for_prefix_command(ctx)
         
         await self.notify_people(self.get_proper_guild_id(ctx))
         
     @commands.guild_only()
-    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="time_left")
     async def time_left_command(self, ctx: commands.Context):
         """Says how much time the current user has remaining"""
@@ -391,12 +364,9 @@ class dm_listener(commands.Cog):
         
 
     @commands.guild_only()
-    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="join")
     async def add(self, ctx: commands.Context):
         """Adds you to the list of authors"""
-        
-        await self.check_for_prefix_command(ctx)
         guild_id = ctx.guild.id
         
         await self.user_manager.add_user(guild_id, ctx.author.id)
@@ -408,12 +378,9 @@ class dm_listener(commands.Cog):
             await self.file_manager.reset_timestamp(guild_id)
 
     @commands.guild_only()
-    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="leave")
     async def remove(self, ctx: commands.Context):
         """Removes you from the list of authors"""
-        
-        await self.check_for_prefix_command(ctx)
         
         proper_guild = self.get_proper_guild_id(ctx)
         
@@ -547,7 +514,6 @@ class dm_listener(commands.Cog):
         
         return emb
     
-    @commands.before_invoke(check_for_prefix_command)
     @commands.hybrid_command(name="my_turns")
     async def my_turns(self, ctx: commands.Context):
         """Lists all of the servers where it's currently your turn"""
