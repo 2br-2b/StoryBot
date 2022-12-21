@@ -230,6 +230,13 @@ class file_manager():
         response = await self._get_db_connection().fetchrow(f"select {config_value} from \"Guilds\" where guild_id='{guild_id}'")
         return response.get(f"{config_value}")
     
+    async def set_config_value(self, guild_id: int, XSS_WARNING_config_name: str, new_value: int) -> None:
+        """Changes a given config value for a server. XSS_WARNING is in caps to emphasize that the user **should not** be given control of this, as it could lead to SQL injection attacks"""
+        
+        
+        await self._get_db_connection().execute(f"UPDATE \"Guilds\" SET {XSS_WARNING_config_name}={new_value} WHERE guild_id='{guild_id}'")
+        
+        
     async def get_active_users(self, guild_id: int) -> list[int]:
         """Returns the user ids of all users in a guild"""
         responses = await self._get_db_connection().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}'")

@@ -5,6 +5,7 @@ from user_manager import user_manager
 from file_manager import file_manager
 from config_manager import ConfigManager
 from discord.ext import commands
+from discord import app_commands
 import logging
 import time
 
@@ -55,7 +56,15 @@ async def on_guild_remove(guild_left: discord.Guild):
     print(f"left guild {guild_left.id}")
     await dml.update_status()
     
-    
+async def on_tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.CommandOnCooldown):
+        return await interaction.response.send_message(f"Command is currently on cooldown! Try again in {error.retry_after:.2f} seconds!")
+
+    elif isinstance(error, app_commands.MissingPermissions):
+        return await interaction.response.send_message("Only server moderators can do this! Make sure you have the `moderate_members` permission, then try again.")
+
+    else:
+        raise error
 
 async def load_cogs(bot: commands.Bot, cog_list: list):
     for cog_name in cog_list:
@@ -69,5 +78,7 @@ async def load_cogs(bot: commands.Bot, cog_list: list):
             print("Put the setup() function back in " + cog_name + " fool.")
 
 handler = logging.FileHandler(filename=f'logs/{int(time.time())} discord.log', encoding='utf-8', mode='w')
+
+bot.tree.on_error = on_tree_error
 bot.run(cmgr.get_token(), log_handler=handler)
 

@@ -31,3 +31,8 @@ EMBED_COLOR = Color.from_str("0x00ff00")
 
 # The maximum number of archived stories to let a server have
 MAX_ARCHIVED_STORIES = 10
+
+# The maximum number of days a server can be configured to have per turn.
+# This can be expanded arbitrarily; however, I implemented it to make sure that stories move along eventually.
+# Set it to 0 to disable it
+MAX_TIMEOUT_DAYS_CONFIGURABLE = 14
