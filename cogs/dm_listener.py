@@ -404,6 +404,50 @@ class dm_listener(commands.Cog):
         
         await self.reply_to_message(context=ctx, content="Done!")
 
+
+    @app_commands.guild_only()
+    @app_commands.command(name="configure")
+    #@app_commands.checks.has_permissions(moderate_members=True)
+    async def kick(self, interaction: discord.Interaction, user: str):
+        """Kicks a user from the list of authors. Can only be run by admins"""
+        
+        if not await self.is_moderator(interaction.user.id, interaction.channel):
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            return
+        
+        try:
+            user_object = await interaction.guild.get_member(int(re.sub(r'[^0-9]', '', user)))
+        except ValueError:
+            pass
+        
+        if user_object == None:
+            user_object = await interaction.guild.get_member_named(user)
+        if user_object == None:
+            user_id = int(re.sub(r'[^0-9]', '', user))
+            return
+        else:
+            user_id = user_object.id
+        
+        proper_guild = self.get_proper_guild_id(interaction.guild_id)
+        
+        if await self.user_manager.get_current_user(proper_guild) == str(user_id):
+            skip_after = True
+        else:
+            skip_after = False
+        
+        await self.user_manager.remove_user(proper_guild, user_id)
+        
+        if(skip_after):
+            try:
+                await self.new_user(proper_guild)
+            except ValueError: #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
+                pass
+        
+        await self.reply_to_message(content=f"<@{user_id}> has been kicked from StoryBot on this server.", interaction=interaction, ephemeral=True)
+
+
+
+
     async def format_story_addition(self, line:str) -> str:
         if(line.startswith(self.config_manager.get_prefix())):
             return None
