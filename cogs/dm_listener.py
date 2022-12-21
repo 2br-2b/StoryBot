@@ -357,9 +357,14 @@ class dm_listener(commands.Cog):
         """Skips the current user's turn if they don't respond in the specified amount of time"""
         
         print('Timing out...') 
-        await self.dm_current_user(guild_id, f"You took too long! Your turn was skipped in {self.bot.get_guild(guild_id).name}. You\'ll have a chance to add to the story later - don\'t worry!")
         current_user_id = int(await self.user_manager.get_current_user(guild_id))
-        await self.user_manager.unboost_user(guild_id, current_user_id)
+        try:
+            await self.dm_current_user(guild_id, f"You took too long! Your turn was skipped in {self.bot.get_guild(guild_id).name}. You\'ll have a chance to add to the story later - don\'t worry!")
+            await self.user_manager.unboost_user(guild_id, current_user_id)
+        except discord.errors.Forbidden:
+            print(f"Kicked {current_user_id} from {guild_id} due to a 403 error")
+            await self.user_manager.remove_user(guild_id=guild_id, user_id=current_user_id)
+        
         await self.file_manager.log_action(user_id=current_user_id, guild_id=guild_id, action="timeout")
         await self.new_user(guild_id)
 
