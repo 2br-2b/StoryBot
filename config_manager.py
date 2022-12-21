@@ -31,20 +31,32 @@ class ConfigManager():
         return config.TOKEN
 
     async def get_default_timeout_days(self) -> float:
-        return config.TIMEOUT_DAYS
+        try:
+            return config.TIMEOUT_DAYS
+        except AttributeError:
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.TIMEOUT_DAYS")
 
     async def get_timeout_days(self, guild_id: int) -> float:
         return int(await self.file_manager.get_config_value(guild_id, "timeout_days"))
 
     async def get_default_reputation(self) -> int:
-        return config.DEFAULT_REPUTATION
+        try:
+            return config.DEFAULT_REPUTATION
+        except AttributeError:
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.DEFAULT_REPUTATION")
 
     async def get_max_reputation(self) -> int:
-        return config.MAX_REPUTATION
+        try:
+            return config.MAX_REPUTATION
+        except AttributeError:
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.MAX_REPUTATION")
 
     def get_prefix(self) -> str:
         # TODO: phase out along while adding slash commands
-        return config.PREFIX
+        try:
+            return config.PREFIX
+        except AttributeError:
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.PREFIX")
 
     async def get_story_announcement_channel(self, guild_id: int) -> int:
         channel_id_string = await self.file_manager.get_config_value(guild_id, "story_announcement_channel")
@@ -64,7 +76,10 @@ class ConfigManager():
         return author_id in await self.file_manager.get_admins(guild_id)
 
     async def get_embed_color(self) -> Color:
-        return config.EMBED_COLOR
+        try:
+            return config.EMBED_COLOR
+        except AttributeError:
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.EMBED_COLOR")
 
     async def is_debug_mode(self) -> bool:
         try:
@@ -73,34 +88,49 @@ class ConfigManager():
             return False
         
     async def get_database_user(self) -> str:
-        return config.DATABASE_USER
+        try:
+            return config.DATABASE_USER
+        except AttributeError:
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.DATABASE_USER")
 
     async def get_database_password(self) -> str:
-        return config.DATABASE_PASSWORD
+        try:
+            return config.DATABASE_PASSWORD
+        except AttributeError:
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.DATABASE_PASSWORD")
 
     async def get_database_name(self) -> str:
-        return config.DATABASE_DB_NAME
+        try:
+            return config.DATABASE_DB_NAME
+        except AttributeError:
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.DATABASE_DB_NAME")
 
     async def get_database_host(self) -> str:
-        return config.DATABASE_HOST
+        try:
+            return config.DATABASE_HOST
+        except AttributeError:
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.DATABASE_HOST")
 
     async def get_database_port(self) -> str:
-        return config.DATABASE_PORT
+        try:
+            return config.DATABASE_PORT
+        except AttributeError:
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.DATABASE_PORT")
     
     async def get_max_archived_stories(self, guild_id: int) -> int:
         try:
             return config.MAX_ARCHIVED_STORIES
         except AttributeError:
-            return 10
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.MAX_ARCHIVED_STORIES")
         
     async def get_db_connection_count(self) -> int:
         try:
             return config.COUNT_OF_DATABASE_CONNECTIONS_TO_OPEN
         except AttributeError:
-            return 10
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.COUNT_OF_DATABASE_CONNECTIONS_TO_OPEN")
         
     async def get_max_timeout_days_configurable(self) -> int:
         try:
             return config.MAX_TIMEOUT_DAYS_CONFIGURABLE
         except AttributeError:
-            return 30
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.MAX_TIMEOUT_DAYS_CONFIGURABLE")
