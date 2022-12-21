@@ -69,7 +69,7 @@ class file_manager():
         await self._get_db_connection().execute(f"delete from \"Logs\" where guild_id = '{guild_id}'")
         await self._get_db_connection().execute(f"delete from \"Guilds\" where guild_id = '{guild_id}'")
         try:
-            for i in range(0, await self.config_manager.get_max_archived_stories()):
+            for i in range(0, await self.config_manager.get_max_archived_stories(guild_id=guild_id)):
                 os.remove(_get_story_file_name(guild_id, i))
         except FileNotFoundError:
             return
@@ -288,7 +288,7 @@ class file_manager():
     
     async def get_archived_story_count(self, guild_id: int) -> int:
         i = 1
-        while i <= await self.config_manager.get_max_archived_stories():
+        while i <= await self.config_manager.get_max_archived_stories(guild_id=guild_id):
             if not os.path.isfile(_get_story_file_name(guild_id, i)):
                 break
             
@@ -297,7 +297,7 @@ class file_manager():
     
     async def new_story(self, guild_id: int, forced: bool = False) -> None:
         existing_count = await self.get_archived_story_count(guild_id)
-        if existing_count >= await self.config_manager.get_max_archived_stories():
+        if existing_count >= await self.config_manager.get_max_archived_stories(guild_id=guild_id):
             if not forced: raise storybot_exceptions.TooManyArchivedStoriesException(f"Guild id {guild_id} already has the maximum number of stories allotted!")
             
             # Reduce all the story counts by 1

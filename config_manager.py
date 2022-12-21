@@ -88,7 +88,7 @@ class ConfigManager():
     async def get_database_port(self) -> str:
         return config.DATABASE_PORT
     
-    async def get_max_archived_stories(self) -> int:
+    async def get_max_archived_stories(self, guild_id: int) -> int:
         try:
             return config.MAX_ARCHIVED_STORIES
         except AttributeError:
