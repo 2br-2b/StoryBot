@@ -120,11 +120,17 @@ class ConfigManager():
         except AttributeError:
             raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.MAX_ARCHIVED_STORIES")
         
-    async def get_db_connection_count(self) -> int:
+    async def get_min_db_connection_count(self) -> int:
         try:
-            return config.COUNT_OF_DATABASE_CONNECTIONS_TO_OPEN
+            return config.MIN_DATABASE_CONNECTIONS_TO_OPEN
         except AttributeError:
-            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.COUNT_OF_DATABASE_CONNECTIONS_TO_OPEN")
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.MIN_DATABASE_CONNECTIONS_TO_OPEN")
+
+    async def get_max_db_connection_count(self) -> int:
+        try:
+            return config.MAX_DATABASE_CONNECTIONS_TO_OPEN
+        except AttributeError:
+            raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.MAX_DATABASE_CONNECTIONS_TO_OPEN")
         
     async def get_max_timeout_days_configurable(self) -> int:
         try:
