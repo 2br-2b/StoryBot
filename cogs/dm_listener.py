@@ -491,10 +491,13 @@ class dm_listener(commands.Cog):
                 if followup == True:
                     eee = await interaction.followup.send(embed=embed) #, ephemeral=ephemeral)
                 else:
-                    if view == None:
-                        eee = await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
-                    else:
-                        eee = await interaction.response.send_message(embed=embed, view=view, ephemeral=ephemeral)
+                    try:
+                        if view == None:
+                            eee = await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+                        else:
+                            eee = await interaction.response.send_message(embed=embed, view=view, ephemeral=ephemeral)
+                    except discord.errors.NotFound:
+                        await self.reply_to_message(embed=embed, view=view, ephemeral=ephemeral, interaction=interaction, followup=True)
                 
                 # if file == None:
                 #     return await eee.send_message(embed=embed, view=view, ephemeral=True)
