@@ -275,23 +275,6 @@ class dm_listener(commands.Cog):
             
             await self.new_user(proper_guild_id)
 
-        @staticmethod
-        def pieMethod(story):
-            """The all-powerful pieMethod
-            Splits the story into a list of strings if it is too long"""
-            MAX_MESSAGE_LENGTH = 1950
-            if len(story) <= MAX_MESSAGE_LENGTH:
-                return [story]
-            list = []
-            count = math.ceil(len(story) / MAX_MESSAGE_LENGTH)
-            for i in range(0, count):
-                if i == count:
-                    list.append(story[i*MAX_MESSAGE_LENGTH:])
-                else:
-                    list.append(story[i*MAX_MESSAGE_LENGTH:(i+1)*MAX_MESSAGE_LENGTH])
-            return list
-        
-
     def lastChars(self, story):
         """Returns the last self.CHARACTERS_TO_SHOW characters of the story"""
         
@@ -824,3 +807,17 @@ def add_period_if_missing(line: str) -> str:
 async def setup(bot):
     await bot.add_cog(dm_listener(bot.file_manager, bot.user_manager, bot))
 
+def pieMethod(story):
+    """The all-powerful pieMethod
+    Splits the story into a list of strings if it is too long"""
+    MAX_MESSAGE_LENGTH = 1950
+    if len(story) <= MAX_MESSAGE_LENGTH:
+        return [story]
+    list = []
+    count = math.ceil(len(story) / MAX_MESSAGE_LENGTH)
+    for i in range(0, count):
+        if i == count:
+            list.append(story[i*MAX_MESSAGE_LENGTH:])
+        else:
+            list.append(story[i*MAX_MESSAGE_LENGTH:(i+1)*MAX_MESSAGE_LENGTH])
+    return list
