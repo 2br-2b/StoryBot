@@ -275,23 +275,6 @@ class dm_listener(commands.Cog):
             
             await self.new_user(proper_guild_id)
 
-        @staticmethod
-        def pieMethod(story):
-            """The all-powerful pieMethod
-            Splits the story into a list of strings if it is too long"""
-            MAX_MESSAGE_LENGTH = 1950
-            if len(story) <= MAX_MESSAGE_LENGTH:
-                return [story]
-            list = []
-            count = math.ceil(len(story) / MAX_MESSAGE_LENGTH)
-            for i in range(0, count):
-                if i == count:
-                    list.append(story[i*MAX_MESSAGE_LENGTH:])
-                else:
-                    list.append(story[i*MAX_MESSAGE_LENGTH:(i+1)*MAX_MESSAGE_LENGTH])
-            return list
-        
-
     def lastChars(self, story):
         """Returns the last self.CHARACTERS_TO_SHOW characters of the story"""
         
@@ -319,7 +302,6 @@ class dm_listener(commands.Cog):
     async def timeout_checker(self):
         """Will skip the current user's turn if they don't respond in the specified amount of time"""
         now = time.time()
-        
         for guild_id in await self.file_manager.get_all_guild_ids():
             
             # Make sure there's more than one user in the server before timing anyone out
@@ -332,13 +314,14 @@ class dm_listener(commands.Cog):
                     await self.timeout_happened(guild_id)
                     
                 # Give people a warning that they're about to time out
-                elif timeout_days >= 3 and now - current_timestamp >= 60 * 60 * 24 * (timeout_days - 1) and not self.file_manager.get_notified(guild_id):
-                    
+                elif timeout_days >= 3 and now - current_timestamp >= 60 * 60 * 24 * (timeout_days - 1) and not await self.file_manager.get_notified(guild_id):
+                    print("oy!")
                     guild_name = self.bot.get_guild(guild_id).name
-                    
-                    await self.dm_current_user(guild_id=guild_id, message=f"Heads up - you're about to time out in **{guild_name}**! You have around a day left before your turn is automatically skipped.\n\nIf you want to pass on this turn, go to {guild_name} and run `/skip`.")
-                    
-                    self.file_manager.set_notified(guild_id, True)
+                    try:
+                        await self.dm_current_user(guild_id=guild_id, message=f"Heads up - you're about to time out in **{guild_name}**! You have around a day left before your turn is automatically skipped.\n\nIf you want to pass on this turn, go to {guild_name} and run `/skip`.")
+                    except discord.errors.Forbidden:
+                        pass
+                    await self.file_manager.set_notified(guild_id, True)
                     
 
 
@@ -406,7 +389,7 @@ class dm_listener(commands.Cog):
 
 
     @app_commands.guild_only()
-    @app_commands.command(name="configure")
+    @app_commands.command(name="kick")
     #@app_commands.checks.has_permissions(moderate_members=True)
     async def kick(self, interaction: discord.Interaction, user: str):
         """Kicks a user from the list of authors. Can only be run by admins"""
@@ -415,20 +398,26 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
             return
         
+        user_object = None
+        user_id = None
         try:
-            user_object = await interaction.guild.get_member(int(re.sub(r'[^0-9]', '', user)))
-        except ValueError:
-            pass
+            user_object = await interaction.guild.fetch_member(int(re.sub(r'[^0-9]', '', user)))
+        except (ValueError, discord.errors.NotFound):
+            user_object = None
         
         if user_object == None:
-            user_object = await interaction.guild.get_member_named(user)
+            user_object = interaction.guild.get_member_named(user)
+            
         if user_object == None:
-            user_id = int(re.sub(r'[^0-9]', '', user))
-            return
-        else:
+            try:
+                user_id = int(re.sub(r'[^0-9]', '', user))
+            except ValueError:
+                await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction)
+                return
+        if user_id == None:
             user_id = user_object.id
         
-        proper_guild = self.get_proper_guild_id(interaction.guild_id)
+        proper_guild = self.get_proper_guild_id(interaction.channel)
         
         if await self.user_manager.get_current_user(proper_guild) == str(user_id):
             skip_after = True
@@ -443,7 +432,7 @@ class dm_listener(commands.Cog):
             except ValueError: #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
                 pass
         
-        await self.reply_to_message(content=f"<@{user_id}> has been kicked from StoryBot on this server.", interaction=interaction, ephemeral=True)
+        await self.reply_to_message(content=f"<@{user_id}> has been kicked from StoryBot on this server (if he was an author).", interaction=interaction, ephemeral=True)
 
 
 
@@ -713,8 +702,8 @@ class dm_listener(commands.Cog):
             return int(view.value)
 
     @app_commands.guild_only()
-    @app_commands.command(name="archive_story", description="Archives your current story and starts a new story. Note - you are limited in the number of archived stories per server, but the bot will warn you if you exceed that limit.")
-    @app_commands.Cooldown(1, 24 * 60 * 60) # Makes sure this can only be run once a day
+    @app_commands.command(name="archive_story", description="Archives your current story and starts a new story.")
+    @app_commands.checks.cooldown(1, 24 * 60 * 60) # Makes sure this can only be run once a day
     #@app_commands.checks.has_permissions(moderate_members=True)
     async def new_story(self, interaction: discord.Interaction, confirm: bool, delete_old_story:bool = False):
         
@@ -818,3 +807,17 @@ def add_period_if_missing(line: str) -> str:
 async def setup(bot):
     await bot.add_cog(dm_listener(bot.file_manager, bot.user_manager, bot))
 
+def pieMethod(story):
+    """The all-powerful pieMethod
+    Splits the story into a list of strings if it is too long"""
+    MAX_MESSAGE_LENGTH = 1950
+    if len(story) <= MAX_MESSAGE_LENGTH:
+        return [story]
+    list = []
+    count = math.ceil(len(story) / MAX_MESSAGE_LENGTH)
+    for i in range(0, count):
+        if i == count:
+            list.append(story[i*MAX_MESSAGE_LENGTH:])
+        else:
+            list.append(story[i*MAX_MESSAGE_LENGTH:(i+1)*MAX_MESSAGE_LENGTH])
+    return list
