@@ -9,6 +9,7 @@ from discord import app_commands
 import logging
 import time
 import storybot_exceptions
+from asyncpg import exceptions as asyncpg_exceptions
 
 intents = discord.Intents.default()
 intents.guilds = True
@@ -58,11 +59,19 @@ async def on_guild_remove(guild_left: discord.Guild):
     
 async def on_tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if isinstance(error, app_commands.CommandOnCooldown):
-        return await interaction.response.send_message(f"Command is currently on cooldown! Try again in {error.retry_after:.2f} seconds!")
+        return await interaction.response.send_message(f"Command is currently on cooldown! Try again in {error.retry_after:.2f} seconds!", ephemeral=True)
 
     elif isinstance(error, app_commands.MissingPermissions):
-        return await interaction.response.send_message("Only server moderators can do this! Make sure you have the `moderate_members` permission, then try again.")
+        return await interaction.response.send_message("Only server moderators can do this! Make sure you have the `moderate_members` permission, then try again.", ephemeral=True)
 
+    elif isinstance(error, storybot_exceptions.ConfigValueNotFoundException):
+        await interaction.response.send_message("Something went wrong on the bot's backend. Feel free to reach out to my admin by going to the link in my bio!", ephemeral=True)
+        raise error
+    
+    elif isinstance(error, asyncpg_exceptions._base.InterfaceError):
+        await interaction.response.send_message("This bot is currently under a heavy load. Try running this command again later! If this error persists, send a message in the discord server linked in my bio.", ephemeral=True)
+        raise error
+        
     else:
         raise error
 
