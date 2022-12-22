@@ -72,9 +72,6 @@ class ConfigManager():
         else:
             return None
 
-    async def is_admin(self, author_id: int, guild_id: int) -> bool:
-        return author_id in await self.file_manager.get_admins(guild_id)
-
     async def get_embed_color(self) -> Color:
         try:
             return config.EMBED_COLOR

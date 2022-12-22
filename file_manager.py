@@ -187,7 +187,7 @@ class file_manager():
     async def add_user(self, user_id: int, guild_id: int):
         try:
             if not user_id in await self.get_active_users(guild_id):
-                await self._get_db_connection().execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation, is_admin) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()}, False)")
+                await self._get_db_connection().execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()})")
                 await self.log_action(user_id=user_id, guild_id=guild_id, action="join")
         except asyncpg.exceptions.ForeignKeyViolationError:
             print(f"Unknown guild found: {guild_id}; user_id: {user_id}")
@@ -215,12 +215,6 @@ class file_manager():
             new_reputation = 0
         
         await self._get_db_connection().execute(f"UPDATE \"Users\" SET reputation = {new_reputation} WHERE user_id='{user_id}' AND guild_id='{guild_id}'")
-        
-    
-    async def get_admins(self, guild_id: int) -> list[int]:
-        """Returns all the admins of a given guild"""
-        responses = await self._get_db_connection().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}' and is_admin=True")
-        return [int(i.get("user_id")) for i in responses]
     
     async def get_config_value(self, guild_id: int, config_value: str):
         """Returns a given config value for a server"""
