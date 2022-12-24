@@ -726,6 +726,22 @@ class dm_listener(commands.Cog):
         except storybot_exceptions.TooManyArchivedStoriesException:
             await self.reply_to_message(content=f"Unfortunately, you've reached the limit for stories archived, {await self.file_manager.get_archived_story_count(interaction.guild_id)}. If you'd like to delete your first stored story, you can replace it with this story. Make sure to set the `delete_old_story` tag to true, then run this command again.\n\nYou can run `/story 1` and pin that message before resetting the story to make sure everyone still has access to it; I just need to make sure I have enough space on my hard drive to store everyone's stories. Thanks for understanding!\n\nIf you have any questions or complaints, feel free to bring them up in my Discord server! The link is in my bio.", interaction=interaction)
             
+    @app_commands.guild_only()
+    @app_commands.command(name="current_users", description="Lists the active users in a guild.")
+    async def list_users(self, interaction: discord.Interaction):
+        gid = self.get_proper_guild_id(interaction.channel)
+        
+        list_of_ids = await self.user_manager.get_unweighted_list(gid)
+        
+        if len(list_of_ids) == 0:
+            response = "There are no active users in this server. Join the bot to become the first!"
+        else:
+            response = ""
+            for id in list_of_ids:
+                response += f"<@!{id}>\n"
+            response = response.rstrip()
+        
+        await self.reply_to_message(interaction=interaction, content=response, title="Current authors in this guild", ephemeral=True)
         
     
 
