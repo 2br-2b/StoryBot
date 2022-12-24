@@ -23,6 +23,8 @@ class StoryBot(commands.Bot):
         
         await bot.file_manager.initialize_connection()
         
+        asyncio.create_task(dml.purge_guild_id_list())
+        
         
 cmgr = ConfigManager(None)
 fmgr = file_manager(cmgr)
@@ -54,9 +56,7 @@ async def on_guild_join(guild_joined: discord.Guild):
 
 @bot.event
 async def on_guild_remove(guild_left: discord.Guild):
-    print(f"leaving guild {guild_left.id}")
     await bot.file_manager.remove_guild(guild_left.id)
-    print(f"left guild {guild_left.id}")
     await dml.update_status()
     
 async def on_tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):

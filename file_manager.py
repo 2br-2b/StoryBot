@@ -50,6 +50,7 @@ class file_manager():
             await self._get_db_connection_pool().execute(f"INSERT INTO \"Guilds\" (guild_id, timeout_days) VALUES ('{guild_id}', {await self.config_manager.get_default_timeout_days()})")
             
     async def remove_guild(self, guild_id: int) -> None:
+        print (f"leaving guild {guild_id}")
         pool = self._get_db_connection_pool()
         
         await pool.execute(f"delete from \"Users\" where guild_id = '{guild_id}'")
@@ -60,7 +61,7 @@ class file_manager():
                 os.remove(_get_story_file_name(guild_id, i))
         except FileNotFoundError:
             return
-                
+        print (f"left guild {guild_id}")
     
     async def getStory(self, guild_id: int, story_number = 0) -> str:
         """Returns the story in the story.txt file"""

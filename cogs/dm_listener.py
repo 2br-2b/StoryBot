@@ -743,6 +743,21 @@ class dm_listener(commands.Cog):
         
         await self.reply_to_message(interaction=interaction, content=response, title="Current authors in this guild", ephemeral=True)
         
+    async def purge_guild_id_list(self):
+        """Checks which guilds the bot is not in and prints out those guild ids"""
+        
+        print("Starting purge")
+        all_guild_ids = await self.file_manager.get_all_guild_ids()
+        
+        for guild_id in all_guild_ids:
+            try:
+                if await self.bot.fetch_guild(guild_id) == None:
+                    raise storybot_exceptions.NotInGuildException
+            except (discord.errors.NotFound, discord.errors.Forbidden, storybot_exceptions.NotInGuildException):
+                print(f"Not in guild {guild_id} - leaving")
+                await self.file_manager.remove_guild(guild_id)
+        print("Finished purge")
+                
     
 
         
