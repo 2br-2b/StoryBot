@@ -546,7 +546,7 @@ class dm_listener(commands.Cog):
         return int(view.value)
     
     async def create_embed(self, content=None, color=None, title=None, author_name=None, author_icon_url=None) -> discord.Embed:
-        """Creates an embed with the given parameters. All values have defaults if not given."""
+        """Creates an embed with the given parameters. All values have defaults if not given"""
         if color == None:
             color = await self.config_manager.get_embed_color()
         emb = discord.Embed(description=content, color=color, title=title)
@@ -705,7 +705,7 @@ class dm_listener(commands.Cog):
             return int(view.value)
 
     @app_commands.guild_only()
-    @app_commands.command(name="archive_story", description="Archives your current story and starts a new story.")
+    @app_commands.command(name="archive_story", description="Archives your current story and starts a new story")
     @app_commands.checks.cooldown(1, 24 * 60 * 60) # Makes sure this can only be run once a day
     #@app_commands.checks.has_permissions(moderate_members=True)
     async def new_story(self, interaction: discord.Interaction, confirm: bool, delete_old_story:bool = False):
@@ -727,8 +727,10 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(content=f"Unfortunately, you've reached the limit for stories archived, {await self.file_manager.get_archived_story_count(interaction.guild_id)}. If you'd like to delete your first stored story, you can replace it with this story. Make sure to set the `delete_old_story` tag to true, then run this command again.\n\nYou can run `/story 1` and pin that message before resetting the story to make sure everyone still has access to it; I just need to make sure I have enough space on my hard drive to store everyone's stories. Thanks for understanding!\n\nIf you have any questions or complaints, feel free to bring them up in my Discord server! The link is in my bio.", interaction=interaction)
             
     @app_commands.guild_only()
-    @app_commands.command(name="current_users", description="Lists the active users in a guild.")
+    @app_commands.command(name="current_users")
     async def list_users(self, interaction: discord.Interaction):
+        """Lists the active users in a guild"""
+        
         gid = self.get_proper_guild_id(interaction.channel)
         
         list_of_ids = await self.user_manager.get_unweighted_list(gid)
@@ -744,7 +746,7 @@ class dm_listener(commands.Cog):
         await self.reply_to_message(interaction=interaction, content=response, title="Current authors in this guild", ephemeral=True)
         
     async def purge_guild_id_list(self):
-        """Checks which guilds the bot is not in and prints out those guild ids"""
+        """Checks which guilds the bot is not in and leaves those guilds"""
         
         print("Starting purge")
         
@@ -818,7 +820,7 @@ def ends_with_continuation_string(text: str) -> bool:
 
 
 def add_period_if_missing(line: str) -> str:
-        """End a string with a period if other punctuation is missing."""
+        """End a string with a period if other punctuation is missing"""
         
         good_endings = (
             ".", "?", "!", '"', "\'", "-", "\\", ",", ";", ":", "\n"
