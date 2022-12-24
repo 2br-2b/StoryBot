@@ -300,7 +300,7 @@ class file_manager():
     async def filter_profanity(self, content: str) -> str:
         """Filters out profanity from the given string. If there is too much profanity or the content of the message is too bad, it will raise a TooMuchProfanityError"""
         
-        return profanity.censor(content)
+        return profanity.censor(content, "\*")
         
         
         

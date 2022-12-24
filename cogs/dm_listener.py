@@ -675,6 +675,12 @@ class dm_listener(commands.Cog):
             case AvailableSettingsToModify.SafeModeEnabled:
                 yes_options = ["1", "yes", "true", "yep", "duh", "yes, please", "affirmative"]
                 no_options = ["0", "no", "nah", "false", "no, thank you", "negative"]
+
+                if value == None:
+                    await self.reply_to_message(content="To toggle safe mode, please set the `value` of this command to either \"yes\" or \"no\". Thank you!", interaction=interaction, error=True)
+                    return
+                value=value.lower()
+                
                 if value in yes_options:
                     activate = True
                 elif value in no_options:
