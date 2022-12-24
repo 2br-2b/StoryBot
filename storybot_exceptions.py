@@ -9,3 +9,7 @@ class ConfigValueNotFoundException(Exception):
 class NotInGuildException(Exception):
     "Is raised when a config value is asked for but isn't found in config.py"
     pass
+
+class TooMuchProfanityError(Exception):
+    "Is raised when a message either has too much profanity to filter out or cannot be added due to the content of the message"
+    pass

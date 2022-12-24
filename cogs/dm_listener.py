@@ -18,6 +18,7 @@ class AvailableSettingsToModify(Enum):
     StoryOutputChannel=2
     TimeoutDays=3
     ResetCurrentPlayerTimeRemaining=4
+    SafeModeEnabled=5
 
 # Listens for DMs to add to the story
 class dm_listener(commands.Cog):
@@ -246,6 +247,9 @@ class dm_listener(commands.Cog):
                 return
                 
             content_to_send = await self.format_story_addition(message.content)
+            
+            if await self.config_manager.get_is_safe_mode_activated(proper_guild_id):
+                content_to_send = await self.file_manager.filter_profanity(content_to_send)
             
             # Add the given line to the story file
             await self.file_manager.addLine(
@@ -582,7 +586,7 @@ class dm_listener(commands.Cog):
     @app_commands.command(name="configure")
     #@app_commands.checks.has_permissions(moderate_members=True)
     async def configure(self, interaction: discord.Interaction, setting: AvailableSettingsToModify, value: str = None):
-        """Allows an admin to change some of the bot's configuration"""
+        """Allows an admin to change some of the bot's configuration. In order to help you keep a log, the output of these commands is public, so using an admin-only channel could be helpful here!"""
         if not await self.is_moderator(interaction.user.id, interaction.channel):
             await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
             return
@@ -668,6 +672,26 @@ class dm_listener(commands.Cog):
                 await self.file_manager.reset_timestamp(proper_guild_id)
                 await self.reply_to_message(content=f"Timestamp has been reset!", interaction=interaction, followup=False)
             
+            case AvailableSettingsToModify.SafeModeEnabled:
+                yes_options = ["1", "yes", "true", "yep", "duh", "yes, please", "affirmative"]
+                no_options = ["0", "no", "nah", "false", "no, thank you", "negative"]
+                if value in yes_options:
+                    activate = True
+                elif value in no_options:
+                    activate = False
+                else:
+                    await self.reply_to_message(content=f"I couldn't understand that. Please try again, and this time, set the `value` to \"yes\" or \"no\". Thanks!", interaction=interaction, error=True)
+                    return
+                
+                await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='safe_mode', new_value=activate)
+                
+                if activate:
+                    message = "Safe Mode has been enabled. While it is still imperfect, it will help filter out some vulgarity in messages. This may be improved on in the future."
+                else:
+                    message = "**Warning: Safe Mode has been disabled**. Messages will *not* be filtered for vulgarity and the like."
+                    
+                await self.reply_to_message(content=message, interaction=interaction)
+                    
             
     async def is_moderator(self, user_id: int, guild_channel: discord.abc.GuildChannel):
         user = await guild_channel.guild.fetch_member(user_id)

@@ -7,6 +7,7 @@ import asyncpg
 from asyncpg import exceptions as db_exceptions
 from datetime import datetime
 import storybot_exceptions
+from better_profanity import profanity
 
 class file_manager():
     def __init__(self, config_manager: ConfigManager) -> None:
@@ -14,6 +15,7 @@ class file_manager():
         config_manager.set_file_manager(self)
         self.OPEN_DB_CONNECTIONS = 0
         self.next_connection_to_use = 0
+        profanity.load_censor_words()
     
     async def initialize_connection(self):
         """Initializes the database connection pool"""
@@ -294,6 +296,12 @@ class file_manager():
         
     def get_active_connection_count(self) -> int:
         return self._get_db_connection_pool().get_size()
+    
+    async def filter_profanity(self, content: str) -> str:
+        """Filters out profanity from the given string. If there is too much profanity or the content of the message is too bad, it will raise a TooMuchProfanityError"""
+        
+        return profanity.censor(content)
+        
         
         
 

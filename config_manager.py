@@ -137,3 +137,6 @@ class ConfigManager():
             return config.MAX_TIMEOUT_DAYS_CONFIGURABLE
         except AttributeError:
             raise storybot_exceptions.ConfigValueNotFoundException("Couldn't find config.MAX_TIMEOUT_DAYS_CONFIGURABLE")
+        
+    async def get_is_safe_mode_activated(self, guild_id: int) -> bool:
+        return await self.file_manager.get_config_value(guild_id, "safe_mode")
