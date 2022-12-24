@@ -5,3 +5,7 @@ class TooManyArchivedStoriesException(Exception):
 class ConfigValueNotFoundException(Exception):
     "Is raised when a config value is asked for but isn't found in config.py"
     pass
+
+class NotInGuildException(Exception):
+    "Is raised when a config value is asked for but isn't found in config.py"
+    pass
