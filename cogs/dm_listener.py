@@ -820,7 +820,10 @@ def pieMethod(story):
     count = math.ceil(len(story) / MAX_MESSAGE_LENGTH)
     for i in range(0, count):
         if i == count:
-            list.append(story[i*MAX_MESSAGE_LENGTH:])
+            text = story[i*MAX_MESSAGE_LENGTH:]
         else:
-            list.append(story[i*MAX_MESSAGE_LENGTH:(i+1)*MAX_MESSAGE_LENGTH])
+            text = story[i*MAX_MESSAGE_LENGTH:(i+1)*MAX_MESSAGE_LENGTH]
+        
+        if text.strip() != "":
+            list.append(text)
     return list
