@@ -47,12 +47,14 @@ async def on_ready():
     
 @bot.event
 async def on_guild_join(guild_joined: discord.Guild):
+    print(f"adding guild {guild_joined.id}")
     await bot.file_manager.add_guild(guild_joined.id)
     print(f"added guild {guild_joined.id}")
     await dml.update_status()
 
 @bot.event
 async def on_guild_remove(guild_left: discord.Guild):
+    print(f"leaving guild {guild_left.id}")
     await bot.file_manager.remove_guild(guild_left.id)
     print(f"left guild {guild_left.id}")
     await dml.update_status()
