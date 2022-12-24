@@ -40,6 +40,16 @@ Reputation can be lost in the following ways:
 - Timing out loses one reputation point (manually skipping your turn does not cause a loss of reputation)
 - An admin can manually decrease a user's reputation
 
+## Safe Mode
+
+For those who need moderation, I'm working on it - look [here](https://github.com/2br-2b/StoryBot/issues?q=is%3Aissue+label%3Amoderation) to see the progress. I've started with adding "Safe Mode" to the bot. Safe Mode is __disabled by default__ and will do its best to filter out vulgar words and replace them with \*s. Safe Mode will likely do more in the future (check for links, etc), but it does not do anything of this sort yet. It is nowhere near perfect and can be circumvented rather easily, but I wanted to implement this optional feature as well as the Safe Mode toggle to start adding optional moderation features.
+
+Even if safe mode is activated, all language checking will be done locally (so your stories will not be sent off or processed by a third party). The current implementation is done thru the (better-profanity python library) [https://github.com/snguyenthanh/better_profanity], and even that lists some examples of how to circumvent it. My goal is not to prevent anyone from using profanity in their stories, but rather to give server operators the option to make it more inconvenient for trolls to use vulgarity.
+
+Moderation is still in a very early stage, so I always appreciate feedback on how its implemented, ideas on how it could be made better, and the like.
+
+To enable profanity filters, run `/configure setting:SafeModeEnabled value:true`
+
 ## Program Structure
 - [dm_listener.py](cogs/dm_listener.py) is in charge of interfacing the bot with Discord and is responsible for most of the logic that goes on
 - [file_manager.py](file_manager.py) is in charge of saving and modifying the story
