@@ -182,6 +182,9 @@ class file_manager():
     async def add_user(self, user_id: int, guild_id: int):
         try:
             if not user_id in await self.get_active_users(guild_id):
+                if await self.user_is_banned(guild_id=guild_id, user_id=user_id):
+                    raise storybot_exceptions.UserIsBannedException(f"{user_id} is banned in {guild_id}")
+                
                 await self._get_db_connection_pool().execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()})")
                 await self.log_action(user_id=user_id, guild_id=guild_id, action="join")
         except asyncpg.exceptions.ForeignKeyViolationError:
@@ -189,11 +192,34 @@ class file_manager():
             await self.add_guild(guild_id=guild_id)
             await self.add_user(user_id=user_id, guild_id=guild_id)
         
+    async def user_is_banned(self, guild_id: int, user_id: int) -> bool:
+        """Returns whether a user is banned in a given guild
+
+        Args:
+            guild_id (int): the guild to check
+            user_id (int): the user to check
+
+        Returns:
+            bool: True if the user is banned, False if not
+        """
+        response = await self._get_db_connection_pool().fetchrow(f"SELECT ban_id from \"Bans\" where user_id = '{user_id}' and guild_id = '{guild_id}'")
+        return response != None
+        
+    async def ban_user(self, guild_id: int, user_id: int):
+        """Bans a user from a given server and kicks them"""
+        await self._get_db_connection_pool().execute(f"INSERT INTO \"Bans\" (user_id, guild_id) VALUES ('{user_id}', '{guild_id}')")
+        await self.log_action(user_id=user_id, guild_id=guild_id, action="ban")
+        await self.remove_user(user_id=user_id, guild_id=guild_id)
     
     async def remove_user(self, user_id: int, guild_id: int):
         """Removes a user from a given server"""
         await self._get_db_connection_pool().execute(f"delete from \"Users\" where user_id='{user_id}' and guild_id='{guild_id}'")
         await self.log_action(user_id=user_id, guild_id=guild_id, action="leave")
+    
+    async def unban_user(self, guild_id: int, user_id: int):
+        """Unbans a user from a given server"""
+        await self._get_db_connection_pool().execute(f"DELETE FROM \"Bans\" WHERE user_id = '{user_id}' AND guild_id = '{guild_id}'")
+        await self.log_action(user_id=user_id, guild_id=guild_id, action="unban")
     
     async def get_reputation(self, user_id: int, guild_id: int) -> int:
         """Returns the reputation of a given user in a given server"""

@@ -38,19 +38,7 @@ class dm_listener(commands.Cog):
             await (await (await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
         
         except discord.ext.commands.errors.HybridCommandError: # Means the user couldn't be DMed
-            
-            if await self.user_manager.get_current_user(guild_id) == await self.user_manager.get_current_user(guild_id):
-                skip_after = True
-            else:
-                skip_after = False
-            
-            await self.user_manager.remove_user(guild_id, int(await self.user_manager.get_current_user(guild_id)))
-        
-            if(skip_after):
-                try:
-                    await self.new_user(guild_id)
-                except ValueError: #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
-                    pass
+            await self.remove_user_plus_skip_logic(guild_id, int(await self.user_manager.get_current_user(guild_id)))
             
 
     async def notify_people(self, guild_id: int):
@@ -162,7 +150,7 @@ class dm_listener(commands.Cog):
     @commands.hybrid_command(name="notify")
     #@commands.has_permissions(moderate_members=True)
     async def notify(self, ctx):
-        """The command to notify users that it's their turn"""
+        """Admin command: notifies users that it's their turn"""
         if not await self.is_moderator(ctx.author.id, ctx.channel):
             await self.reply_to_message(content=f"Only an admin can run this command!", context=ctx, error=True, ephemeral=True)
             return
@@ -361,13 +349,16 @@ class dm_listener(commands.Cog):
         """Adds you to the list of authors"""
         guild_id = ctx.guild.id
         
-        await self.user_manager.add_user(guild_id, ctx.author.id)
-        await self.reply_to_message(context=ctx, content="Done!")
-        
-        if(await self.user_manager.get_current_user(guild_id) == None):
-            await self.file_manager.set_current_user_id(guild_id, ctx.author.id)
-            await self.notify_people(guild_id)
-            await self.file_manager.reset_timestamp(guild_id)
+        try:
+            await self.user_manager.add_user(guild_id, ctx.author.id)
+            await self.reply_to_message(context=ctx, content="Done!", ephemeral=True)
+            
+            if(await self.user_manager.get_current_user(guild_id) == None):
+                await self.file_manager.set_current_user_id(guild_id, ctx.author.id)
+                await self.notify_people(guild_id)
+                await self.file_manager.reset_timestamp(guild_id)
+        except storybot_exceptions.UserIsBannedException:
+            await self.reply_to_message(context=ctx, content="You are currently banned in this server. If you believe this is in error, please reach out to your server's moderators.", error=True, ephemeral=True)
 
     @commands.guild_only()
     @commands.hybrid_command(name="leave")
@@ -376,18 +367,7 @@ class dm_listener(commands.Cog):
         
         proper_guild = self.get_proper_guild_id(ctx)
         
-        if await self.user_manager.get_current_user(proper_guild) == str(ctx.author.id):
-            skip_after = True
-        else:
-            skip_after = False
-        
-        await self.user_manager.remove_user(proper_guild, ctx.author.id)
-        
-        if(skip_after):
-            try:
-                await self.new_user(proper_guild)
-            except ValueError: #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
-                pass
+        await self.remove_user_plus_skip_logic(proper_guild, ctx.author.id)
         
         await self.reply_to_message(context=ctx, content="Done!")
 
@@ -396,50 +376,124 @@ class dm_listener(commands.Cog):
     @app_commands.command(name="kick")
     #@app_commands.checks.has_permissions(moderate_members=True)
     async def kick(self, interaction: discord.Interaction, user: str):
-        """Kicks a user from the list of authors. Can only be run by admins"""
+        """Admin command: kicks a user from the list of authors"""
         
         if not await self.is_moderator(interaction.user.id, interaction.channel):
             await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
             return
         
-        user_object = None
-        user_id = None
         try:
-            user_object = await interaction.guild.fetch_member(int(re.sub(r'[^0-9]', '', user)))
-        except (ValueError, discord.errors.NotFound):
-            user_object = None
-        
-        if user_object == None:
-            user_object = interaction.guild.get_member_named(user)
-            
-        if user_object == None:
-            try:
-                user_id = int(re.sub(r'[^0-9]', '', user))
-            except ValueError:
-                await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction)
-                return
-        if user_id == None:
-            user_id = user_object.id
+            user_id = await self.get_user_id_from_string(interaction.guild, user)
+        except storybot_exceptions.UserNotFoundFromStringError:
+            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction)
+            return
         
         proper_guild = self.get_proper_guild_id(interaction.channel)
         
-        if await self.user_manager.get_current_user(proper_guild) == str(user_id):
+        await self.remove_user_plus_skip_logic(proper_guild, user_id)
+        
+        await self.reply_to_message(content=f"<@{user_id}> has been kicked from StoryBot on this server (if he was an author).", interaction=interaction, ephemeral=True)
+
+    @app_commands.guild_only()
+    @app_commands.command(name="ban")
+    #@app_commands.checks.has_permissions(moderate_members=True)
+    async def ban(self, interaction: discord.Interaction, user: str):
+        """Admin command: bans a user from joining the list of authors and kicks them if they're already there"""
+        
+        if not await self.is_moderator(interaction.user.id, interaction.channel):
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            return
+        
+        try:
+            user_id = await self.get_user_id_from_string(interaction.guild, user)
+        except storybot_exceptions.UserNotFoundFromStringError:
+            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction, error=True, ephemeral=True)
+            return
+            
+        if await self.is_moderator(user_id, interaction.channel) and not await self.config_manager.is_debug_mode():
+            await self.reply_to_message(content=f"Banning of moderators is not supported, as they could simply unban themselves. You can `/kick` a moderator, but not ban them.", interaction=interaction, error=True, ephemeral=True)
+            return
+            
+        if await self.user_manager.get_current_user(interaction.guild_id) == str(user_id):
             skip_after = True
         else:
             skip_after = False
         
-        await self.user_manager.remove_user(proper_guild, user_id)
+        await self.file_manager.ban_user(guild_id=interaction.guild_id, user_id=user_id)
         
         if(skip_after):
             try:
-                await self.new_user(proper_guild)
-            except ValueError: #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
+                await self.new_user(interaction.guild_id)
+            except ValueError:
+                #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
                 pass
         
-        await self.reply_to_message(content=f"<@{user_id}> has been kicked from StoryBot on this server (if he was an author).", interaction=interaction, ephemeral=True)
+        await self.reply_to_message(content=f"<@{user_id}> has been banned from StoryBot on this server.", interaction=interaction, ephemeral=True)
 
+    @app_commands.guild_only()
+    @app_commands.command(name="unban")
+    #@app_commands.checks.has_permissions(moderate_members=True)
+    async def unban(self, interaction: discord.Interaction, user: str):
+        """Admin command: unbans a user from joining the list of authors"""
+        
+        if not await self.is_moderator(interaction.user.id, interaction.channel):
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            return
+        
+        try:
+            user_id = await self.get_user_id_from_string(interaction.guild, user)
+        except storybot_exceptions.UserNotFoundFromStringError:
+            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction, error=True, ephemeral=True)
+            return
+        
+        await self.file_manager.unban_user(guild_id=interaction.guild_id, user_id=user_id)
+        await self.reply_to_message(content=f"<@{user_id}> has been unbanned from StoryBot on this server (if he/she was banned).", interaction=interaction, ephemeral=True)
 
+    async def remove_user_plus_skip_logic(self, guild_id: int, user_id: int) -> None:
+        """Removes a given user from the guild. If it's their turn, it skips to the next user
 
+        Args:
+            guild_id (int): the guild to remove the user from
+            user_id (int): the user to remove from the guild
+        """
+        
+        if await self.user_manager.get_current_user(guild_id) == await self.user_manager.get_current_user(guild_id):
+            skip_after = True
+        else:
+            skip_after = False
+        
+        await self.user_manager.remove_user(guild_id, int(await self.user_manager.get_current_user(guild_id)))
+    
+        if(skip_after):
+            try:
+                await self.new_user(guild_id)
+            except ValueError:
+                #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
+                pass
+        
+    async def get_user_id_from_string(self, guild: discord.Guild, user: str) -> int:
+        """Given a string used as a parameter in a command, returns a user. May return an invalid user id or throw a `storybot_exceptions.UserNotFoundFromStringError`"""
+        user_object = None
+        user_id = None
+        
+        try:
+            user_object = await guild.fetch_member(int(re.sub(r'[^0-9]', '', user)))
+        except (ValueError, discord.errors.NotFound):
+            user_object = None
+        
+        if user_object == None:
+            user_object = guild.get_member_named(user)
+            
+        if not user_object == None:
+            return user_object.id
+        
+        try:
+            user_id = int(re.sub(r'[^0-9]', '', user))
+        except ValueError:
+            # If the string ends up as '', this will run
+            raise storybot_exceptions.UserNotFoundFromStringError()
+            
+        
 
     async def format_story_addition(self, line:str) -> str:
         if(line.startswith(self.config_manager.get_prefix())):
@@ -586,7 +640,7 @@ class dm_listener(commands.Cog):
     @app_commands.command(name="configure")
     #@app_commands.checks.has_permissions(moderate_members=True)
     async def configure(self, interaction: discord.Interaction, setting: AvailableSettingsToModify, value: str = None):
-        """Allows an admin to change some of the bot's configuration. In order to help you keep a log, the output of these commands is public, so using an admin-only channel could be helpful here!"""
+        """Admin command: change some of the bot's configuration"""
         if not await self.is_moderator(interaction.user.id, interaction.channel):
             await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
             return
@@ -735,7 +789,7 @@ class dm_listener(commands.Cog):
             return int(view.value)
 
     @app_commands.guild_only()
-    @app_commands.command(name="archive_story", description="Archives your current story and starts a new story")
+    @app_commands.command(name="archive_story", description="Admin command: archives your current story and starts a new story")
     @app_commands.checks.cooldown(1, 24 * 60 * 60) # Makes sure this can only be run once a day
     #@app_commands.checks.has_permissions(moderate_members=True)
     async def new_story(self, interaction: discord.Interaction, confirm: bool, delete_old_story:bool = False):
