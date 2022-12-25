@@ -207,14 +207,19 @@ class file_manager():
         
     async def ban_user(self, guild_id: int, user_id: int):
         """Bans a user from a given server and kicks them"""
-        await self.log_action(user_id=user_id, guild_id=guild_id, action="ban")
         await self._get_db_connection_pool().execute(f"INSERT INTO \"Bans\" (user_id, guild_id) VALUES ('{user_id}', '{guild_id}')")
+        await self.log_action(user_id=user_id, guild_id=guild_id, action="ban")
         await self.remove_user(user_id=user_id, guild_id=guild_id)
     
     async def remove_user(self, user_id: int, guild_id: int):
         """Removes a user from a given server"""
         await self._get_db_connection_pool().execute(f"delete from \"Users\" where user_id='{user_id}' and guild_id='{guild_id}'")
         await self.log_action(user_id=user_id, guild_id=guild_id, action="leave")
+    
+    async def unban_user(self, guild_id: int, user_id: int):
+        """Unbans a user from a given server"""
+        await self._get_db_connection_pool().execute(f"DELETE FROM \"Bans\" WHERE user_id = '{user_id}' AND guild_id = '{guild_id}'")
+        await self.log_action(user_id=user_id, guild_id=guild_id, action="unban")
     
     async def get_reputation(self, user_id: int, guild_id: int) -> int:
         """Returns the reputation of a given user in a given server"""
