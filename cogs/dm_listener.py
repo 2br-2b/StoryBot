@@ -278,7 +278,7 @@ class dm_listener(commands.Cog):
     async def timeout_happened(self, guild_id: int):
         """Skips the current user's turn if they don't respond in the specified amount of time"""
         
-        print('Timing out...') 
+        print(f'Timing out {guild_id}...') 
         current_user_id = int(await self.user_manager.get_current_user(guild_id))
         try:
             await self.dm_current_user(guild_id, f"You took too long! Your turn was skipped in {self.bot.get_guild(guild_id).name}. You\'ll have a chance to add to the story later - don\'t worry!")
@@ -307,7 +307,7 @@ class dm_listener(commands.Cog):
                     
                 # Give people a warning that they're about to time out
                 elif timeout_days >= 3 and now - current_timestamp >= 60 * 60 * 24 * (timeout_days - 1) and not await self.file_manager.get_notified(guild_id):
-                    print("oy!")
+                    print(f"oy! {guild_id}")
                     guild_name = self.bot.get_guild(guild_id).name
                     try:
                         await self.dm_current_user(guild_id=guild_id, message=f"Heads up - you're about to time out in **{guild_name}**! You have around a day left before your turn is automatically skipped.\n\nIf you want to pass on this turn, go to {guild_name} and run `/skip`.")
