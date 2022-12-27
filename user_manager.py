@@ -22,7 +22,7 @@ class user_manager():
         else:
             new_user = int(random.choices(ids, weights=reputations)[0])
         
-        await self.bot.file_manager.set_current_user_id(guild_id, new_user)
+        await self.bot.set_current_user(guild_id, new_user)
         
         return new_user
 
@@ -38,9 +38,12 @@ class user_manager():
         else:
             new_user = int(random.choice(unweighted_list))
         
-        await self.bot.file_manager.set_current_user_id(guild_id, new_user)
+        await self.bot.set_current_user(guild_id, new_user)
         
         return new_user
+
+    async def set_current_user(self, guild_id: int, user_id: int):
+        await self.bot.file_manager.set_current_user_id(guild_id, user_id)
 
     async def get_current_user(self, guild_id: int) -> str:
         """Returns the current user's id as a string"""
