@@ -137,9 +137,9 @@ class dm_listener(commands.Cog):
         
         try:
             if(current_user_id != None):
-                await self.file_manager.log_action(user_id=int(current_user_id), guild_id=proper_guild_id, action="skip")
+                await self.file_manager.log_action(user_id=int(current_user_id), guild_id=proper_guild_id, XSS_WARNING_action="skip")
             else:
-                await self.file_manager.log_action(user_id=0, guild_id=proper_guild_id, action="skip")
+                await self.file_manager.log_action(user_id=0, guild_id=proper_guild_id, XSS_WARNING_action="skip")
             
             await self.new_user(proper_guild_id)
             await self.reply_to_message(context=ctx, content="Skipping :(")
@@ -245,21 +245,24 @@ class dm_listener(commands.Cog):
                 line=content_to_send
                 )
             
-            await self.file_manager.log_action(user_id=message.author.id, guild_id=proper_guild_id, action="write")
-            
             # Mirror the messages to a Discord channel
             channel_int = await self.config_manager.get_story_output_channel(proper_guild_id)
+            sent_message = None
+            sent_message_id = None
             if channel_int != None:
                 channel = self.bot.get_channel(channel_int)
                 if channel != None:
                     try:
                         # Makes sure that if someone sends a longer message because they have Discord Nitro, the bot will still send the entire story
                         for story_chunk in pieMethod(content_to_send):
-                            await channel.send(story_chunk)
-                    
+                            sent_message = await channel.send(story_chunk)
+                            sent_message_id = sent_message.id
+                            
                     except discord.errors.Forbidden:
                         # TODO: Check for this perm properly
                         pass
+                    
+            await self.file_manager.log_action(user_id=message.author.id, guild_id=proper_guild_id, XSS_WARNING_action="write", characters_sent=len(content_to_send), sent_message_id=sent_message_id)
             
             await self.reply_to_message(message, "Got it!  Thanks!")
             
@@ -287,7 +290,7 @@ class dm_listener(commands.Cog):
             print(f"Kicked {current_user_id} from {guild_id} due to a 403 error")
             await self.user_manager.remove_user(guild_id=guild_id, user_id=current_user_id)
         
-        await self.file_manager.log_action(user_id=current_user_id, guild_id=guild_id, action="timeout")
+        await self.file_manager.log_action(user_id=current_user_id, guild_id=guild_id, XSS_WARNING_action="timeout")
         await self.new_user(guild_id)
 
     @tasks.loop(seconds=60 * 60) # Check back every hour
@@ -490,9 +493,13 @@ class dm_listener(commands.Cog):
         
         try:
             user_id = int(re.sub(r'[^0-9]', '', user))
+            if not (10000000000000000 <= user_id <= 18446744073709551615): # Make sure that the userid is valid (between `10^17` and `(2^64)-1`)
+                raise storybot_exceptions.UserNotFoundFromStringError("The userID is not in the valid range!")
         except ValueError:
             # If the string ends up as '', this will run
             raise storybot_exceptions.UserNotFoundFromStringError()
+        
+        return user_id
             
         
 
