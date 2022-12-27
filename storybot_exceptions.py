@@ -25,3 +25,7 @@ class UserIsBannedException(Exception):
 class NoValidUndoCommand(Exception):
     "Is raised when a user tries to `/undo` the last story chunk but either there isn't a story file or the last log doesn't have a character length"
     pass
+
+class NotAnAuthorException(Exception):
+    "Is raised when an action would need to involve a user being an author in a guild, but this isn't the case"
+    pass
