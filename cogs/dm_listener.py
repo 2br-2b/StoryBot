@@ -855,6 +855,24 @@ class dm_listener(commands.Cog):
                 
         print("Finished purge")
     
+    @app_commands.guild_only()
+    @app_commands.command(name="undo")
+    #@app_commands.checks.has_permissions(moderate_members=True)
+    async def undo(self, interaction: discord.Interaction, public: bool = False):
+        """Admin command: deletes the last message added to the bot"""
+        if not await self.is_moderator(interaction.user.id, interaction.channel):
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            return
+        
+        proper_guild_id = self.get_proper_guild_id(interaction.channel)
+        
+        try:
+            message_number = await self.file_manager.undo_last_chunk(proper_guild_id)
+            
+            await self.reply_to_message(interaction=interaction, content="Deleted the last addition to the story!", ephemeral=not public)
+        
+        except storybot_exceptions.NoValidUndoCommand as e:
+            await self.reply_to_message(interaction=interaction, content=f"Something went wrong undoing the last message. {str(e)}", error=True, ephemeral=not public)
 
         
 class DropdownView(discord.ui.View):

@@ -331,6 +331,9 @@ class file_manager():
             pass
         Path(_get_story_file_name(guild_id)).touch()
         
+        # Delete all the previous characters_in_chunk and sent_message_ids to prevent `/undo` commands
+        await self._get_db_connection_pool().execute(f"UPDATE \"Logs\" SET characters_in_chunk=NULL, sent_message_ids=NULL WHERE guild_id='{guild_id}'")
+        
     def get_active_connection_count(self) -> int:
         return self._get_db_connection_pool().get_size()
     
@@ -338,7 +341,38 @@ class file_manager():
         """Filters out profanity from the given string. If there is too much profanity or the content of the message is too bad, it will raise a TooMuchProfanityError"""
         
         return profanity.censor(content, "\*")
+    
+    
+    async def undo_last_chunk(self, guild_id: int) -> int:
+        """Deletes the last addition to a given story
+
+        Args:
+            guild_id (int): the guild to delete the story from
+
+        Raises:
+            storybot_exceptions.NoValidUndoCommand: There was some problem undoing the story chunk
+
+        Returns:
+            int: the id of the message the bot sent with this chunk in the story_output_channel
+        """
         
+        response = await self._get_db_connection_pool().fetchrow(f"SELECT characters_in_chunk, sent_message_id, log_id from \"Logs\" where guild_id='{guild_id}' and action='write' ORDER BY log_id DESC")
+        last_chunk_size = response.get("characters_in_chunk")
+        log_id = response.get("log_id")
+        
+        if last_chunk_size == None:
+            raise storybot_exceptions.NoValidUndoCommand("Your most recent log doesn't contain a character count!")
+        
+        text = None
+        with open(_get_story_file_name(guild_id), "r+") as file:
+            text = file.read()
+        
+        with open(_get_story_file_name(guild_id), "w") as file:
+            file.write(text[:-last_chunk_size])
+        
+        await self._get_db_connection_pool().execute(f"DELETE FROM \"Logs\" where log_id = {log_id}")
+        
+        return response.get("sent_message_id")
         
         
 

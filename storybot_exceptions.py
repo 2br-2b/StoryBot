@@ -21,3 +21,7 @@ class UserNotFoundFromStringError(Exception):
 class UserIsBannedException(Exception):
     "Is raised when a user tries to join a story but is banned"
     pass
+
+class NoValidUndoCommand(Exception):
+    "Is raised when a user tries to `/undo` the last story chunk but either there isn't a story file or the last log doesn't have a character length"
+    pass
