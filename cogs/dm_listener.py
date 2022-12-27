@@ -147,17 +147,6 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!", error=True)
         
     @commands.guild_only()
-    @commands.hybrid_command(name="notify")
-    #@commands.has_permissions(moderate_members=True)
-    async def notify(self, ctx):
-        """Admin command: notifies users that it's their turn"""
-        if not await self.is_moderator(ctx.author.id, ctx.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", context=ctx, error=True, ephemeral=True)
-            return
-        
-        await self.notify_people(self.get_proper_guild_id(ctx))
-        
-    @commands.guild_only()
     @commands.hybrid_command(name="time_left")
     async def time_left_command(self, ctx: commands.Context):
         """Says how much time the current user has remaining"""
