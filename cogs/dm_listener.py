@@ -411,8 +411,9 @@ class dm_listener(commands.Cog):
             return
             
         if await self.is_moderator(user_id, interaction.channel) and not await self.config_manager.is_debug_mode():
-            await self.reply_to_message(content=f"Banning of moderators is not supported, as they could simply unban themselves. You can `/kick` a moderator, but not ban them.", interaction=interaction, error=True, ephemeral=True)
-            return
+            # await self.reply_to_message(content=f"Banning of moderators is not supported, as they could simply unban themselves. You can `/kick` a moderator, but not ban them.", interaction=interaction, error=True, ephemeral=True)
+            # return
+            pass
             
         if await self.user_manager.get_current_user(interaction.guild_id) == str(user_id):
             skip_after = True
