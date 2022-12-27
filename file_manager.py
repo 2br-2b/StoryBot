@@ -186,7 +186,7 @@ class file_manager():
                     raise storybot_exceptions.UserIsBannedException(f"{user_id} is banned in {guild_id}")
                 
                 await self._get_db_connection_pool().execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()})")
-                await self.log_action(user_id=user_id, guild_id=guild_id, action="join")
+                await self.log_action(user_id=user_id, guild_id=guild_id, XSS_WARNING_action="join")
         except asyncpg.exceptions.ForeignKeyViolationError:
             print(f"Unknown guild found: {guild_id}; user_id: {user_id}")
             await self.add_guild(guild_id=guild_id)
@@ -208,18 +208,18 @@ class file_manager():
     async def ban_user(self, guild_id: int, user_id: int):
         """Bans a user from a given server and kicks them"""
         await self._get_db_connection_pool().execute(f"INSERT INTO \"Bans\" (user_id, guild_id) VALUES ('{user_id}', '{guild_id}')")
-        await self.log_action(user_id=user_id, guild_id=guild_id, action="ban")
+        await self.log_action(user_id=user_id, guild_id=guild_id, XSS_WARNING_action="ban")
         await self.remove_user(user_id=user_id, guild_id=guild_id)
     
     async def remove_user(self, user_id: int, guild_id: int):
         """Removes a user from a given server"""
         await self._get_db_connection_pool().execute(f"delete from \"Users\" where user_id='{user_id}' and guild_id='{guild_id}'")
-        await self.log_action(user_id=user_id, guild_id=guild_id, action="leave")
+        await self.log_action(user_id=user_id, guild_id=guild_id, XSS_WARNING_action="leave")
     
     async def unban_user(self, guild_id: int, user_id: int):
         """Unbans a user from a given server"""
         await self._get_db_connection_pool().execute(f"DELETE FROM \"Bans\" WHERE user_id = '{user_id}' AND guild_id = '{guild_id}'")
-        await self.log_action(user_id=user_id, guild_id=guild_id, action="unban")
+        await self.log_action(user_id=user_id, guild_id=guild_id, XSS_WARNING_action="unban")
     
     async def get_reputation(self, user_id: int, guild_id: int) -> int:
         """Returns the reputation of a given user in a given server"""
@@ -237,10 +237,10 @@ class file_manager():
         
         await self._get_db_connection_pool().execute(f"UPDATE \"Users\" SET reputation = {new_reputation} WHERE user_id='{user_id}' AND guild_id='{guild_id}'")
     
-    async def get_config_value(self, guild_id: int, config_value: str):
+    async def get_config_value(self, guild_id: int, XSS_WARNING_config_value: str):
         """Returns a given config value for a server"""
-        response = await self._get_db_connection_pool().fetchrow(f"select {config_value} from \"Guilds\" where guild_id='{guild_id}'")
-        return response.get(f"{config_value}")
+        response = await self._get_db_connection_pool().fetchrow(f"select {XSS_WARNING_config_value} from \"Guilds\" where guild_id='{guild_id}'")
+        return response.get(f"{XSS_WARNING_config_value}")
     
     async def set_config_value(self, guild_id: int, XSS_WARNING_config_name: str, new_value: int) -> None:
         """Changes a given config value for a server. XSS_WARNING is in caps to emphasize that the user **should not** be given control of this, as it could lead to SQL injection attacks"""
@@ -271,14 +271,22 @@ class file_manager():
         
         return ret
     
-    async def log_action(self, user_id: int, guild_id: int, action: str) -> None:
+    async def log_action(self, user_id: int, guild_id: int, XSS_WARNING_action: str, sent_message_id: int = None, characters_sent: int = None) -> None:
         # Actions to be logged:
         # - Joining/leaving a story in a given server (`join`, `leave`)
         # - Adding to the story (`add`)
         # - Manually skipping (`skip`)
         # - Timing out (`timeout`)
-        await self._get_db_connection_pool().execute(f"INSERT INTO \"Logs\" (user_id, guild_id, action) VALUES ('{user_id}', '{guild_id}', '{action}')")
         
+        if sent_message_id == None:
+            sent_message_id = "NULL"
+        else:
+            sent_message_id = f"'{sent_message_id}'"
+            
+        if characters_sent == None:
+            characters_sent = "NULL"
+        
+        await self._get_db_connection_pool().execute(f"INSERT INTO \"Logs\" (user_id, guild_id, action, sent_message_id, characters_in_chunk) VALUES ('{user_id}', '{guild_id}', '{XSS_WARNING_action}', {sent_message_id}, {characters_sent})")
         
     async def get_recent_users_queue(self, guild_id: int) -> list[int]:
         user_count = len(await self.get_active_users(guild_id))
