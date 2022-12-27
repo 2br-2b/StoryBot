@@ -231,6 +231,7 @@ class dm_listener(commands.Cog):
             #self.get_proper_guild_id(message.channel)
             
             if (await self.user_manager.get_current_user(proper_guild_id)) != str(message.author.id):
+                # This means the user had turns in multiple servers, entered input and received the prompt to choose a server, then waited until it was no longer their turn (either by answering another prompt or timing out) to respond. If unpatched, users could send messages after their turn ends.
                 await self.reply_to_message(message=message, content="Nice try :stuck_out_tongue_winking_eye:", ephemeral=True)
                 return
                 
