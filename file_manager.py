@@ -325,7 +325,10 @@ class file_manager():
             existing_count -= 1
             
         # Add the current story as the last story
-        os.replace(_get_story_file_name(guild_id), _get_story_file_name(guild_id, existing_count + 1))
+        try:
+            os.replace(_get_story_file_name(guild_id), _get_story_file_name(guild_id, existing_count + 1))
+        except FileNotFoundError:
+            pass
         Path(_get_story_file_name(guild_id)).touch()
         
     def get_active_connection_count(self) -> int:
