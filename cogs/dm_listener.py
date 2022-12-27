@@ -489,9 +489,13 @@ class dm_listener(commands.Cog):
         
         try:
             user_id = int(re.sub(r'[^0-9]', '', user))
+            if not (10000000000000000 <= user_id <= 18446744073709551615): # Make sure that the userid is valid (between `10^17` and `(2^64)-1`)
+                raise storybot_exceptions.UserNotFoundFromStringError("The userID is not in the valid range!")
         except ValueError:
             # If the string ends up as '', this will run
             raise storybot_exceptions.UserNotFoundFromStringError()
+        
+        return user_id
             
         
 
