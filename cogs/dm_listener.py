@@ -869,6 +869,33 @@ class dm_listener(commands.Cog):
         except storybot_exceptions.NoValidUndoCommand as e:
             await self.reply_to_message(interaction=interaction, content=f"Something went wrong undoing the last message. {str(e)}", error=True, ephemeral=not public)
 
+
+    @app_commands.guild_only()
+    @app_commands.command(name="set_turn")
+    #@app_commands.checks.has_permissions(moderate_members=True)
+    async def set_turn(self, interaction: discord.Interaction, user: str, public: bool = False):
+        """Admin command: Sets the current user for the bot"""
+        
+        if not await self.is_moderator(interaction.user.id, interaction.channel):
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            return
+        
+        try:
+            user_id = await self.get_user_id_from_string(interaction.guild, user)
+        except storybot_exceptions.UserNotFoundFromStringError:
+            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction)
+            return
+        
+        proper_guild = self.get_proper_guild_id(interaction.channel)
+        
+        try:
+            await self.new_user(guild_id=proper_guild, user_id=user_id)
+            await self.reply_to_message(interaction=interaction, content=f"Done! It is now <@!{user_id}>'s turn.", ephemeral=not public)
+        except storybot_exceptions.NotAnAuthorException:
+            if user_id == self.bot.user.id:
+                await self.reply_to_message(interaction=interaction, content=f"I'd love to, but unfortunately, I can't write (yet). Maybe try in a year or so, or keep up-to-date in our support server!", error=True, ephemeral=not public)
+            else:
+                await self.reply_to_message(interaction=interaction, content=f"<@!{user_id}> is not an author in this guild. Have them run `/join`, then try again.", error=True, ephemeral=not public)
         
 class DropdownView(discord.ui.View):
     def __init__(self, server_json, dropdown_placeholder='Which server is this story for?'):
