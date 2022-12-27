@@ -530,7 +530,7 @@ class dm_listener(commands.Cog):
             return add_period_if_missing(line)
         
         
-    async def reply_to_message(self, message: discord.Message = None, content: str = "", context: commands.Context = None, file: discord.File = None, author_name: str = None, author_icon_url: str = None, title: str = None, ephemeral = False, view=None, interaction: discord.Interaction=None, error=False, followup=False) -> discord.Message:
+    async def reply_to_message(self, message: discord.Message = None, content: str = "", context: commands.Context = None, file: discord.File = None, author_name: str = None, author_icon_url: str = None, title: str = None, ephemeral = True, view=None, interaction: discord.Interaction=None, error=False, followup=False) -> discord.Message:
         """Replies the given message
 
         Args:
@@ -547,6 +547,9 @@ class dm_listener(commands.Cog):
         
         if author_icon_url != None:
             embed.set_author(name=author_name, icon_url=author_icon_url)
+            
+        if error:
+            embed.color = discord.Color.brand_red()
         
         try:
             if not context is None:
