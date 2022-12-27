@@ -332,7 +332,7 @@ class file_manager():
         Path(_get_story_file_name(guild_id)).touch()
         
         # Delete all the previous characters_in_chunk and sent_message_ids to prevent `/undo` commands
-        await self._get_db_connection_pool().execute(f"UPDATE \"Logs\" SET characters_in_chunk=NULL, sent_message_ids=NULL WHERE guild_id='{guild_id}'")
+        await self._get_db_connection_pool().execute(f"UPDATE \"Logs\" SET characters_in_chunk=NULL, sent_message_id=NULL WHERE guild_id='{guild_id}'")
         
     def get_active_connection_count(self) -> int:
         return self._get_db_connection_pool().get_size()
