@@ -22,7 +22,7 @@ class user_manager():
         else:
             new_user = int(random.choices(ids, weights=reputations)[0])
         
-        await self.bot.set_current_user(guild_id, new_user)
+        await self.set_current_user(guild_id, new_user)
         
         return new_user
 
@@ -38,7 +38,7 @@ class user_manager():
         else:
             new_user = int(random.choice(unweighted_list))
         
-        await self.bot.set_current_user(guild_id, new_user)
+        await self.set_current_user(guild_id, new_user)
         
         return new_user
 
