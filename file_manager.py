@@ -361,7 +361,7 @@ class file_manager():
         log_id = response.get("log_id")
         
         if last_chunk_size == None:
-            raise storybot_exceptions.NoValidUndoCommand("Your most recent log doesn't contain a character count!")
+            raise storybot_exceptions.NoValidUndoCommand("You haven't written anything you can undo!")
         
         text = None
         with open(_get_story_file_name(guild_id), "r+") as file:
