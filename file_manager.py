@@ -210,7 +210,7 @@ class file_manager():
             bool: True if the user is in the server but inactive, False if either is false
         """
         response = await self._get_db_connection_pool().fetchrow(f"SELECT is_active from \"Users\" where user_id = '{user_id}' and guild_id = '{guild_id}'")
-        return response.get("is_active") != None and not response.get("is_active")
+        return response != None and not response.get("is_active")
         
     async def user_is_banned(self, guild_id: int, user_id: int) -> bool:
         """Returns whether a user is banned in a given guild
