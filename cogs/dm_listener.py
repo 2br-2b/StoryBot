@@ -35,11 +35,14 @@ class dm_listener(commands.Cog):
     async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
         """Sends the given message to the current user"""
         try:
-            await (await (await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
+            self.dm_user(user_id=int(await self.user_manager.get_current_user(guild_id)), message=message, file=file, embed=embed)
         
         except discord.ext.commands.errors.HybridCommandError: # Means the user couldn't be DMed
             await self.remove_user_plus_skip_logic(guild_id, int(await self.user_manager.get_current_user(guild_id)))
             
+    async def dm_user(self, user_id: int, message, file = None, embed = None):
+        """Sends the given message to the current user"""
+        await (await (await self.bot.fetch_user(user_id)).create_dm()).send(message, embed=embed, file = file)
 
     async def notify_people(self, guild_id: int):
         """Notifies the current user that it's their turn to add to the story"""
