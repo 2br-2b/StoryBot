@@ -941,18 +941,14 @@ class dm_listener(commands.Cog):
     @app_commands.guild_only()
     @app_commands.command(name="set_turn")
     #@app_commands.checks.has_permissions(moderate_members=True)
-    async def set_turn(self, interaction: discord.Interaction, user: str, public: bool = False):
+    async def set_turn(self, interaction: discord.Interaction, user: discord.User, public: bool = False):
         """Admin command: Sets the current user for the bot"""
         
         if not await self.is_moderator(interaction.user.id, interaction.channel):
             await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=not public, ephemeral=True)
             return
         
-        try:
-            user_id = await self.get_user_id_from_string(interaction.guild, user)
-        except storybot_exceptions.UserNotFoundFromStringError:
-            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction, error=not public)
-            return
+        user_id = user.id
         
         proper_guild = self.get_proper_guild_id(interaction.channel)
         
