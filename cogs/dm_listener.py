@@ -364,12 +364,9 @@ class dm_listener(commands.Cog):
     async def unpause_users(self):
         #Guild_id is first, then user_id
         tuples = await self.user_manager.unpause_all_necessary_users()
-        print (f"about to loop {tuples}")
         for letuple in tuples:
-            print ("about to dm")
             await self.dm_user(user_id=letuple[1], message=f"You have been automatically unpaused in {(await self.bot.fetch_guild(letuple[0])).name}`!")
-            print ("dmed")
-        print(f"done looping {len(tuples)}")
+            
 
     @commands.Cog.listener()
     async def on_ready(self):
