@@ -110,22 +110,53 @@ class dm_listener(commands.Cog):
         else:
             await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=True)
 
-    @commands.hybrid_command(name="help")
-    async def help(self, ctx):
-        """The help command"""
+    @app_commands.command(name="help")
+    async def help(self, interaction: discord.Interaction, show_admin_commands:bool = False, public: bool = False):
+        """The help command. Nothing suspicious at all going on here!"""
         
-        await self.reply_to_message(context=ctx, 
-            content="""This bot is a story bot.  One user will write a part of the story (anywhere from a sentence or two to a couple of paragraphs - your choice!), then another, and so on until the story is complete!
-            
-    `/join` adds you to the authors, while `/leave` removes you
-    `/story` displays the story so far - put a number afterwards to see a past story
-    `/turn` displays whose turn it is
+        content="""This bot is a story bot.  One user will write a part of the story (anywhere from a sentence or two to a couple of paragraphs - your choice!), then another, and so on until the story is complete!
+
+        `/join` adds you to the authors, while `/leave` removes you
+        `/story` displays the story so far - put a number afterwards to see a past story
+        `/turn` displays whose turn it is"""
     
-    Note - these commands only work in servers""", ephemeral=True)
+        if show_admin_commands:
+            user_id = interaction.user.id
+            
+            if isinstance(interaction.channel, discord.abc.PrivateChannel):
+                content = """A direct message? Clever. I see you wish to learn the ways of the admins. Very well, I shall teach you. But beware: these commands only work in servers.
+                
+                `/configure` brings balance to the story by letting admins prepare the bot
+                `/ban` and `/unban` are the yin and yang of the bot, representing life and death. `/kick` acts as their center, not quite causing destruction, yet still bringing death to the server
+                `/undo` permits people to change their ways, perhaps undoing damages done by those seeking to destroy the balance
+                `/set_turn` is the paradox, for it disrupts the balance, yet allows for greater balance together
+                `/archive_story` is the great reset, allowing people to begin again"""
+                
+            else:
+                if await self.is_moderator(user_id, interaction.id):
+                    content = """But of course! I will show you all the ways of the StoryBot Moderators.
+                    
+                    `/configure` shows all the ways you can troll your subjects
+                    `/kick` and `/ban` will fortify your defenses against the trolls of the internet
+                    `/unban` can be used to pardon the plebs who have offended your grace
+                    `/undo` will fix the errors of your subjects by nullifying their contributions
+                    `/set_turn` allows you to grant favors to your closest subjects
+                    `/archive_story` will bring closure to your story and allow you to begin again"""
+                else:
+                    content = """Heh? An imposter? Well, I suppose I can show you all of the ways by which you will be punished.
+                    
+                    `/configure` will give your lords the power to manipulate the masses
+                    `/kick`, `/ban`, and `/unban` represent the powers your lord has over all members of the server
+                    `/undo` shows how futile your writings are, as they can be wiped away in an instant
+                    `/set_turn` can be used to alter the flow of time (and the story)
+                    `/archive_story` shall be used to complete quests and begin new ones"""
+                
+            
+            
+        await self.reply_to_message(interaction=interaction, content=content, ephemeral=not public)
 
     @commands.guild_only()
     @commands.hybrid_command(name="skip")
-    async def skip(self, ctx: commands.Context):
         """Skip your turn"""
         
         proper_guild_id = self.get_proper_guild_id(ctx)
