@@ -129,8 +129,10 @@ class file_manager():
     async def set_current_user_id(self,  guild_id: int, user_id: int) -> str:
         """Sets the current user for a given guild"""
         if user_id == None:
-            user_id = 0
-        await self._get_db_connection_pool().execute(f"UPDATE \"Guilds\" SET current_user_id='{user_id}' WHERE guild_id='{guild_id}'")
+            user_id = "null"
+        else:
+            user_id=f"'{user_id}'"
+        await self._get_db_connection_pool().execute(f"UPDATE \"Guilds\" SET current_user_id={user_id} WHERE guild_id='{guild_id}'")
         return str(user_id)
         
         
