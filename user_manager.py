@@ -102,7 +102,13 @@ class user_manager():
     async def pause_user(self, guild_id: int, user_id: int, days: int = 0):
         await self.bot.file_manager.pause_user(guild_id, user_id, days)
 
-
+    async def unpause_all_necessary_users(self) -> list:
+        print("Checking for unpauses...")
+        list_to_unpause = await self.bot.file_manager.get_all_users_to_unpause()
+        for tup in list_to_unpause:
+            print(f"unpausing {tup}")
+            await self.bot.file_manager.make_user_active(tup[0], tup[1])
+        return list_to_unpause
 
 
 @staticmethod

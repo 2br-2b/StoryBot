@@ -427,7 +427,8 @@ class file_manager():
         await database_pool.execute(f"update \"Users\" set is_active=True, paused_until=Null WHERE guild_id='{guild_id}' AND user_id='{user_id}'")
         
         
-        
+    async def get_all_users_to_unpause(self) -> list:
+        return [(i.get("guild_id"), i.get("user_id")) for i in await self._get_db_connection_pool().fetch("SELECT user_id, guild_id FROM \"Users\" WHERE is_active=false and paused_until IS NOT null AND paused_until < now()")]
         
         
 

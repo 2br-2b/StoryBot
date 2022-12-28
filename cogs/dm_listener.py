@@ -360,7 +360,16 @@ class dm_listener(commands.Cog):
                         pass
                     await self.file_manager.set_notified(guild_id, True)
                     
-
+    @tasks.loop(seconds=60 * 60 * 2) # Check back every 2 hours
+    async def unpause_users(self):
+        #Guild_id is first, then user_id
+        tuples = await self.user_manager.unpause_all_necessary_users()
+        print (f"about to loop {tuples}")
+        for letuple in tuples:
+            print ("about to dm")
+            await self.dm_user(user_id=letuple[1], message=f"You have been automatically unpaused in {(await self.bot.fetch_guild(letuple[0])).name}`!")
+            print ("dmed")
+        print(f"done looping {len(tuples)}")
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -375,11 +384,18 @@ class dm_listener(commands.Cog):
         except RuntimeError as e:
             if not str(e) == "Task is already launched and is not completed.":
                 raise RuntimeError(str(e))
+            
+        try:
+            self.unpause_users.start()
+        except RuntimeError as e:
+            if not str(e) == "Task is already launched and is not completed.":
+                raise RuntimeError(str(e))
 
 
     def cog_unload(self):
         self.timeout_checker.cancel()
         self._update_status_loop.stop()
+        self.unpause_users.stop()
         
         
     @tasks.loop(hours = 24) # Check back every 24 hours
