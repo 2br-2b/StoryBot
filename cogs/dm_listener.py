@@ -984,11 +984,25 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(interaction=interaction, content=f"You can only pause for up to 90 days. Please try again!", error=True, ephemeral=not public)
             return
         
+        if str(interaction.user.id) == await self.user_manager.get_current_user(interaction.guild_id):
+            skip_after = True
+            print("Skip!")
+        else:
+            skip_after = False
+            print("Don't skip!")
+        
         try:
             await self.user_manager.pause_user(guild_id=interaction.guild_id, user_id=interaction.user.id, days=days + weeks * 7)
         except storybot_exceptions.NotAnAuthorException:
             await self.reply_to_message(interaction=interaction, content=f"You have to be an author to pause your turn!", error=True, ephemeral=not public)
             return
+        
+        if(skip_after):
+            try:
+                await self.new_user(interaction.guild_id)
+            except ValueError:
+                #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
+                pass
         
         if days + weeks * 7 == 0:
             await self.reply_to_message(interaction=interaction, content=f"Success! You are now paused until you run `/join` again.", ephemeral=not public)
