@@ -966,12 +966,15 @@ class dm_listener(commands.Cog):
             return
         
         try:
-            self.user_manager.pause_user(guild_id=interaction.guild_id, user_id=interaction.user.id, days=days + weeks * 7)
+            await self.user_manager.pause_user(guild_id=interaction.guild_id, user_id=interaction.user.id, days=days + weeks * 7)
         except storybot_exceptions.NotAnAuthorException:
             await self.reply_to_message(interaction=interaction, content=f"You have to be an author to pause your turn!", error=True, ephemeral=not public)
             return
         
-        self.reply_to_message(interaction=interaction, content=f"Success! You are now paused for {days + weeks * 7} days!", ephemeral=not public)
+        if days + weeks * 7 == 0:
+            await self.reply_to_message(interaction=interaction, content=f"Success! You are now paused until you run `/join` again.", ephemeral=not public)
+        else:
+            await self.reply_to_message(interaction=interaction, content=f"Success! You are now paused for {days + weeks * 7} days!\n\nTo rejoin early, run `/join` again.", ephemeral=not public)
         
         
         

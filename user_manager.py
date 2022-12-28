@@ -100,7 +100,7 @@ class user_manager():
         return user_id in await self.get_recent_users_queue(guild_id)
     
     async def pause_user(self, guild_id: int, user_id: int, days: int = 0):
-        await self.file_manager.pause_user(guild_id, user_id, days)
+        await self.bot.file_manager.pause_user(guild_id, user_id, days)
 
 
 

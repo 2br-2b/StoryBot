@@ -187,14 +187,30 @@ class file_manager():
                 if await self.user_is_banned(guild_id=guild_id, user_id=user_id):
                     raise storybot_exceptions.UserIsBannedException(f"{user_id} is banned in {guild_id}")
                 
-                await self._get_db_connection_pool().execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()})")
-                await self.log_action(user_id=user_id, guild_id=guild_id, XSS_WARNING_action="join")
+                if await self.user_is_inactive(guild_id=guild_id, user_id=user_id):
+                    await self.make_user_active(guild_id=guild_id, user_id=user_id)
+                else:
+                    await self._get_db_connection_pool().execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()})")
+                    await self.log_action(user_id=user_id, guild_id=guild_id, XSS_WARNING_action="join")
             else:
                 raise storybot_exceptions.AlreadyAnAuthorException(f"{user_id} is already an author in {guild_id}!")
         except asyncpg.exceptions.ForeignKeyViolationError:
             print(f"Unknown guild found: {guild_id}; user_id: {user_id}")
             await self.add_guild(guild_id=guild_id)
             await self.add_user(user_id=user_id, guild_id=guild_id)
+        
+    async def user_is_inactive(self, guild_id: int, user_id: int) -> bool:
+        """Returns if a user is an author in a given guild, but is not active
+
+        Args:
+            guild_id (int): the guild to check
+            user_id (int): the user to check
+
+        Returns:
+            bool: True if the user is in the server but inactive, False if either is false
+        """
+        response = await self._get_db_connection_pool().fetchrow(f"SELECT is_active from \"Users\" where user_id = '{user_id}' and guild_id = '{guild_id}'")
+        return response.get("is_active") != None and not response.get("is_active")
         
     async def user_is_banned(self, guild_id: int, user_id: int) -> bool:
         """Returns whether a user is banned in a given guild
@@ -254,8 +270,13 @@ class file_manager():
         
         
     async def get_active_users(self, guild_id: int) -> list[int]:
-        """Returns the user ids of all users in a guild"""
+        """Returns the user ids of all active authors in a guild"""
         responses = await self._get_db_connection_pool().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}' and is_active=True")
+        return [int(i.get("user_id")) for i in responses]
+    
+    async def get_all_users(self, guild_id: int) -> list[int]:
+        """Returns the user ids of all authors in a guild, active or not"""
+        responses = await self._get_db_connection_pool().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}'")
         return [int(i.get("user_id")) for i in responses]
     
     async def get_active_users_and_reputations(self, guild_id: int) -> json:
@@ -389,18 +410,21 @@ class file_manager():
         
         database_pool = self._get_db_connection_pool()
         
-        paused = (await database_pool.fetchrow(f"SELECT is_paused, membership_id FROM \"Users\" WHERE guild_id='{guild_id}' AND user_id='{user_id}'")).get("is_paused")
+        response = (await database_pool.fetchrow(f"SELECT is_active, membership_id FROM \"Users\" WHERE guild_id='{guild_id}' AND user_id='{user_id}'"))
         
-        if paused == None:
+        
+        if response.get("is_active") == None:
             raise storybot_exceptions.NotAnAuthorException(f"{user_id} can't pause in {guild_id} since they're not an author!")
         
         if days != 0:
-            await database_pool.execute(f"update \"Users\" set paused_until=now()+INTERVAL '{days} day', is_active=False WHERE membership_id={paused.get('membership_id')}")
+            await database_pool.execute(f"update \"Users\" set paused_until=now()+INTERVAL '{days} day', is_active=False WHERE membership_id={response.get('membership_id')}")
         else:
-            await database_pool.execute(f"update \"Users\" set is_active=False WHERE membership_id={paused.get('membership_id')}")
+            await database_pool.execute(f"update \"Users\" set is_active=False, paused_until=Null WHERE membership_id={response.get('membership_id')}")
+            
         
-        
-        
+    async def make_user_active(self, guild_id: int, user_id: int):
+        database_pool = self._get_db_connection_pool()
+        await database_pool.execute(f"update \"Users\" set is_active=True, paused_until=Null WHERE guild_id='{guild_id}' AND user_id='{user_id}'")
         
         
         
