@@ -77,7 +77,7 @@ class dm_listener(commands.Cog):
     
     @commands.guild_only()
     @commands.hybrid_command(name="story")
-    async def story(self, ctx: commands.Context, archived_story_number:int = 0):
+    async def story(self, ctx: commands.Context, archived_story_number:int = 0, public: bool = True):
         """Sends a reply with the requested story
         If there is a number, the given story number will be returned"""
         
@@ -88,7 +88,7 @@ class dm_listener(commands.Cog):
                 file = await self.file_manager.get_story_file(proper_guild_id, archived_story_number)
                 title = "Story " + str(archived_story_number)
             except FileNotFoundError:
-                await self.reply_to_message(content='That story number couldn\'t be found!', context=ctx, ephemeral=True)
+                await self.reply_to_message(content='That story number couldn\'t be found!', context=ctx, ephemeral=not public, error=True)
                 return
         else:
             file = await self.file_manager.get_story_file(proper_guild_id)
@@ -96,19 +96,19 @@ class dm_listener(commands.Cog):
             
         await self.reply_to_message(
             content=self.lastChars(await self.file_manager.getStory(guild_id = proper_guild_id, story_number = archived_story_number)),
-            title=title, file = file, context=ctx, ephemeral=True)
+            title=title, file = file, context=ctx, ephemeral=not public)
 
     @commands.guild_only()
     @commands.hybrid_command(name="turn")
-    async def turn(self, ctx: commands.Context):
+    async def turn(self, ctx: commands.Context, public: bool = False):
         """Sends a message with the current user's name"""
         
         current_user_id = await self.user_manager.get_current_user(self.get_proper_guild_id(ctx))
         if current_user_id != None:
             current_user = await ctx.guild.fetch_member(int(current_user_id))
-            await self.reply_to_message(author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url, context=ctx, ephemeral=True)
+            await self.reply_to_message(author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url, context=ctx, ephemeral=not public)
         else:
-            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=True)
+            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=not public, error=True)
 
     @app_commands.command(name="help")
     async def help(self, interaction: discord.Interaction, show_admin_commands:bool = False, public: bool = False):
@@ -157,13 +157,14 @@ class dm_listener(commands.Cog):
 
     @commands.guild_only()
     @commands.hybrid_command(name="skip")
+    async def skip(self, ctx: commands.Context, public: bool = False):
         """Skip your turn"""
         
         proper_guild_id = self.get_proper_guild_id(ctx)
         current_user_id = await self.user_manager.get_current_user(proper_guild_id)
         
         if str(ctx.author.id) != current_user_id and not await self.is_moderator(ctx.author.id, ctx.channel):
-            await self.reply_to_message(context=ctx, content="It's not your turn here!", error=True)
+            await self.reply_to_message(context=ctx, content="It's not your turn here!", error=True, ephemeral=not public)
             return
         
         try:
@@ -173,19 +174,19 @@ class dm_listener(commands.Cog):
                 await self.file_manager.log_action(user_id=0, guild_id=proper_guild_id, XSS_WARNING_action="skip")
             
             await self.new_user(proper_guild_id)
-            await self.reply_to_message(context=ctx, content="Skipping :(")
+            await self.reply_to_message(context=ctx, content="Skipping :(", ephemeral=not public)
         except ValueError:
-            await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!", error=True)
+            await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!", error=True, ephemeral=not public)
         
     @commands.guild_only()
     @commands.hybrid_command(name="time_left")
-    async def time_left_command(self, ctx: commands.Context):
+    async def time_left_command(self, ctx: commands.Context, public: bool = False):
         """Says how much time the current user has remaining"""
         
         proper_guild_id = self.get_proper_guild_id(ctx)
         user_id = await self.user_manager.get_current_user(proper_guild_id)
         if user_id == None:
-            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=True)
+            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=not public, error=True)
             return
         
         seconds_per_turn = await self.config_manager.get_timeout_days(ctx.guild.id) * 24 * 60 * 60
@@ -196,7 +197,7 @@ class dm_listener(commands.Cog):
         
         current_user = await ctx.guild.fetch_member(int(user_id))
         
-        await self.reply_to_message(context=ctx, content=f"Time remaining: {dm_listener.print_time(seconds=seconds_remaining + 60)}\nTime used: {dm_listener.print_time(seconds=seconds_since_timestamp)}", ephemeral=True, author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url)
+        await self.reply_to_message(context=ctx, content=f"Time remaining: {dm_listener.print_time(seconds=seconds_remaining + 60)}\nTime used: {dm_listener.print_time(seconds=seconds_since_timestamp)}", ephemeral=not public, author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url)
         
     @staticmethod
     def print_time(seconds:int, include_seconds: bool = False) -> str:
@@ -369,69 +370,69 @@ class dm_listener(commands.Cog):
 
     @commands.guild_only()
     @commands.hybrid_command(name="join")
-    async def add(self, ctx: commands.Context):
+    async def add(self, ctx: commands.Context, public: bool = False):
         """Adds you to the list of authors"""
         guild_id = ctx.guild.id
         
         try:
             await self.user_manager.add_user(guild_id, ctx.author.id)
-            await self.reply_to_message(context=ctx, content="Done!", ephemeral=True)
+            await self.reply_to_message(context=ctx, content="Done!", ephemeral=not public)
             
             if(await self.user_manager.get_current_user(guild_id) == None):
                 await self.file_manager.set_current_user_id(guild_id, ctx.author.id)
                 await self.notify_people(guild_id)
                 await self.file_manager.reset_timestamp(guild_id)
         except storybot_exceptions.UserIsBannedException:
-            await self.reply_to_message(context=ctx, content="You are currently banned in this server. If you believe this is in error, please reach out to your server's moderators.", error=True, ephemeral=True)
+            await self.reply_to_message(context=ctx, content="You are currently banned in this server. If you believe this is in error, please reach out to your server's moderators.", error=True, ephemeral=not public)
 
     @commands.guild_only()
     @commands.hybrid_command(name="leave")
-    async def remove(self, ctx: commands.Context):
+    async def remove(self, ctx: commands.Context, public: bool = False):
         """Removes you from the list of authors"""
         
         proper_guild = self.get_proper_guild_id(ctx)
         
         await self.remove_user_plus_skip_logic(proper_guild, ctx.author.id)
         
-        await self.reply_to_message(context=ctx, content="Done!")
+        await self.reply_to_message(context=ctx, content="Done!", ephemeral=not public)
 
 
     @app_commands.guild_only()
     @app_commands.command(name="kick")
     #@app_commands.checks.has_permissions(moderate_members=True)
-    async def kick(self, interaction: discord.Interaction, user: str):
+    async def kick(self, interaction: discord.Interaction, user: str, public: bool=False):
         """Admin command: kicks a user from the list of authors"""
         
         if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=not public)
             return
         
         try:
             user_id = await self.get_user_id_from_string(interaction.guild, user)
         except storybot_exceptions.UserNotFoundFromStringError:
-            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction)
+            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction, error=True, ephemeral=not public)
             return
         
         proper_guild = self.get_proper_guild_id(interaction.channel)
         
         await self.remove_user_plus_skip_logic(proper_guild, user_id)
         
-        await self.reply_to_message(content=f"<@{user_id}> has been kicked from StoryBot on this server (if he was an author).", interaction=interaction, ephemeral=True)
+        await self.reply_to_message(content=f"<@{user_id}> has been kicked from StoryBot on this server (if he was an author).", interaction=interaction, ephemeral=not public)
 
     @app_commands.guild_only()
     @app_commands.command(name="ban")
     #@app_commands.checks.has_permissions(moderate_members=True)
-    async def ban(self, interaction: discord.Interaction, user: str):
+    async def ban(self, interaction: discord.Interaction, user: str, public: bool = False):
         """Admin command: bans a user from joining the list of authors and kicks them if they're already there"""
         
         if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=not public)
             return
         
         try:
             user_id = await self.get_user_id_from_string(interaction.guild, user)
         except storybot_exceptions.UserNotFoundFromStringError:
-            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction, error=True, ephemeral=True)
+            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction, error=True, ephemeral=not public)
             return
             
         if await self.is_moderator(user_id, interaction.channel) and not await self.config_manager.is_debug_mode():
@@ -453,26 +454,26 @@ class dm_listener(commands.Cog):
                 #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
                 pass
         
-        await self.reply_to_message(content=f"<@{user_id}> has been banned from StoryBot on this server.", interaction=interaction, ephemeral=True)
+        await self.reply_to_message(content=f"<@{user_id}> has been banned from StoryBot on this server.", interaction=interaction, ephemeral=not public)
 
     @app_commands.guild_only()
     @app_commands.command(name="unban")
     #@app_commands.checks.has_permissions(moderate_members=True)
-    async def unban(self, interaction: discord.Interaction, user: str):
+    async def unban(self, interaction: discord.Interaction, user: str, public: bool = False):
         """Admin command: unbans a user from joining the list of authors"""
         
         if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=not public)
             return
         
         try:
             user_id = await self.get_user_id_from_string(interaction.guild, user)
         except storybot_exceptions.UserNotFoundFromStringError:
-            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction, error=True, ephemeral=True)
+            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction, error=True, ephemeral=not public)
             return
         
         await self.file_manager.unban_user(guild_id=interaction.guild_id, user_id=user_id)
-        await self.reply_to_message(content=f"<@{user_id}> has been unbanned from StoryBot on this server (if he/she was banned).", interaction=interaction, ephemeral=True)
+        await self.reply_to_message(content=f"<@{user_id}> has been unbanned from StoryBot on this server (if he/she was banned).", interaction=interaction, ephemeral=not public)
 
     async def remove_user_plus_skip_logic(self, guild_id: int, user_id: int) -> None:
         """Removes a given user from the guild. If it's their turn, it skips to the next user
@@ -652,7 +653,7 @@ class dm_listener(commands.Cog):
         return emb
     
     @commands.hybrid_command(name="my_turns")
-    async def my_turns(self, ctx: commands.Context):
+    async def my_turns(self, ctx: commands.Context, public: bool = False):
         """Lists all of the servers where it's currently your turn"""
         user_current_turns = await self.file_manager.get_current_turns_of_user(ctx.author.id)
         
@@ -665,7 +666,7 @@ class dm_listener(commands.Cog):
                 text += guild_name + "\n"
             text = text[:-1]
             
-        await self.reply_to_message(context=ctx, content=text, title=f"{ctx.author.name}'s current turns", ephemeral=True)
+        await self.reply_to_message(context=ctx, content=text, title=f"{ctx.author.name}'s current turns", ephemeral=not public)
         
     async def update_status(self):
         s=f" {len(await self.file_manager.get_all_guild_ids())} stories unfold"
@@ -677,7 +678,7 @@ class dm_listener(commands.Cog):
     @app_commands.guild_only()
     @app_commands.command(name="configure")
     #@app_commands.checks.has_permissions(moderate_members=True)
-    async def configure(self, interaction: discord.Interaction, setting: AvailableSettingsToModify, value: str = None):
+    async def configure(self, interaction: discord.Interaction, setting: AvailableSettingsToModify, value: str = None, public: bool = False):
         """Admin command: change some of the bot's configuration"""
         if not await self.is_moderator(interaction.user.id, interaction.channel):
             await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
@@ -702,14 +703,14 @@ class dm_listener(commands.Cog):
                     try:
                         channel = await interaction.guild.fetch_channel(new_story_output_channel)
                     except (discord.errors.Forbidden, discord.errors.NotFound):
-                        await self.reply_to_message(content=f"Hmm... I can't see that channel for some reason. Check my permissions, then try again.", interaction=interaction, error=True)
+                        await self.reply_to_message(content=f"Hmm... I can't see that channel for some reason. Check my permissions, then try again.", interaction=interaction, error=True, ephemeral=not public)
                         return
                     if not channel.permissions_for(await channel.guild.fetch_member(self.bot.user.id)).send_messages:
-                        await self.reply_to_message(content=f"I can see that channel, but I can't send messages in it. Check my permissions, then try again.", interaction=interaction, error=True)
+                        await self.reply_to_message(content=f"I can see that channel, but I can't send messages in it. Check my permissions, then try again.", interaction=interaction, error=True, ephemeral=not public)
                         return
                 
                 await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='story_output_channel', new_value=new_story_output_channel)
-                await self.reply_to_message(content=f"Finished changing the story output channel!", interaction=interaction, followup=followup)
+                await self.reply_to_message(content=f"Finished changing the story output channel to <#{new_story_output_channel}>!", interaction=interaction, followup=followup, ephemeral=not public)
             
             case AvailableSettingsToModify.AnnouncementChannel:
                 if value == None:
@@ -727,49 +728,49 @@ class dm_listener(commands.Cog):
                     try:
                         channel = await interaction.guild.fetch_channel(new_story_announcement_channel)
                     except (discord.errors.Forbidden, discord.errors.NotFound):
-                        await self.reply_to_message(content=f"Hmm... I can't see that channel for some reason. Check my permissions, then try again.", interaction=interaction, error=True)
+                        await self.reply_to_message(content=f"Hmm... I can't see that channel for some reason. Check my permissions, then try again.", interaction=interaction, error=True, ephemeral=not public)
                         return
                     if not channel.permissions_for(await channel.guild.fetch_member(self.bot.user.id)).send_messages:
-                        await self.reply_to_message(content=f"I can see that channel, but I can't send messages in it. Check my permissions, then try again.", interaction=interaction, error=True)
+                        await self.reply_to_message(content=f"I can see that channel, but I can't send messages in it. Check my permissions, then try again.", interaction=interaction, error=True, ephemeral=not public)
                         return
                 
                 await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='story_announcement_channel', new_value=new_story_announcement_channel)
-                await self.reply_to_message(content=f"Finished changing the story announcement channel!", interaction=interaction, followup=followup)
+                await self.reply_to_message(content=f"Finished changing the story announcement channel to <#{new_story_announcement_channel}>!", interaction=interaction, followup=followup, ephemeral=not public)
             
             case AvailableSettingsToModify.TimeoutDays:
                 try:
                     new_timeout_days=int(value)
                 except ValueError:
                     # They didn't enter a number
-                    await self.reply_to_message(content=f"Please enter a valid integer (whole number) for the `value`!", interaction=interaction, error=True)
+                    await self.reply_to_message(content=f"Please enter a valid integer (whole number) for the `value`!", interaction=interaction, error=True, ephemeral=not public)
                     return
                 except TypeError:
                     # They didn't enter anything
-                    await self.reply_to_message(content=f"Please enter a number into the `value` field!", interaction=interaction, error=True)
+                    await self.reply_to_message(content=f"Please enter a number into the `value` field!", interaction=interaction, error=True, ephemeral=not public)
                     return
                 
                 max_timeout_days = await self.config_manager.get_max_timeout_days_configurable()
                 
                 if new_timeout_days <= 0:
-                    await self.reply_to_message(content=f"Please choose a number of days greater than 0!", interaction=interaction, error=True)
+                    await self.reply_to_message(content=f"Please choose a number of days greater than 0!", interaction=interaction, error=True, ephemeral=not public)
                     return
                 elif max_timeout_days > 0 and new_timeout_days > max_timeout_days:
-                    await self.reply_to_message(content=f"Timeout lengths greater than {max_timeout_days} are not supported by the bot right now. If you would like a longer timeout length, join my support server and let me know!", interaction=interaction, error=True)
+                    await self.reply_to_message(content=f"Timeout lengths greater than {max_timeout_days} are not supported by the bot right now. If you would like a longer timeout length, join my support server and let me know!", interaction=interaction, error=True, ephemeral=not public)
                     return
                 
                 await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='timeout_days', new_value=new_timeout_days)
-                await self.reply_to_message(content=f"Finished setting the timeout days to **{new_timeout_days}**!", interaction=interaction)
+                await self.reply_to_message(content=f"Finished setting the timeout days to **{new_timeout_days}**!", interaction=interaction, ephemeral=not public)
             
             case AvailableSettingsToModify.ResetCurrentPlayerTimeRemaining:
                 await self.file_manager.reset_timestamp(proper_guild_id)
-                await self.reply_to_message(content=f"Timestamp has been reset!", interaction=interaction, followup=False)
+                await self.reply_to_message(content=f"Timestamp has been reset!", interaction=interaction, followup=False, ephemeral=not public)
             
             case AvailableSettingsToModify.SafeModeEnabled:
                 yes_options = ["1", "yes", "true", "yep", "duh", "yes, please", "affirmative"]
                 no_options = ["0", "no", "nah", "false", "no, thank you", "negative"]
 
                 if value == None:
-                    await self.reply_to_message(content="To toggle safe mode, please set the `value` of this command to either \"yes\" or \"no\". Thank you!", interaction=interaction, error=True)
+                    await self.reply_to_message(content="To toggle safe mode, please set the `value` of this command to either \"yes\" or \"no\". Thank you!", interaction=interaction, error=True, ephemeral=not public)
                     return
                 value=value.lower()
                 
@@ -778,7 +779,7 @@ class dm_listener(commands.Cog):
                 elif value in no_options:
                     activate = False
                 else:
-                    await self.reply_to_message(content=f"I couldn't understand that. Please try again, and this time, set the `value` to \"yes\" or \"no\". Thanks!", interaction=interaction, error=True)
+                    await self.reply_to_message(content=f"I couldn't understand that. Please try again, and this time, set the `value` to \"yes\" or \"no\". Thanks!", interaction=interaction, error=True, ephemeral=not public)
                     return
                 
                 await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='safe_mode', new_value=activate)
@@ -788,7 +789,7 @@ class dm_listener(commands.Cog):
                 else:
                     message = "**Warning: Safe Mode has been disabled**. Messages will *not* be filtered for vulgarity and the like."
                     
-                await self.reply_to_message(content=message, interaction=interaction)
+                await self.reply_to_message(content=message, interaction=interaction, ephemeral=not public)
                     
             
     async def is_moderator(self, user_id: int, guild_channel: discord.abc.GuildChannel):
@@ -830,27 +831,27 @@ class dm_listener(commands.Cog):
     @app_commands.command(name="archive_story", description="Admin command: archives your current story and starts a new story")
     @app_commands.checks.cooldown(1, 24 * 60 * 60) # Makes sure this can only be run once a day
     #@app_commands.checks.has_permissions(moderate_members=True)
-    async def new_story(self, interaction: discord.Interaction, confirm: bool, delete_old_story:bool = False):
+    async def new_story(self, interaction: discord.Interaction, confirm: bool, delete_old_story:bool = False, public: bool = False):
         
         if not confirm:
-            await self.reply_to_message(content=f"Just to be sure no one accidentally types this command, you need to set the `confirm` parameter to True to create a new story. If that was your goal, try running this command again with that parameter changed. If not, feel free to ignore this!", interaction=interaction, ephemeral=True)
+            await self.reply_to_message(content=f"Just to be sure no one accidentally types this command, you need to set the `confirm` parameter to True to create a new story. If that was your goal, try running this command again with that parameter changed. If not, feel free to ignore this!", interaction=interaction, ephemeral=not public)
             return
             
         if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=not public)
             return
         
         try:
             await self.file_manager.new_story(interaction.guild_id, forced = delete_old_story)
-            await self.reply_to_message(content=f"Your old story has been archived, and a new story has been created! Run `/story {await self.file_manager.get_archived_story_count(interaction.guild_id)}` to see your last story, and feel free to start your storywriting. Have fun!", interaction=interaction)
+            await self.reply_to_message(content=f"Your old story has been archived, and a new story has been created! Run `/story {await self.file_manager.get_archived_story_count(interaction.guild_id)}` to see your last story, and feel free to start your storywriting. Have fun!", interaction=interaction, ephemeral=not public)
             await self.new_user(guild_id=interaction.guild_id)
             
         except storybot_exceptions.TooManyArchivedStoriesException:
-            await self.reply_to_message(content=f"Unfortunately, you've reached the limit for stories archived, {await self.file_manager.get_archived_story_count(interaction.guild_id)}. If you'd like to delete your first stored story, you can replace it with this story. Make sure to set the `delete_old_story` tag to true, then run this command again.\n\nYou can run `/story 1` and pin that message before resetting the story to make sure everyone still has access to it; I just need to make sure I have enough space on my hard drive to store everyone's stories. Thanks for understanding!\n\nIf you have any questions or complaints, feel free to bring them up in my Discord server! The link is in my bio.", interaction=interaction)
+            await self.reply_to_message(content=f"Unfortunately, you've reached the limit for stories archived, {await self.file_manager.get_archived_story_count(interaction.guild_id)}. If you'd like to delete your first stored story, you can replace it with this story. Make sure to set the `delete_old_story` tag to true, then run this command again.\n\nYou can run `/story 1` and pin that message before resetting the story to make sure everyone still has access to it; I just need to make sure I have enough space on my hard drive to store everyone's stories. Thanks for understanding!\n\nIf you have any questions or complaints, feel free to bring them up in my Discord server! The link is in my bio.", interaction=interaction, ephemeral=not public)
             
     @app_commands.guild_only()
     @app_commands.command(name="current_users")
-    async def list_users(self, interaction: discord.Interaction):
+    async def list_users(self, interaction: discord.Interaction, public: bool = False):
         """Lists the active users in a guild"""
         
         gid = self.get_proper_guild_id(interaction.channel)
@@ -865,7 +866,7 @@ class dm_listener(commands.Cog):
                 response += f"<@!{id}>\n"
             response = response.rstrip()
         
-        await self.reply_to_message(interaction=interaction, content=response, title="Current authors in this guild", ephemeral=True)
+        await self.reply_to_message(interaction=interaction, content=response, title="Current authors in this guild", ephemeral=not public)
         
     async def purge_guild_id_list(self):
         """Checks which guilds the bot is not in and leaves those guilds"""
@@ -888,7 +889,7 @@ class dm_listener(commands.Cog):
     async def undo(self, interaction: discord.Interaction, public: bool = False):
         """Admin command: deletes the last message added to the bot"""
         if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=not public)
             return
         
         proper_guild_id = self.get_proper_guild_id(interaction.channel)
@@ -909,13 +910,13 @@ class dm_listener(commands.Cog):
         """Admin command: Sets the current user for the bot"""
         
         if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
+            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=not public, ephemeral=True)
             return
         
         try:
             user_id = await self.get_user_id_from_string(interaction.guild, user)
         except storybot_exceptions.UserNotFoundFromStringError:
-            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction)
+            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction, error=not public)
             return
         
         proper_guild = self.get_proper_guild_id(interaction.channel)
