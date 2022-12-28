@@ -9,7 +9,7 @@ class user_manager():
     
     async def set_random_weighted_user(self, guild_id: int) -> int:
         """Sets a random user as the current user based on their reputation"""
-        json_formatted = await self.bot.file_manager.get_users_and_reputations(guild_id)
+        json_formatted = await self.bot.file_manager.get_active_users_and_reputations(guild_id)
         ids = []
         reputations = []
         for key in json_formatted.keys():
