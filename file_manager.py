@@ -175,7 +175,7 @@ class file_manager():
         Returns:
             list[int]: a list with all of the user's servers
         """
-        result = (await self._get_db_connection_pool().fetch(f"select guild_id from \"Users\" where user_id = '{user_id}'"))
+        result = (await self._get_db_connection_pool().fetch(f"select guild_id from \"Users\" where user_id = '{user_id}' and is_active=true"))
         result = [int(i.get("guild_id")) for i in result]
         return result
     
@@ -253,10 +253,10 @@ class file_manager():
         
     async def get_active_users(self, guild_id: int) -> list[int]:
         """Returns the user ids of all users in a guild"""
-        responses = await self._get_db_connection_pool().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}'")
+        responses = await self._get_db_connection_pool().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}' and is_active=True")
         return [int(i.get("user_id")) for i in responses]
     
-    async def get_users_and_reputations(self, guild_id: int) -> json:
+    async def get_active_users_and_reputations(self, guild_id: int) -> json:
         """Returns a json-format of all the user ids and their reputations from a server
 
         Args:
@@ -265,7 +265,7 @@ class file_manager():
         Returns:
             json: the users in a server in a {userid (str): reputation (int)} format
         """
-        responses = await self._get_db_connection_pool().fetch(f"select user_id, reputation from \"Users\" where guild_id='{guild_id}'")
+        responses = await self._get_db_connection_pool().fetch(f"select user_id, reputation from \"Users\" where guild_id='{guild_id}' and is_active=True")
         
         ret = {}
         for user in responses:
