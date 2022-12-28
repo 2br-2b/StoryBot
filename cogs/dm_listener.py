@@ -949,6 +949,32 @@ class dm_listener(commands.Cog):
             else:
                 await self.reply_to_message(interaction=interaction, content=f"<@!{user_id}> is not an author in this guild. Have them run `/join`, then try again.", error=True, ephemeral=not public)
         
+    @app_commands.guild_only()
+    @app_commands.command(name="pause")
+    async def pause(self, interaction: discord.Interaction, days: int = 0, weeks: int = 0, public: bool = False):
+        """Pauses your turn for the length of time requested"""
+        error_message = None
+        
+        if days < 0:
+            await self.reply_to_message(interaction=interaction, content=f"Please enter a positive number of days to pause for!", error=True, ephemeral=not public)
+            return
+        if weeks < 0:
+            await self.reply_to_message(interaction=interaction, content=f"Please enter a positive number of weeks to pause for!", error=True, ephemeral=not public)
+            return
+        if days + weeks * 7 > 90:
+            await self.reply_to_message(interaction=interaction, content=f"You can only pause for up to 90 days. Please try again!", error=True, ephemeral=not public)
+            return
+        
+        try:
+            self.user_manager.pause_user(guild_id=interaction.guild_id, user_id=interaction.user.id, days=days + weeks * 7)
+        except storybot_exceptions.NotAnAuthorException:
+            await self.reply_to_message(interaction=interaction, content=f"You have to be an author to pause your turn!", error=True, ephemeral=not public)
+            return
+        
+        self.reply_to_message(interaction=interaction, content=f"Success! You are now paused for {days + weeks * 7} days!", ephemeral=not public)
+        
+        
+        
 class DropdownView(discord.ui.View):
     def __init__(self, server_json, dropdown_placeholder='Which server is this story for?'):
         super().__init__()

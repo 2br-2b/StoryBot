@@ -378,6 +378,33 @@ class file_manager():
         
         return response.get("sent_message_id")
         
+    async def pause_user(self, guild_id: int, user_id: int, days: int = 0) -> None:
+        """Pauses a user for the requested number of days. If days = 0, then the user will be paused indefinitely.
+
+        Args:
+            guild_id (int): the guild to pause the user in
+            user_id (int): the user to pause
+            days (int, optional):The number of days to pause for. Defaults to 0.
+        """
+        
+        database_pool = self._get_db_connection_pool()
+        
+        paused = (await database_pool.fetchrow(f"SELECT is_paused, membership_id FROM \"Users\" WHERE guild_id='{guild_id}' AND user_id='{user_id}'")).get("is_paused")
+        
+        if paused == None:
+            raise storybot_exceptions.NotAnAuthorException(f"{user_id} can't pause in {guild_id} since they're not an author!")
+        
+        if days != 0:
+            await database_pool.execute(f"update \"Users\" set paused_until=now()+INTERVAL '{days} day', is_active=False WHERE membership_id={paused.get('membership_id')}")
+        else:
+            await database_pool.execute(f"update \"Users\" set is_active=False WHERE membership_id={paused.get('membership_id')}")
+        
+        
+        
+        
+        
+        
+        
         
 
 @staticmethod
