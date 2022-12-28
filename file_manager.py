@@ -187,6 +187,8 @@ class file_manager():
                 
                 await self._get_db_connection_pool().execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()})")
                 await self.log_action(user_id=user_id, guild_id=guild_id, XSS_WARNING_action="join")
+            else:
+                raise storybot_exceptions.AlreadyAnAuthorException(f"{user_id} is already an author in {guild_id}!")
         except asyncpg.exceptions.ForeignKeyViolationError:
             print(f"Unknown guild found: {guild_id}; user_id: {user_id}")
             await self.add_guild(guild_id=guild_id)

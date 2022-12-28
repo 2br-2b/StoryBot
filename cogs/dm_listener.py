@@ -401,6 +401,8 @@ class dm_listener(commands.Cog):
                 await self.file_manager.reset_timestamp(guild_id)
         except storybot_exceptions.UserIsBannedException:
             await self.reply_to_message(context=ctx, content="You are currently banned in this server. If you believe this is in error, please reach out to your server's moderators.", error=True, ephemeral=not public)
+        except storybot_exceptions.AlreadyAnAuthorException:
+            await self.reply_to_message(context=ctx, content="You are already an author in this server!", error=True, ephemeral=not public)
 
     @commands.guild_only()
     @commands.hybrid_command(name="leave")
