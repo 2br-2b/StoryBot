@@ -1,10 +1,11 @@
 import random
 from config_manager import ConfigManager
+from file_manager import file_manager
 
 class user_manager():
     def __init__(self, bot, config_manager: ConfigManager):
         self.bot = bot
-        self.config_manager = config_manager
+        self.config_manager: ConfigManager = config_manager
     
     async def set_random_weighted_user(self, guild_id: int) -> int:
         """Sets a random user as the current user based on their reputation"""
@@ -57,7 +58,7 @@ class user_manager():
         """Adds the given user to the list of users"""
         await self.bot.file_manager.add_user(user_id=user_id, guild_id=guild_id)
 
-    async def remove_user(self, guild_id: int, user_id):
+    async def remove_user(self, guild_id: int, user_id: int):
         """Removes the given user from the list of users"""
         await self.bot.file_manager.remove_user(user_id=user_id, guild_id=guild_id)
 
