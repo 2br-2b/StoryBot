@@ -643,7 +643,7 @@ class dm_listener(commands.Cog):
         if user_id == None:
             await self.user_manager.set_random_weighted_user(guild_id)
         else:
-            if user_id in (await self.user_manager.get_unweighted_list(guild_id)):
+            if user_id in (await self.user_manager.get_active_and_inactive_users(guild_id)):
                 await self.user_manager.set_current_user(guild_id=guild_id, user_id=user_id)
             else:
                 raise storybot_exceptions.NotAnAuthorException(f"{user_id} is not an author in {guild_id}!")

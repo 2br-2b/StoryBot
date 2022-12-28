@@ -79,10 +79,8 @@ class user_manager():
         return await self.bot.file_manager.get_active_users(guild_id)
 
 
-    ######################################
-    # The methods for the recent users queue.
-    # These should probably be in their own class, but since this implementation may be changing when multi server support is added, I decided to just put them in here for now.
-    ######################################
+    async def get_active_and_inactive_users(self, guild_id: int) -> list[int]:
+        return await self.bot.file_manager.get_all_users(guild_id)
 
     async def get_recent_users_queue(self, guild_id: int) -> list[int]:
         return await self.bot.file_manager.get_recent_users_queue(guild_id)
