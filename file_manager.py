@@ -121,7 +121,7 @@ class file_manager():
     async def get_current_user_id(self,  guild_id: int) -> str:
         """Gets the ID of the current user of a server"""
         result = (await self._get_db_connection_pool().fetchrow(f"select current_user_id from \"Guilds\" where guild_id = '{guild_id}'"))
-        if result == None or result == "0":
+        if result == None or result.get("current_user_id") == "0":
             return None
         return result.get("current_user_id")
     
