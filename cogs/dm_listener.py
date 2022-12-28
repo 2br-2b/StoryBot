@@ -116,43 +116,60 @@ class dm_listener(commands.Cog):
         
         content="""This bot is a story bot.  One user will write a part of the story (anywhere from a sentence or two to a couple of paragraphs - your choice!), then another, and so on until the story is complete!
 
-        `/join` adds you to the authors, while `/leave` removes you
-        `/story` displays the story so far - put a number afterwards to see a past story
-        `/turn` displays whose turn it is"""
+        - `/join` adds you to the authors, while `/leave` removes you
+        - `/story` displays the story so far - put a number afterwards to see a past story
+        - `/skip` skips your turn (in case you don't have time to write)
+        - `/turn` displays whose turn it is in this server. If it's your turn, DM the bot to write something!
+        - `/my_turns` shows all the servers where it's your turn. If it's your turn in multiple, when you send the bot a story, it'll ask you which you're writing for"""
     
         if show_admin_commands:
-            user_id = interaction.user.id
-            
-            if isinstance(interaction.channel, discord.abc.PrivateChannel):
-                content = """A direct message? Clever. I see you wish to learn the ways of the admins. Very well, I shall teach you. But beware: these commands only work in servers.
+            if not public:
+                user_id = interaction.user.id
                 
-                `/configure` brings balance to the story by letting admins prepare the bot
-                `/ban` and `/unban` are the yin and yang of the bot, representing life and death. `/kick` acts as their center, not quite causing destruction, yet still bringing death to the server
-                `/undo` permits people to change their ways, perhaps undoing damages done by those seeking to destroy the balance
-                `/set_turn` is the paradox, for it disrupts the balance, yet allows for greater balance together
-                `/archive_story` is the great reset, allowing people to begin again"""
-                
-            else:
-                if await self.is_moderator(user_id, interaction.id):
-                    content = """But of course! I will show you all the ways of the StoryBot Moderators.
+                if interaction.guild == None:
+                    content = """A direct message? Clever. I see you wish to learn the ways of the admins. Very well, I shall teach you. But beware: these commands only work in servers.
                     
-                    `/configure` shows all the ways you can troll your subjects
-                    `/kick` and `/ban` will fortify your defenses against the trolls of the internet
-                    `/unban` can be used to pardon the plebs who have offended your grace
-                    `/undo` will fix the errors of your subjects by nullifying their contributions
-                    `/set_turn` allows you to grant favors to your closest subjects
-                    `/archive_story` will bring closure to your story and allow you to begin again"""
+                    - `/configure` brings balance to the story by letting admins prepare the bot
+                    - `/ban` and `/unban` are the yin and yang of the bot, representing life and death. `/kick` acts as their center, not quite causing destruction, yet still bringing death to the server
+                    - `/undo` permits people to change their ways, perhaps undoing damages done by those seeking to destroy the balance
+                    - `/set_turn` is the paradox, for it disrupts the balance, yet allows for greater balance together
+                    - `/archive_story` is the great reset, allowing people to begin again
+                    
+                    If you wish for regular help, set `public` to True"""
+                    
                 else:
-                    content = """Heh? An imposter? Well, I suppose I can show you all of the ways by which you will be punished.
-                    
-                    `/configure` will give your lords the power to manipulate the masses
-                    `/kick`, `/ban`, and `/unban` represent the powers your lord has over all members of the server
-                    `/undo` shows how futile your writings are, as they can be wiped away in an instant
-                    `/set_turn` can be used to alter the flow of time (and the story)
-                    `/archive_story` shall be used to complete quests and begin new ones"""
-                
+                    if await self.is_moderator(user_id, interaction.channel):
+                        content = """But of course! I will show you all the ways of the StoryBot Moderators.
+                        
+                        - `/configure` shows all the ways you can troll your subjects
+                        - `/kick` and `/ban` will fortify your defenses against the trolls of the internet
+                        - `/unban` can be used to pardon the plebs who have offended your grace
+                        - `/undo` will fix the errors of your subjects by nullifying their contributions
+                        - `/set_turn` allows you to grant favors to your closest subjects
+                        - `/archive_story` will bring closure to your story and allow you to begin again
+                        
+                        If you wish for normal "advice", set `public` on this command to True"""
+                    else:
+                        content = """Heh? An imposter? Well, I suppose I can show you all of the ways by which you will be punished.
+                        
+                        - `/configure` will give your lords the power to manipulate the masses
+                        - `/kick`, `/ban`, and `/unban` represent the powers your lord has over all members of the server
+                        - `/undo` shows how futile your writings are, as they can be wiped away in an instant
+                        - `/set_turn` can be used to alter the flow of time (and the story)
+                        - `/archive_story` shall be used to complete quests and begin new ones
+                        
+                        If you wish do not wish to be humiliated again, run this command with `public` set to True"""
             
-            
+            else:
+                content = """Here is a list of the admin-only commands:
+                        
+                    - `/configure` changes the bot's settings
+                    - `/kick`, `/ban`, and `/unban` have obvious functions
+                    - `/undo` deletes the most recent addition to the story (but doesn't remove the message from the story output channel)
+                    - `/set_turn` changes the current user to a user of your choice. This can be used along with `/undo` to reverse the effects of a turn!
+                    - `/archive_story` archives the current story and lets you start over. Don't worry - you'll still be able to read the old story!"""
+                        
+                        
         await self.reply_to_message(interaction=interaction, content=content, ephemeral=not public)
 
     @commands.guild_only()
