@@ -1,14 +1,15 @@
 import random
 from config_manager import ConfigManager
+from file_manager import file_manager
 
 class user_manager():
     def __init__(self, bot, config_manager: ConfigManager):
         self.bot = bot
-        self.config_manager = config_manager
+        self.config_manager: ConfigManager = config_manager
     
     async def set_random_weighted_user(self, guild_id: int) -> int:
         """Sets a random user as the current user based on their reputation"""
-        json_formatted = await self.bot.file_manager.get_users_and_reputations(guild_id)
+        json_formatted = await self.bot.file_manager.get_active_users_and_reputations(guild_id)
         ids = []
         reputations = []
         for key in json_formatted.keys():
@@ -57,7 +58,7 @@ class user_manager():
         """Adds the given user to the list of users"""
         await self.bot.file_manager.add_user(user_id=user_id, guild_id=guild_id)
 
-    async def remove_user(self, guild_id: int, user_id):
+    async def remove_user(self, guild_id: int, user_id: int):
         """Removes the given user from the list of users"""
         await self.bot.file_manager.remove_user(user_id=user_id, guild_id=guild_id)
 
@@ -77,11 +78,11 @@ class user_manager():
     async def get_unweighted_list(self, guild_id: int) -> list[int]:
         return await self.bot.file_manager.get_active_users(guild_id)
 
+    async def get_inactive_users(self, guild_id: int) -> list[int]:
+        return await self.bot.file_manager.get_inactive_users(guild_id)
 
-    ######################################
-    # The methods for the recent users queue.
-    # These should probably be in their own class, but since this implementation may be changing when multi server support is added, I decided to just put them in here for now.
-    ######################################
+    async def get_active_and_inactive_users(self, guild_id: int) -> list[int]:
+        return await self.bot.file_manager.get_all_users(guild_id)
 
     async def get_recent_users_queue(self, guild_id: int) -> list[int]:
         return await self.bot.file_manager.get_recent_users_queue(guild_id)
@@ -99,8 +100,16 @@ class user_manager():
         """
         return user_id in await self.get_recent_users_queue(guild_id)
     
+    async def pause_user(self, guild_id: int, user_id: int, days: int = 0):
+        await self.bot.file_manager.pause_user(guild_id, user_id, days)
 
-
+    async def unpause_all_necessary_users(self) -> list:
+        print("Checking for unpauses...")
+        list_to_unpause = await self.bot.file_manager.get_all_users_to_unpause()
+        for tup in list_to_unpause:
+            print(f"unpausing {tup}")
+            await self.bot.file_manager.make_user_active(tup[0], tup[1])
+        return list_to_unpause
 
 
 @staticmethod

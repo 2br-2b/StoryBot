@@ -121,7 +121,7 @@ class file_manager():
     async def get_current_user_id(self,  guild_id: int) -> str:
         """Gets the ID of the current user of a server"""
         result = (await self._get_db_connection_pool().fetchrow(f"select current_user_id from \"Guilds\" where guild_id = '{guild_id}'"))
-        if result == None or result == "0":
+        if result == None or result.get("current_user_id") == "0":
             return None
         return result.get("current_user_id")
     
@@ -129,8 +129,10 @@ class file_manager():
     async def set_current_user_id(self,  guild_id: int, user_id: int) -> str:
         """Sets the current user for a given guild"""
         if user_id == None:
-            user_id = 0
-        await self._get_db_connection_pool().execute(f"UPDATE \"Guilds\" SET current_user_id='{user_id}' WHERE guild_id='{guild_id}'")
+            user_id = "null"
+        else:
+            user_id=f"'{user_id}'"
+        await self._get_db_connection_pool().execute(f"UPDATE \"Guilds\" SET current_user_id={user_id} WHERE guild_id='{guild_id}'")
         return str(user_id)
         
         
@@ -175,7 +177,7 @@ class file_manager():
         Returns:
             list[int]: a list with all of the user's servers
         """
-        result = (await self._get_db_connection_pool().fetch(f"select guild_id from \"Users\" where user_id = '{user_id}'"))
+        result = (await self._get_db_connection_pool().fetch(f"select guild_id from \"Users\" where user_id = '{user_id}' and is_active=true"))
         result = [int(i.get("guild_id")) for i in result]
         return result
     
@@ -185,12 +187,30 @@ class file_manager():
                 if await self.user_is_banned(guild_id=guild_id, user_id=user_id):
                     raise storybot_exceptions.UserIsBannedException(f"{user_id} is banned in {guild_id}")
                 
-                await self._get_db_connection_pool().execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()})")
-                await self.log_action(user_id=user_id, guild_id=guild_id, XSS_WARNING_action="join")
+                if await self.user_is_inactive(guild_id=guild_id, user_id=user_id):
+                    await self.make_user_active(guild_id=guild_id, user_id=user_id)
+                else:
+                    await self._get_db_connection_pool().execute(f"INSERT INTO \"Users\" (user_id, guild_id, reputation) VALUES ('{user_id}', '{guild_id}', {await self.config_manager.get_default_reputation()})")
+                    await self.log_action(user_id=user_id, guild_id=guild_id, XSS_WARNING_action="join")
+            else:
+                raise storybot_exceptions.AlreadyAnAuthorException(f"{user_id} is already an author in {guild_id}!")
         except asyncpg.exceptions.ForeignKeyViolationError:
             print(f"Unknown guild found: {guild_id}; user_id: {user_id}")
             await self.add_guild(guild_id=guild_id)
             await self.add_user(user_id=user_id, guild_id=guild_id)
+        
+    async def user_is_inactive(self, guild_id: int, user_id: int) -> bool:
+        """Returns if a user is an author in a given guild, but is not active
+
+        Args:
+            guild_id (int): the guild to check
+            user_id (int): the user to check
+
+        Returns:
+            bool: True if the user is in the server but inactive, False if either is false
+        """
+        response = await self._get_db_connection_pool().fetchrow(f"SELECT is_active from \"Users\" where user_id = '{user_id}' and guild_id = '{guild_id}'")
+        return response != None and not response.get("is_active")
         
     async def user_is_banned(self, guild_id: int, user_id: int) -> bool:
         """Returns whether a user is banned in a given guild
@@ -250,11 +270,21 @@ class file_manager():
         
         
     async def get_active_users(self, guild_id: int) -> list[int]:
-        """Returns the user ids of all users in a guild"""
+        """Returns the user ids of all active authors in a guild"""
+        responses = await self._get_db_connection_pool().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}' and is_active=True")
+        return [int(i.get("user_id")) for i in responses]
+    
+    async def get_all_users(self, guild_id: int) -> list[int]:
+        """Returns the user ids of all authors in a guild, active or not"""
         responses = await self._get_db_connection_pool().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}'")
         return [int(i.get("user_id")) for i in responses]
     
-    async def get_users_and_reputations(self, guild_id: int) -> json:
+    async def get_inactive_users(self, guild_id: int) -> list[int]:
+        """Returns the user ids of all authors in a guild, active or not"""
+        responses = await self._get_db_connection_pool().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}' and is_active = False")
+        return [int(i.get("user_id")) for i in responses]
+    
+    async def get_active_users_and_reputations(self, guild_id: int) -> json:
         """Returns a json-format of all the user ids and their reputations from a server
 
         Args:
@@ -263,7 +293,7 @@ class file_manager():
         Returns:
             json: the users in a server in a {userid (str): reputation (int)} format
         """
-        responses = await self._get_db_connection_pool().fetch(f"select user_id, reputation from \"Users\" where guild_id='{guild_id}'")
+        responses = await self._get_db_connection_pool().fetch(f"select user_id, reputation from \"Users\" where guild_id='{guild_id}' and is_active=True")
         
         ret = {}
         for user in responses:
@@ -373,6 +403,37 @@ class file_manager():
         await self._get_db_connection_pool().execute(f"DELETE FROM \"Logs\" where log_id = {log_id}")
         
         return response.get("sent_message_id")
+        
+    async def pause_user(self, guild_id: int, user_id: int, days: int = 0) -> None:
+        """Pauses a user for the requested number of days. If days = 0, then the user will be paused indefinitely.
+
+        Args:
+            guild_id (int): the guild to pause the user in
+            user_id (int): the user to pause
+            days (int, optional):The number of days to pause for. Defaults to 0.
+        """
+        
+        database_pool = self._get_db_connection_pool()
+        
+        response = (await database_pool.fetchrow(f"SELECT is_active, membership_id FROM \"Users\" WHERE guild_id='{guild_id}' AND user_id='{user_id}'"))
+        
+        
+        if response.get("is_active") == None:
+            raise storybot_exceptions.NotAnAuthorException(f"{user_id} can't pause in {guild_id} since they're not an author!")
+        
+        if days != 0:
+            await database_pool.execute(f"update \"Users\" set paused_until=now()+INTERVAL '{days} day', is_active=False WHERE membership_id={response.get('membership_id')}")
+        else:
+            await database_pool.execute(f"update \"Users\" set is_active=False, paused_until=Null WHERE membership_id={response.get('membership_id')}")
+            
+        
+    async def make_user_active(self, guild_id: int, user_id: int):
+        database_pool = self._get_db_connection_pool()
+        await database_pool.execute(f"update \"Users\" set is_active=True, paused_until=Null WHERE guild_id='{guild_id}' AND user_id='{user_id}'")
+        
+        
+    async def get_all_users_to_unpause(self) -> list:
+        return [(i.get("guild_id"), i.get("user_id")) for i in await self._get_db_connection_pool().fetch("SELECT user_id, guild_id FROM \"Users\" WHERE is_active=false and paused_until IS NOT null AND paused_until < now()")]
         
         
 

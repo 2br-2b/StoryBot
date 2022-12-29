@@ -35,11 +35,14 @@ class dm_listener(commands.Cog):
     async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
         """Sends the given message to the current user"""
         try:
-            await (await (await self.bot.fetch_user(int(await self.user_manager.get_current_user(guild_id)))).create_dm()).send(message, embed=embed, file = file)
+            await self.dm_user(user_id=int(await self.user_manager.get_current_user(guild_id)), message=message, file=file, embed=embed)
         
         except discord.ext.commands.errors.HybridCommandError: # Means the user couldn't be DMed
             await self.remove_user_plus_skip_logic(guild_id, int(await self.user_manager.get_current_user(guild_id)))
             
+    async def dm_user(self, user_id: int, message, file = None, embed = None):
+        """Sends the given message to the current user"""
+        await (await (await self.bot.fetch_user(user_id)).create_dm()).send(message, embed=embed, file = file)
 
     async def notify_people(self, guild_id: int):
         """Notifies the current user that it's their turn to add to the story"""
@@ -357,7 +360,13 @@ class dm_listener(commands.Cog):
                         pass
                     await self.file_manager.set_notified(guild_id, True)
                     
-
+    @tasks.loop(seconds=60 * 60 * 2) # Check back every 2 hours
+    async def unpause_users(self):
+        #Guild_id is first, then user_id
+        tuples = await self.user_manager.unpause_all_necessary_users()
+        for letuple in tuples:
+            await self.dm_user(user_id=letuple[1], message=f"You have been automatically unpaused in {(await self.bot.fetch_guild(letuple[0])).name}`!")
+            
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -372,11 +381,18 @@ class dm_listener(commands.Cog):
         except RuntimeError as e:
             if not str(e) == "Task is already launched and is not completed.":
                 raise RuntimeError(str(e))
+            
+        try:
+            self.unpause_users.start()
+        except RuntimeError as e:
+            if not str(e) == "Task is already launched and is not completed.":
+                raise RuntimeError(str(e))
 
 
     def cog_unload(self):
         self.timeout_checker.cancel()
         self._update_status_loop.stop()
+        self.unpause_users.stop()
         
         
     @tasks.loop(hours = 24) # Check back every 24 hours
@@ -401,6 +417,8 @@ class dm_listener(commands.Cog):
                 await self.file_manager.reset_timestamp(guild_id)
         except storybot_exceptions.UserIsBannedException:
             await self.reply_to_message(context=ctx, content="You are currently banned in this server. If you believe this is in error, please reach out to your server's moderators.", error=True, ephemeral=not public)
+        except storybot_exceptions.AlreadyAnAuthorException:
+            await self.reply_to_message(context=ctx, content="You are already an author in this server!", error=True, ephemeral=not public)
 
     @commands.guild_only()
     @commands.hybrid_command(name="leave")
@@ -625,7 +643,7 @@ class dm_listener(commands.Cog):
         if user_id == None:
             await self.user_manager.set_random_weighted_user(guild_id)
         else:
-            if user_id in (await self.user_manager.get_unweighted_list(guild_id)):
+            if user_id in (await self.user_manager.get_active_and_inactive_users(guild_id)):
                 await self.user_manager.set_current_user(guild_id=guild_id, user_id=user_id)
             else:
                 raise storybot_exceptions.NotAnAuthorException(f"{user_id} is not an author in {guild_id}!")
@@ -883,6 +901,15 @@ class dm_listener(commands.Cog):
                 response += f"<@!{id}>\n"
             response = response.rstrip()
         
+        inactive_users = await self.user_manager.get_inactive_users(gid)
+        
+        if len(inactive_users) != 0:
+            response += "\n\n**Inactive/paused users:**\n"
+            for id in inactive_users:
+                response += f"<@!{id}>\n"
+            response = response.rstrip()
+        
+        
         await self.reply_to_message(interaction=interaction, content=response, title="Current authors in this guild", ephemeral=not public)
         
     async def purge_guild_id_list(self):
@@ -923,18 +950,14 @@ class dm_listener(commands.Cog):
     @app_commands.guild_only()
     @app_commands.command(name="set_turn")
     #@app_commands.checks.has_permissions(moderate_members=True)
-    async def set_turn(self, interaction: discord.Interaction, user: str, public: bool = False):
+    async def set_turn(self, interaction: discord.Interaction, user: discord.User, public: bool = False):
         """Admin command: Sets the current user for the bot"""
         
         if not await self.is_moderator(interaction.user.id, interaction.channel):
             await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=not public, ephemeral=True)
             return
         
-        try:
-            user_id = await self.get_user_id_from_string(interaction.guild, user)
-        except storybot_exceptions.UserNotFoundFromStringError:
-            await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction, error=not public)
-            return
+        user_id = user.id
         
         proper_guild = self.get_proper_guild_id(interaction.channel)
         
@@ -946,6 +969,48 @@ class dm_listener(commands.Cog):
                 await self.reply_to_message(interaction=interaction, content=f"I'd love to, but unfortunately, I can't write (yet). Maybe try in a year or so, or keep up-to-date in our support server!", error=True, ephemeral=not public)
             else:
                 await self.reply_to_message(interaction=interaction, content=f"<@!{user_id}> is not an author in this guild. Have them run `/join`, then try again.", error=True, ephemeral=not public)
+        
+    @app_commands.guild_only()
+    @app_commands.command(name="pause")
+    async def pause(self, interaction: discord.Interaction, days: int = 0, weeks: int = 0, public: bool = False):
+        """Pauses your turn for the length of time requested"""
+        error_message = None
+        
+        if days < 0:
+            await self.reply_to_message(interaction=interaction, content=f"Please enter a positive number of days to pause for!", error=True, ephemeral=not public)
+            return
+        if weeks < 0:
+            await self.reply_to_message(interaction=interaction, content=f"Please enter a positive number of weeks to pause for!", error=True, ephemeral=not public)
+            return
+        if days + weeks * 7 > 90:
+            await self.reply_to_message(interaction=interaction, content=f"You can only pause for up to 90 days. Please try again!", error=True, ephemeral=not public)
+            return
+        
+        if str(interaction.user.id) == await self.user_manager.get_current_user(interaction.guild_id):
+            skip_after = True
+        else:
+            skip_after = False
+            
+        
+        try:
+            await self.user_manager.pause_user(guild_id=interaction.guild_id, user_id=interaction.user.id, days=days + weeks * 7)
+        except storybot_exceptions.NotAnAuthorException:
+            await self.reply_to_message(interaction=interaction, content=f"You have to be an author to pause your turn!", error=True, ephemeral=not public)
+            return
+        
+        if(skip_after):
+            try:
+                await self.new_user(interaction.guild_id)
+            except ValueError:
+                #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
+                pass
+        
+        if days + weeks * 7 == 0:
+            await self.reply_to_message(interaction=interaction, content=f"Success! You are now paused until you run `/join` again.", ephemeral=not public)
+        else:
+            await self.reply_to_message(interaction=interaction, content=f"Success! You are now paused for {days + weeks * 7} days!\n\nTo rejoin early, run `/join` again.", ephemeral=not public)
+        
+        
         
 class DropdownView(discord.ui.View):
     def __init__(self, server_json, dropdown_placeholder='Which server is this story for?'):

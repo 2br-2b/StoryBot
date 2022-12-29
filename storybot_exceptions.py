@@ -29,3 +29,7 @@ class NoValidUndoCommand(Exception):
 class NotAnAuthorException(Exception):
     "Is raised when an action would need to involve a user being an author in a guild, but this isn't the case"
     pass
+
+class AlreadyAnAuthorException(Exception):
+    "Is raised when a user tries to join as an author in a server but is already an author there"
+    pass
