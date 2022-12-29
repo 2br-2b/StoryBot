@@ -413,7 +413,7 @@ class dm_listener(commands.Cog):
     @commands.guild_only()
     @commands.hybrid_command(name="join")
     async def add(self, ctx: commands.Context, public: bool = False):
-        """Adds you to the list of authors"""
+        """Adds you to the list of authors, or unpauses you if you're paused"""
         guild_id = ctx.guild.id
         
         try:
