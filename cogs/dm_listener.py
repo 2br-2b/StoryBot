@@ -744,8 +744,16 @@ class dm_listener(commands.Cog):
                         await self.reply_to_message(content=f"I can see that channel, but I can't send messages in it. Check my permissions, then try again.", interaction=interaction, error=True, ephemeral=not public)
                         return
                 
-                await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='story_output_channel', new_value=new_story_output_channel)
-                await self.reply_to_message(content=f"Finished changing the story output channel to <#{new_story_output_channel}>!", interaction=interaction, followup=followup, ephemeral=not public)
+                if new_story_output_channel != 0: #If it is 0, that means cancel was pressed
+                    await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='story_output_channel', new_value=new_story_output_channel)
+                    
+                    if new_story_announcement_channel == -1:
+                        content=f"Disabled the Story Output Channel!"
+                    else:
+                        content=f"Finished changing the story output channel to <#{new_story_output_channel}>!"
+                    
+                    await self.reply_to_message(content=content, interaction=interaction, followup=followup, ephemeral=not public)
+                    
             
             case AvailableSettingsToModify.AnnouncementChannel:
                 if value == None:
@@ -769,8 +777,18 @@ class dm_listener(commands.Cog):
                         await self.reply_to_message(content=f"I can see that channel, but I can't send messages in it. Check my permissions, then try again.", interaction=interaction, error=True, ephemeral=not public)
                         return
                 
-                await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='story_announcement_channel', new_value=new_story_announcement_channel)
-                await self.reply_to_message(content=f"Finished changing the story announcement channel to <#{new_story_announcement_channel}>!", interaction=interaction, followup=followup, ephemeral=not public)
+                
+                if new_story_announcement_channel != 0: #If it is 0, that means cancel was pressed
+                    await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='story_announcement_channel', new_value=new_story_announcement_channel)
+                    
+                    if new_story_announcement_channel == -1:
+                        content=f"Disabled the Story Announcement Channel!"
+                    else:
+                        content=f"Finished changing the story announcement channel to <#{new_story_output_channel}>!"
+                    
+                    await self.reply_to_message(content=content, interaction=interaction, followup=followup, ephemeral=not public)
+                
+                
             
             case AvailableSettingsToModify.TimeoutDays:
                 try:
