@@ -194,7 +194,7 @@ class dm_listener(commands.Cog):
         try:
             await self.reply_to_message(context=ctx, content="Skipping :(", ephemeral=not public)
             
-            if(current_user_id != None):
+            if current_user_id != None and str(ctx.author.id) == current_user_id:
                 await self.file_manager.log_action(user_id=int(current_user_id), guild_id=proper_guild_id, XSS_WARNING_action="skip")
             else:
                 await self.file_manager.log_action(user_id=0, guild_id=proper_guild_id, XSS_WARNING_action="skip")
