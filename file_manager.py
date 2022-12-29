@@ -279,6 +279,11 @@ class file_manager():
         responses = await self._get_db_connection_pool().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}'")
         return [int(i.get("user_id")) for i in responses]
     
+    async def get_inactive_users(self, guild_id: int) -> list[int]:
+        """Returns the user ids of all authors in a guild, active or not"""
+        responses = await self._get_db_connection_pool().fetch(f"select user_id from \"Users\" where guild_id='{guild_id}' and is_active = False")
+        return [int(i.get("user_id")) for i in responses]
+    
     async def get_active_users_and_reputations(self, guild_id: int) -> json:
         """Returns a json-format of all the user ids and their reputations from a server
 

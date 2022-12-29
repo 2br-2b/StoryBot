@@ -78,6 +78,8 @@ class user_manager():
     async def get_unweighted_list(self, guild_id: int) -> list[int]:
         return await self.bot.file_manager.get_active_users(guild_id)
 
+    async def get_inactive_users(self, guild_id: int) -> list[int]:
+        return await self.bot.file_manager.get_inactive_users(guild_id)
 
     async def get_active_and_inactive_users(self, guild_id: int) -> list[int]:
         return await self.bot.file_manager.get_all_users(guild_id)

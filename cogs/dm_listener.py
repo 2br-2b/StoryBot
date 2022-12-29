@@ -901,6 +901,15 @@ class dm_listener(commands.Cog):
                 response += f"<@!{id}>\n"
             response = response.rstrip()
         
+        inactive_users = await self.user_manager.get_inactive_users(gid)
+        
+        if len(inactive_users) != 0:
+            response += "\n\n**Inactive/paused users:**\n"
+            for id in inactive_users:
+                response += f"<@!{id}>\n"
+            response = response.rstrip()
+        
+        
         await self.reply_to_message(interaction=interaction, content=response, title="Current authors in this guild", ephemeral=not public)
         
     async def purge_guild_id_list(self):
@@ -979,10 +988,9 @@ class dm_listener(commands.Cog):
         
         if str(interaction.user.id) == await self.user_manager.get_current_user(interaction.guild_id):
             skip_after = True
-            print("Skip!")
         else:
             skip_after = False
-            print("Don't skip!")
+            
         
         try:
             await self.user_manager.pause_user(guild_id=interaction.guild_id, user_id=interaction.user.id, days=days + weeks * 7)
