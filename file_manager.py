@@ -330,8 +330,8 @@ class file_manager():
         await self._get_db_connection_pool().execute(f"UPDATE \"Guilds\" SET notified={notified} WHERE guild_id='{guild_id}'")
         
     async def get_notified(self, guild_id: int) -> bool:
-        result = await self._get_db_connection_pool().fetch(f"SELECT notified FROM \"Guilds\" WHERE guild_id='{guild_id}'")
-        return result[0].get("notified")
+        result = await self._get_db_connection_pool().fetchrow(f"SELECT notified FROM \"Guilds\" WHERE guild_id='{guild_id}'")
+        return result.get("notified")
     
     
     async def get_archived_story_count(self, guild_id: int) -> int:
