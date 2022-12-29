@@ -188,13 +188,15 @@ class dm_listener(commands.Cog):
             return
         
         try:
+            await self.reply_to_message(context=ctx, content="Skipping :(", ephemeral=not public)
+            
             if(current_user_id != None):
                 await self.file_manager.log_action(user_id=int(current_user_id), guild_id=proper_guild_id, XSS_WARNING_action="skip")
             else:
                 await self.file_manager.log_action(user_id=0, guild_id=proper_guild_id, XSS_WARNING_action="skip")
             
             await self.new_user(proper_guild_id)
-            await self.reply_to_message(context=ctx, content="Skipping :(", ephemeral=not public)
+            
         except ValueError:
             await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!", error=True, ephemeral=not public)
         
@@ -641,6 +643,11 @@ class dm_listener(commands.Cog):
         
         await self.file_manager.reset_timestamp(guild_id)
         if user_id == None:
+            # If the user has timed out or skipped in their 5 most recent logs, the bot will suggest that they pause
+            if await self.file_manager.get_recent_skips(guild_id=guild_id, user_id=await self.user_manager.get_current_user(guild_id), recent_actions_to_check=10) == 10:
+                print("ye")
+                g_name = (await self.bot.fetch_guild(guild_id)).name
+                await self.dm_user(user_id=await self.user_manager.get_current_user(guild_id), message=f"Hey, I've noticed you've timed missed your last few turns in {g_name}, either by skipping your turn or timing out. If you need a break, you can run `/pause` in {g_name}. Then, the I won't choose you as the current author for however long you specify, whether that be a day or a few months!\n\nI added this feature in to help out people who may not have time to write, not to pressure people into leaving stories. If you want to stay unpaused, no pressure - you're still an author in {guild_id}! Just so you know, however, this bot weights the author it chooses based on how often they respond when it's their turn, so you might not be chosen as often as the author.")
             await self.user_manager.set_random_weighted_user(guild_id)
         else:
             if user_id in (await self.user_manager.get_active_and_inactive_users(guild_id)):
