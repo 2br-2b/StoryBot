@@ -769,7 +769,7 @@ class dm_listener(commands.Cog):
                 if new_story_output_channel != 0: #If it is 0, that means cancel was pressed
                     await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='story_output_channel', new_value=new_story_output_channel)
                     
-                    if new_story_announcement_channel == -1:
+                    if new_story_output_channel == -1:
                         content=f"Disabled the Story Output Channel!"
                     else:
                         content=f"Finished changing the story output channel to <#{new_story_output_channel}>!"
