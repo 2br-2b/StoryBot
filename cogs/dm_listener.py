@@ -40,9 +40,13 @@ class dm_listener(commands.Cog):
         except discord.ext.commands.errors.HybridCommandError: # Means the user couldn't be DMed
             await self.remove_user_plus_skip_logic(guild_id, int(await self.user_manager.get_current_user(guild_id)))
             
-    async def dm_user(self, user_id: int, message, file = None, embed = None):
+    async def dm_user(self, user_id: int, message, file = None, embed = None, view = None):
         """Sends the given message to the current user"""
-        await (await (await self.bot.fetch_user(user_id)).create_dm()).send(message, embed=embed, file = file)
+        channel = await (await self.bot.fetch_user(user_id)).create_dm()
+        if view == None:
+            return await channel.send(message, embed=embed, file = file)
+        else:
+            return await channel.send(message, embed=embed, file = file, view=view)
 
     async def notify_people(self, guild_id: int):
         """Notifies the current user that it's their turn to add to the story"""
@@ -188,13 +192,15 @@ class dm_listener(commands.Cog):
             return
         
         try:
-            if(current_user_id != None):
+            await self.reply_to_message(context=ctx, content="Skipping :(", ephemeral=not public)
+            
+            if current_user_id != None and str(ctx.author.id) == current_user_id:
                 await self.file_manager.log_action(user_id=int(current_user_id), guild_id=proper_guild_id, XSS_WARNING_action="skip")
             else:
                 await self.file_manager.log_action(user_id=0, guild_id=proper_guild_id, XSS_WARNING_action="skip")
             
             await self.new_user(proper_guild_id)
-            await self.reply_to_message(context=ctx, content="Skipping :(", ephemeral=not public)
+            
         except ValueError:
             await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!", error=True, ephemeral=not public)
         
@@ -365,7 +371,10 @@ class dm_listener(commands.Cog):
         #Guild_id is first, then user_id
         tuples = await self.user_manager.unpause_all_necessary_users()
         for letuple in tuples:
-            await self.dm_user(user_id=letuple[1], message=f"You have been automatically unpaused in {(await self.bot.fetch_guild(letuple[0])).name}`!")
+            g_name = (await self.bot.fetch_guild(letuple[0])).name
+            view = AskForPause(server_name=g_name, guild_id=letuple[0], dml=self)
+            view.msg = await self.dm_user(user_id=letuple[1], message=f"You have been automatically unpaused in {g_name}!", view=view)
+            await self.user_manager.boost_user(guild_id=letuple[0], user_id=letuple[1])
             
 
     @commands.Cog.listener()
@@ -404,7 +413,7 @@ class dm_listener(commands.Cog):
     @commands.guild_only()
     @commands.hybrid_command(name="join")
     async def add(self, ctx: commands.Context, public: bool = False):
-        """Adds you to the list of authors"""
+        """Adds you to the list of authors, or unpauses you if you're paused"""
         guild_id = ctx.guild.id
         
         try:
@@ -638,9 +647,15 @@ class dm_listener(commands.Cog):
           
     async def new_user(self, guild_id: int, user_id: int = None):
         """Chooses a new user and notifies all relevant parties"""
+        send_timeout_message = False
         
         await self.file_manager.reset_timestamp(guild_id)
         if user_id == None:
+            # If the user has timed out or skipped in their 5 most recent logs, the bot will suggest that they pause
+            if await self.file_manager.get_recent_skips(guild_id=guild_id, user_id=await self.user_manager.get_current_user(guild_id), recent_actions_to_check=5) == 5:
+                old_user_id = await self.user_manager.get_current_user(guild_id)
+                send_timeout_message = True
+                
             await self.user_manager.set_random_weighted_user(guild_id)
         else:
             if user_id in (await self.user_manager.get_active_and_inactive_users(guild_id)):
@@ -650,6 +665,13 @@ class dm_listener(commands.Cog):
         
         if await self.user_manager.get_current_user(guild_id) != None:
             await self.notify_people(guild_id)
+            
+        if send_timeout_message:
+            g_name = (await self.bot.fetch_guild(guild_id)).name
+            
+            view = AskForPause(server_name=g_name, guild_id=guild_id, dml = self)
+            view.msg = await self.dm_user(user_id=old_user_id, message=f"Hey, I've noticed you've timed missed your last few turns in {g_name}, either by skipping your turn or timing out. If you need a break, you can run `/pause` in {g_name}. Then, the I won't choose you as the current author for however long you specify, whether that be a day or a few months!\n\nI added this feature in to help out people who may not have time to write, not to pressure people into leaving stories. If you want to stay unpaused, no pressure - you're still an author in {g_name}! Just so you know, however, this bot weights the author it chooses based on how often they respond when it's their turn, so you might not be chosen as often as the author.", view=view)
+            
 
     def get_proper_guild_id(self, channel: discord.abc.Messageable) -> int:
         if channel.guild is None:
@@ -986,31 +1008,33 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(interaction=interaction, content=f"You can only pause for up to 90 days. Please try again!", error=True, ephemeral=not public)
             return
         
-        if str(interaction.user.id) == await self.user_manager.get_current_user(interaction.guild_id):
-            skip_after = True
-        else:
-            skip_after = False
-            
-        
         try:
-            await self.user_manager.pause_user(guild_id=interaction.guild_id, user_id=interaction.user.id, days=days + weeks * 7)
+            await self.pause_user_with_logic(guild_id=interaction.guild_id, user_id=interaction.user.id, days=days + weeks * 7)
         except storybot_exceptions.NotAnAuthorException:
             await self.reply_to_message(interaction=interaction, content=f"You have to be an author to pause your turn!", error=True, ephemeral=not public)
             return
-        
-        if(skip_after):
-            try:
-                await self.new_user(interaction.guild_id)
-            except ValueError:
-                #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
-                pass
         
         if days + weeks * 7 == 0:
             await self.reply_to_message(interaction=interaction, content=f"Success! You are now paused until you run `/join` again.", ephemeral=not public)
         else:
             await self.reply_to_message(interaction=interaction, content=f"Success! You are now paused for {days + weeks * 7} days!\n\nTo rejoin early, run `/join` again.", ephemeral=not public)
         
+    async def pause_user_with_logic(self, guild_id: int, user_id: int, days: int):
+        if str(user_id) == await self.user_manager.get_current_user(guild_id):
+            skip_after = True
+        else:
+            skip_after = False
+            
+        await self.file_manager.log_action(user_id=user_id, guild_id=guild_id, XSS_WARNING_action="pause")
+            
+        await self.user_manager.pause_user(guild_id=guild_id, user_id=user_id, days=days)
         
+        if(skip_after):
+            try:
+                await self.new_user(guild_id)
+            except ValueError:
+                #This means that there's no users in the list of users. new_user will return an error but will also set the current user to None.
+                pass
         
 class DropdownView(discord.ui.View):
     def __init__(self, server_json, dropdown_placeholder='Which server is this story for?'):
@@ -1109,3 +1133,30 @@ def pieMethod(story):
         if text.strip() != "":
             list.append(text)
     return list
+
+class AskForPause(discord.ui.View):
+    def __init__(self, server_name: str, guild_id: int, dml: dm_listener):
+        super().__init__()
+        self.value = None
+        self.server_name = server_name
+        self.guild_id = guild_id
+        self.dm_listener = dml
+
+    @discord.ui.button(label='Pause for 1 week', style=discord.ButtonStyle.green)
+    async def pause_for_a_week(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = 7
+        await self.dm_listener.pause_user_with_logic(guild_id=self.guild_id, user_id=interaction.user.id, days=self.value)
+        await interaction.response.send_message(f"Confirmed! You won't be chosen as the author for the next week in {self.server_name}!\n\nIf you change your mind before then, run `/join` to unpause yourself!")
+        
+        await self.cleanup()
+    
+    @discord.ui.button(label='Do nothing', style=discord.ButtonStyle.grey)
+    async def do_nothing(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(f"Confirmed! You are still an author in {self.server_name}!")
+        # The log makes sure the user won't get DMed next time they skip
+        await self.dm_listener.file_manager.log_action(user_id=interaction.user.id, guild_id=self.guild_id, XSS_WARNING_action="confirm")
+        await self.cleanup()
+        
+    async def cleanup(self):
+        if self.msg != None: await self.msg.delete()
+        self.stop()
