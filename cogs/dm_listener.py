@@ -35,10 +35,13 @@ class dm_listener(commands.Cog):
     async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
         """Sends the given message to the current user"""
         try:
-            await self.dm_user(user_id=int(await self.user_manager.get_current_user(guild_id)), message=message, file=file, embed=embed)
-        
-        except discord.ext.commands.errors.HybridCommandError: # Means the user couldn't be DMed
-            await self.remove_user_plus_skip_logic(guild_id, int(await self.user_manager.get_current_user(guild_id)))
+            try:
+                await self.dm_user(user_id=int(await self.user_manager.get_current_user(guild_id)), message=message, file=file, embed=embed)
+            
+            except discord.ext.commands.errors.HybridCommandError: # Means the user couldn't be DMed
+                await self.remove_user_plus_skip_logic(guild_id, int(await self.user_manager.get_current_user(guild_id)))
+        except ValueError:
+            pass
             
     async def dm_user(self, user_id: int, message, file = None, embed = None, view = None):
         """Sends the given message to the current user"""
@@ -60,27 +63,30 @@ class dm_listener(commands.Cog):
         except discord.errors.Forbidden:
             # Can't DM the user
             user_id = await self.user_manager.get_current_user(guild_id=guild_id)
-            print(f"Kicking {user_id} from {guild_id} because I can't DM them while running notify_people")
-            await self.user_manager.remove_user(guild_id, user_id=user_id)
-            await self.new_user(guild_id=guild_id)
-        
-        current_user = await (await self.bot.fetch_guild(guild_id)).fetch_member(int(await self.user_manager.get_current_user(guild_id)))
-        
-        emb = await self.create_embed(
-            author_icon_url=current_user.display_avatar.url,
-            author_name=f"It's now {current_user.display_name}'s turn!"
-            )
-        
-        # Send a message in the story chanel
-        channel_int = await self.config_manager.get_story_announcement_channel(guild_id)
-        if channel_int != None:
-            channel = self.bot.get_channel(channel_int)
-            if channel != None:
-                try:
-                    await channel.send(embed = emb)
-                except discord.errors.Forbidden:
-                    # TODO: Check for this perm properly
-                    pass
+            if user_id != None:
+                print(f"Kicking {user_id} from {guild_id} because I can't DM them while running notify_people")
+                await self.user_manager.remove_user(guild_id, user_id=int(user_id))
+                await self.new_user(guild_id=guild_id)
+                
+                
+        if await self.user_manager.get_current_user(guild_id) != None:
+            current_user = await (await self.bot.fetch_guild(guild_id)).fetch_member(int(await self.user_manager.get_current_user(guild_id)))
+            
+            emb = await self.create_embed(
+                author_icon_url=current_user.display_avatar.url,
+                author_name=f"It's now {current_user.display_name}'s turn!"
+                )
+            
+            # Send a message in the story chanel
+            channel_int = await self.config_manager.get_story_announcement_channel(guild_id)
+            if channel_int != None:
+                channel = self.bot.get_channel(channel_int)
+                if channel != None:
+                    try:
+                        await channel.send(embed = emb)
+                    except discord.errors.Forbidden:
+                        # TODO: Check for this perm properly
+                        pass
     
     @commands.guild_only()
     @commands.hybrid_command(name="story")
@@ -330,7 +336,12 @@ class dm_listener(commands.Cog):
         """Skips the current user's turn if they don't respond in the specified amount of time"""
         
         print(f'Timing out {guild_id}...') 
-        current_user_id = int(await self.user_manager.get_current_user(guild_id))
+        current_user_id = await self.user_manager.get_current_user(guild_id)
+        if current_user_id == None:
+            return
+        else:
+            current_user_id = int(current_user_id)
+        
         try:
             await self.dm_current_user(guild_id, f"You took too long! Your turn was skipped in {self.bot.get_guild(guild_id).name}. You\'ll have a chance to add to the story later - don\'t worry!")
             await self.user_manager.unboost_user(guild_id, current_user_id)
@@ -527,12 +538,12 @@ class dm_listener(commands.Cog):
             user_id (int): the user to remove from the guild
         """
         
-        if await self.user_manager.get_current_user(guild_id) == await self.user_manager.get_current_user(guild_id):
+        if str(user_id) == await self.user_manager.get_current_user(guild_id):
             skip_after = True
         else:
             skip_after = False
         
-        await self.user_manager.remove_user(guild_id, int(await self.user_manager.get_current_user(guild_id)))
+        await self.user_manager.remove_user(guild_id, user_id)
     
         if(skip_after):
             try:
@@ -651,9 +662,10 @@ class dm_listener(commands.Cog):
         
         await self.file_manager.reset_timestamp(guild_id)
         if user_id == None:
+            c_user_id = await self.user_manager.get_current_user(guild_id)
+            
             # If the user has timed out or skipped in their 5 most recent logs, the bot will suggest that they pause
-            if await self.file_manager.get_recent_skips(guild_id=guild_id, user_id=await self.user_manager.get_current_user(guild_id), recent_actions_to_check=5) == 5:
-                old_user_id = await self.user_manager.get_current_user(guild_id)
+            if await self.file_manager.get_recent_skips(guild_id=guild_id, user_id=c_user_id, recent_actions_to_check=5) == 5:
                 send_timeout_message = True
                 
             await self.user_manager.set_random_weighted_user(guild_id)
@@ -670,7 +682,7 @@ class dm_listener(commands.Cog):
             g_name = (await self.bot.fetch_guild(guild_id)).name
             
             view = AskForPause(server_name=g_name, guild_id=guild_id, dml = self)
-            view.msg = await self.dm_user(user_id=old_user_id, message=f"Hey, I've noticed you've timed missed your last few turns in {g_name}, either by skipping your turn or timing out. If you need a break, you can run `/pause` in {g_name}. Then, the I won't choose you as the current author for however long you specify, whether that be a day or a few months!\n\nI added this feature in to help out people who may not have time to write, not to pressure people into leaving stories. If you want to stay unpaused, no pressure - you're still an author in {g_name}! Just so you know, however, this bot weights the author it chooses based on how often they respond when it's their turn, so you might not be chosen as often as the author.", view=view)
+            view.msg = await self.dm_user(user_id=c_user_id, message=f"Hey, I've noticed you've timed missed your last few turns in {g_name}, either by skipping your turn or timing out. If you need a break, you can run `/pause` in {g_name}. Then, the I won't choose you as the current author for however long you specify, whether that be a day or a few months!\n\nI added this feature in to help out people who may not have time to write, not to pressure people into leaving stories. If you want to stay unpaused, no pressure - you're still an author in {g_name}! Just so you know, however, this bot weights the author it chooses based on how often they respond when it's their turn, so you might not be chosen as often as the author.", view=view)
             
 
     def get_proper_guild_id(self, channel: discord.abc.Messageable) -> int:
