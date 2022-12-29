@@ -438,8 +438,18 @@ class file_manager():
     async def get_all_users_to_unpause(self) -> list:
         return [(i.get("guild_id"), i.get("user_id")) for i in await self._get_db_connection_pool().fetch("SELECT user_id, guild_id FROM \"Users\" WHERE is_active=false and paused_until IS NOT null AND paused_until < now()")]
         
+    async def get_recent_skips(self, guild_id: int, user_id: int, recent_actions_to_check: int = 5) -> int:
+        """Returns how many of the user's recent actions have been skips or timeouts"""
+        database_pool = self._get_db_connection_pool()
+        val = await database_pool.fetchval(f"with partial_query as (select replace(action, 'timeout', 'skip') as replaced from \"Logs\" where user_id='{user_id}' and guild_id = '{guild_id}' ORDER BY log_id DESC limit {recent_actions_to_check} ) select count (*) as \"count\" from partial_query where replaced='skip' group by replaced")
         
-
+        if val == None:
+            return 0
+        else:
+            return val
+        
+        
+        
 @staticmethod
 def _get_story_file_name(guild_id: int, story_number: int = 0) -> str:
     if story_number == 0:
