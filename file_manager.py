@@ -387,6 +387,9 @@ class file_manager():
         """
         
         response = await self._get_db_connection_pool().fetchrow(f"SELECT characters_in_chunk, sent_message_id, log_id from \"Logs\" where guild_id='{guild_id}' and action='write' ORDER BY log_id DESC")
+        if response == None:
+            raise storybot_exceptions.NoValidUndoCommand("You haven't written anything yet!")
+        
         last_chunk_size = response.get("characters_in_chunk")
         log_id = response.get("log_id")
         
@@ -418,7 +421,7 @@ class file_manager():
         response = (await database_pool.fetchrow(f"SELECT is_active, membership_id FROM \"Users\" WHERE guild_id='{guild_id}' AND user_id='{user_id}'"))
         
         
-        if response.get("is_active") == None:
+        if response == None:
             raise storybot_exceptions.NotAnAuthorException(f"{user_id} can't pause in {guild_id} since they're not an author!")
         
         if days != 0:
