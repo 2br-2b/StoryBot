@@ -818,7 +818,7 @@ class dm_listener(commands.Cog):
                     if new_story_announcement_channel == -1:
                         content=f"Disabled the Story Announcement Channel!"
                     else:
-                        content=f"Finished changing the story announcement channel to <#{new_story_output_channel}>!"
+                        content=f"Finished changing the story announcement channel to <#{new_story_announcement_channel}>!"
                     
                     await self.reply_to_message(content=content, interaction=interaction, followup=followup, ephemeral=not public)
                 
