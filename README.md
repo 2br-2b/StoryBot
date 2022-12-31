@@ -35,6 +35,7 @@ After the story is added to, a new user is chosen based off of a weighted random
 Reputation can be gained in the following ways:
 - Adding to the story gains one reputation
 - An admin can manually increase a user's reputation
+- If you pause yourself for a day or more, when you automatically unpause, you'll gain a reputation point
 
 Reputation can be lost in the following ways:
 - Timing out loses one reputation point (manually skipping your turn does not cause a loss of reputation)
