@@ -88,20 +88,22 @@ class dm_listener(commands.Cog):
                         # TODO: Check for this perm properly
                         pass
     
-    @commands.guild_only()
-    @commands.hybrid_command(name="story")
-    async def story(self, ctx: commands.Context, archived_story_number:int = 0, public: bool = True):
+    
+    @app_commands.guild_only()
+    @app_commands.command(name="story")
+    @app_commands.checks.cooldown(1, 60) # The command can only be run once a minute
+    async def story(self, interaction: discord.Interaction, archived_story_number:int = 0, public: bool = True):
         """Sends a reply with the requested story
         If there is a number, the given story number will be returned"""
         
-        proper_guild_id = self.get_proper_guild_id(ctx)
+        proper_guild_id = interaction.guild_id
         
         if archived_story_number != 0:
             try:
                 file = await self.file_manager.get_story_file(proper_guild_id, archived_story_number)
                 title = "Story " + str(archived_story_number)
             except FileNotFoundError:
-                await self.reply_to_message(content='That story number couldn\'t be found!', context=ctx, ephemeral=not public, error=True)
+                await self.reply_to_message(content='That story number couldn\'t be found!', interaction=interaction, ephemeral=not public, error=True)
                 return
         else:
             file = await self.file_manager.get_story_file(proper_guild_id)
@@ -109,7 +111,7 @@ class dm_listener(commands.Cog):
             
         await self.reply_to_message(
             content=self.lastChars(await self.file_manager.getStory(guild_id = proper_guild_id, story_number = archived_story_number)),
-            title=title, file = file, context=ctx, ephemeral=not public)
+            title=title, file = file, interaction=interaction, ephemeral=not public)
 
     @commands.guild_only()
     @commands.hybrid_command(name="turn")
