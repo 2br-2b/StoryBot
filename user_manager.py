@@ -46,13 +46,9 @@ class user_manager():
     async def set_current_user(self, guild_id: int, user_id: int):
         await self.bot.file_manager.set_current_user_id(guild_id, user_id)
 
-    async def get_current_user(self, guild_id: int) -> str:
+    async def get_current_user(self, guild_id: int) -> int:
         """Returns the current user's id as a string"""
-        ret = await self.bot.file_manager.get_current_user_id(guild_id)
-        if ret == "" or ret == "0":
-            return None
-        else:
-            return ret
+        return await self.bot.file_manager.get_current_user_id(guild_id)
 
     async def add_user(self, guild_id: int, user_id):
         """Adds the given user to the list of users"""
@@ -62,7 +58,7 @@ class user_manager():
         """Removes the given user from the list of users"""
         await self.bot.file_manager.remove_user(user_id=user_id, guild_id=guild_id)
 
-    async def boost_user(self, guild_id: int, user_id):
+    async def boost_user(self, guild_id: int, user_id: int):
         """Boosts the given user's reputation"""
         
         await self.bot.file_manager.alter_reputation(user_id=user_id, guild_id=guild_id, amount=1)

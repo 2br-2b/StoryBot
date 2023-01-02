@@ -36,15 +36,16 @@ class dm_listener(commands.Cog):
         """Sends the given message to the current user"""
         try:
             try:
-                await self.dm_user(user_id=int(await self.user_manager.get_current_user(guild_id)), message=message, file=file, embed=embed)
+                await self.dm_user(user_id=await self.user_manager.get_current_user(guild_id), message=message, file=file, embed=embed)
             
             except discord.ext.commands.errors.HybridCommandError: # Means the user couldn't be DMed
-                await self.remove_user_plus_skip_logic(guild_id, int(await self.user_manager.get_current_user(guild_id)))
+                await self.remove_user_plus_skip_logic(guild_id, await self.user_manager.get_current_user(guild_id))
         except ValueError:
             pass
             
     async def dm_user(self, user_id: int, message, file = None, embed = None, view = None):
         """Sends the given message to the current user"""
+        if(user_id == None): return
         channel = await (await self.bot.fetch_user(user_id)).create_dm()
         if view == None:
             return await channel.send(message, embed=embed, file = file)
@@ -65,12 +66,12 @@ class dm_listener(commands.Cog):
             user_id = await self.user_manager.get_current_user(guild_id=guild_id)
             if user_id != None:
                 print(f"Kicking {user_id} from {guild_id} because I can't DM them while running notify_people")
-                self.remove_user_plus_skip_logic(guild_id, user_id=int(user_id))
+                self.remove_user_plus_skip_logic(guild_id, user_id)
                 return
                 
                 
         if await self.user_manager.get_current_user(guild_id) != None:
-            current_user = await (await self.bot.fetch_guild(guild_id)).fetch_member(int(await self.user_manager.get_current_user(guild_id)))
+            current_user = await (await self.bot.fetch_guild(guild_id)).fetch_member(await self.user_manager.get_current_user(guild_id))
             
             emb = await self.create_embed(
                 author_icon_url=current_user.display_avatar.url,
@@ -120,7 +121,7 @@ class dm_listener(commands.Cog):
         
         current_user_id = await self.user_manager.get_current_user(interaction.guild_id)
         if current_user_id != None:
-            current_user = await interaction.guild.fetch_member(int(current_user_id))
+            current_user = await interaction.guild.fetch_member(current_user_id)
             await self.reply_to_message(author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url, interaction=interaction, ephemeral=not public)
         else:
             await self.reply_to_message(content="There is no current user. Join the bot to become the first!", interaction=interaction, ephemeral=not public, error=True)
@@ -195,15 +196,15 @@ class dm_listener(commands.Cog):
         proper_guild_id = self.get_proper_guild_id(ctx)
         current_user_id = await self.user_manager.get_current_user(proper_guild_id)
         
-        if str(ctx.author.id) != current_user_id and not await self.is_moderator(ctx.author.id, ctx.channel):
+        if ctx.author.id != current_user_id and not await self.is_moderator(ctx.author.id, ctx.channel):
             await self.reply_to_message(context=ctx, content="It's not your turn here!", error=True, ephemeral=not public)
             return
         
         try:
             await self.reply_to_message(context=ctx, content="Skipping :(", ephemeral=not public)
             
-            if current_user_id != None and str(ctx.author.id) == current_user_id:
-                await self.file_manager.log_action(user_id=int(current_user_id), guild_id=proper_guild_id, XSS_WARNING_action="skip")
+            if current_user_id != None and ctx.author.id == current_user_id:
+                await self.file_manager.log_action(user_id=current_user_id, guild_id=proper_guild_id, XSS_WARNING_action="skip")
             else:
                 await self.file_manager.log_action(user_id=0, guild_id=proper_guild_id, XSS_WARNING_action="skip")
             
@@ -229,7 +230,7 @@ class dm_listener(commands.Cog):
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
         
-        current_user = await ctx.guild.fetch_member(int(user_id))
+        current_user = await ctx.guild.fetch_member(user_id)
         
         await self.reply_to_message(context=ctx, content=f"Time remaining: {dm_listener.print_time(seconds=seconds_remaining + 60)}\nTime used: {dm_listener.print_time(seconds=seconds_since_timestamp)}", ephemeral=not public, author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url)
         
@@ -285,7 +286,7 @@ class dm_listener(commands.Cog):
                 
             #self.get_proper_guild_id(message.channel)
             
-            if (await self.user_manager.get_current_user(proper_guild_id)) != str(message.author.id):
+            if await self.user_manager.get_current_user(proper_guild_id) != message.author.id:
                 # This means the user had turns in multiple servers, entered input and received the prompt to choose a server, then waited until it was no longer their turn (either by answering another prompt or timing out) to respond. If unpatched, users could send messages after their turn ends.
                 await self.reply_to_message(message=message, content="Nice try :stuck_out_tongue_winking_eye:", ephemeral=True)
                 return
@@ -322,7 +323,7 @@ class dm_listener(commands.Cog):
             
             await self.reply_to_message(message, "Got it!  Thanks!")
             
-            await self.user_manager.boost_user(proper_guild_id, int(await self.user_manager.get_current_user(proper_guild_id)))
+            await self.user_manager.boost_user(proper_guild_id, await self.user_manager.get_current_user(proper_guild_id))
             
             await self.new_user(proper_guild_id)
 
@@ -339,10 +340,7 @@ class dm_listener(commands.Cog):
         
         print(f'Timing out {guild_id}...') 
         current_user_id = await self.user_manager.get_current_user(guild_id)
-        if current_user_id == None:
-            return
-        else:
-            current_user_id = int(current_user_id)
+        if current_user_id == None: return
         
         try:
             await self.dm_current_user(guild_id, f"You took too long! Your turn was skipped in {self.bot.get_guild(guild_id).name}. You\'ll have a chance to add to the story later - don\'t worry!")
@@ -433,7 +431,7 @@ class dm_listener(commands.Cog):
             await self.user_manager.add_user(guild_id, ctx.author.id)
             await self.reply_to_message(context=ctx, content="Done!", ephemeral=not public)
             
-            if(await self.user_manager.get_current_user(guild_id) == None):
+            if await self.user_manager.get_current_user(guild_id) == None:
                 await self.file_manager.set_current_user_id(guild_id, ctx.author.id)
                 await self.notify_people(guild_id)
                 await self.file_manager.reset_timestamp(guild_id)
@@ -497,7 +495,7 @@ class dm_listener(commands.Cog):
             # return
             pass
             
-        if await self.user_manager.get_current_user(interaction.guild_id) == str(user_id):
+        if await self.user_manager.get_current_user(interaction.guild_id) == user_id:
             skip_after = True
         else:
             skip_after = False
@@ -539,8 +537,9 @@ class dm_listener(commands.Cog):
             guild_id (int): the guild to remove the user from
             user_id (int): the user to remove from the guild
         """
+        if user_id == None: return
         
-        if str(user_id) == await self.user_manager.get_current_user(guild_id):
+        if user_id == await self.user_manager.get_current_user(guild_id):
             skip_after = True
         else:
             skip_after = False
@@ -1052,7 +1051,7 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(interaction=interaction, content=f"Success! You are now paused for {days + weeks * 7} days!\n\nTo rejoin early, run `/join` again.", ephemeral=not public)
         
     async def pause_user_with_logic(self, guild_id: int, user_id: int, days: int):
-        if str(user_id) == await self.user_manager.get_current_user(guild_id):
+        if user_id == await self.user_manager.get_current_user(guild_id):
             skip_after = True
         else:
             skip_after = False
