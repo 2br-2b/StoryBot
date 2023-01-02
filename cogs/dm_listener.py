@@ -188,22 +188,22 @@ class dm_listener(commands.Cog):
                         
         await self.reply_to_message(interaction=interaction, content=content, ephemeral=not public)
 
-    @commands.guild_only()
-    @commands.hybrid_command(name="skip")
-    async def skip(self, ctx: commands.Context, public: bool = False):
+    @app_commands.guild_only()
+    @app_commands.command(name="skip")
+    async def skip(self, interaction: discord.Interaction, public: bool = False):
         """Skip your turn"""
         
-        proper_guild_id = self.get_proper_guild_id(ctx)
+        proper_guild_id = interaction.guild_id
         current_user_id = await self.user_manager.get_current_user(proper_guild_id)
         
-        if ctx.author.id != current_user_id and not await self.is_moderator(ctx.author.id, ctx.channel):
-            await self.reply_to_message(context=ctx, content="It's not your turn here!", error=True, ephemeral=not public)
+        if interaction.user.id != current_user_id and not await self.is_moderator(interaction.user.id, interaction.channel):
+            await self.reply_to_message(interaction=interaction, content="It's not your turn here!", error=True, ephemeral=not public)
             return
         
         try:
-            await self.reply_to_message(context=ctx, content="Skipping :(", ephemeral=not public)
+            await self.reply_to_message(interaction=interaction, content="Skipping :(", ephemeral=not public)
             
-            if current_user_id != None and ctx.author.id == current_user_id:
+            if current_user_id != None and interaction.user.id == current_user_id:
                 await self.file_manager.log_action(user_id=current_user_id, guild_id=proper_guild_id, XSS_WARNING_action="skip")
             else:
                 await self.file_manager.log_action(user_id=0, guild_id=proper_guild_id, XSS_WARNING_action="skip")
@@ -211,7 +211,7 @@ class dm_listener(commands.Cog):
             await self.new_user(proper_guild_id)
             
         except ValueError:
-            await self.reply_to_message(context=ctx, content="There are no users in the queue to skip to!", error=True, ephemeral=not public)
+            await self.reply_to_message(interaction=interaction, content="There are no users in the queue to skip to!", error=True, ephemeral=not public)
         
     @commands.guild_only()
     @commands.hybrid_command(name="time_left")
