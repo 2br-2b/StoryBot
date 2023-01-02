@@ -123,7 +123,7 @@ class file_manager():
         result = (await self._get_db_connection_pool().fetchrow(f"select current_user_id from \"Guilds\" where guild_id = '{guild_id}'"))
         try:
             return int(result.get("current_user_id"))
-        except ValueError:
+        except TypeError:
             # If the result is None, then the int() function will raise an exception
             return None
     
