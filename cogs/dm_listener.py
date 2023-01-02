@@ -30,7 +30,7 @@ class dm_listener(commands.Cog):
         
         self.CHARACTERS_TO_SHOW = 4096
         
-        self.config_manager = bot.config_manager
+        self.config_manager : ConfigManager = bot.config_manager
 
     async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
         """Sends the given message to the current user"""
@@ -213,26 +213,26 @@ class dm_listener(commands.Cog):
         except ValueError:
             await self.reply_to_message(interaction=interaction, content="There are no users in the queue to skip to!", error=True, ephemeral=not public)
         
-    @commands.guild_only()
-    @commands.hybrid_command(name="time_left")
-    async def time_left_command(self, ctx: commands.Context, public: bool = False):
+    @app_commands.guild_only()
+    @app_commands.command(name="time_left")
+    async def time_left_command(self, interaction: discord.Interaction, public: bool = False):
         """Says how much time the current user has remaining"""
         
-        proper_guild_id = self.get_proper_guild_id(ctx)
+        proper_guild_id = interaction.guild_id
         user_id = await self.user_manager.get_current_user(proper_guild_id)
         if user_id == None:
-            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=not public, error=True)
+            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", interaction=interaction, ephemeral=not public, error=True)
             return
         
-        seconds_per_turn = await self.config_manager.get_timeout_days(ctx.guild.id) * 24 * 60 * 60
+        seconds_per_turn = await self.config_manager.get_timeout_days(interaction.guild_id) * 24 * 60 * 60
         timeout_timestamp = int(await self.file_manager.load_timestamp(proper_guild_id))
         current_time = int(time.time())
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
         
-        current_user = await ctx.guild.fetch_member(user_id)
+        current_user = await interaction.guild.fetch_member(user_id)
         
-        await self.reply_to_message(context=ctx, content=f"Time remaining: {dm_listener.print_time(seconds=seconds_remaining + 60)}\nTime used: {dm_listener.print_time(seconds=seconds_since_timestamp)}", ephemeral=not public, author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url)
+        await self.reply_to_message(interaction=interaction, content=f"Time remaining: {dm_listener.print_time(seconds=seconds_remaining + 60)}\nTime used: {dm_listener.print_time(seconds=seconds_since_timestamp)}", ephemeral=not public, author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url)
         
     @staticmethod
     def print_time(seconds:int, include_seconds: bool = False) -> str:
