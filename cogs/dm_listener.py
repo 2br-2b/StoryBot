@@ -113,17 +113,17 @@ class dm_listener(commands.Cog):
             content=self.lastChars(await self.file_manager.getStory(guild_id = proper_guild_id, story_number = archived_story_number)),
             title=title, file = file, interaction=interaction, ephemeral=not public)
 
-    @commands.guild_only()
-    @commands.hybrid_command(name="turn")
-    async def turn(self, ctx: commands.Context, public: bool = False):
+    @app_commands.guild_only()
+    @app_commands.command(name="turn")
+    async def turn(self, interaction: discord.Interaction, public: bool = False):
         """Sends a message with the current user's name"""
         
-        current_user_id = await self.user_manager.get_current_user(self.get_proper_guild_id(ctx))
+        current_user_id = await self.user_manager.get_current_user(interaction.guild_id)
         if current_user_id != None:
-            current_user = await ctx.guild.fetch_member(int(current_user_id))
-            await self.reply_to_message(author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url, context=ctx, ephemeral=not public)
+            current_user = await interaction.guild.fetch_member(int(current_user_id))
+            await self.reply_to_message(author_name=current_user.display_name, author_icon_url=current_user.display_avatar.url, interaction=interaction, ephemeral=not public)
         else:
-            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", context=ctx, ephemeral=not public, error=True)
+            await self.reply_to_message(content="There is no current user. Join the bot to become the first!", interaction=interaction, ephemeral=not public, error=True)
 
     @app_commands.command(name="help")
     async def help(self, interaction: discord.Interaction, show_admin_commands:bool = False, public: bool = False):
