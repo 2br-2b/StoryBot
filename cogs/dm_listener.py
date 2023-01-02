@@ -440,16 +440,14 @@ class dm_listener(commands.Cog):
         except storybot_exceptions.AlreadyAnAuthorException:
             await self.reply_to_message(interaction=interaction, content="You are already an author in this server!", error=True, ephemeral=not public)
 
-    @commands.guild_only()
-    @commands.hybrid_command(name="leave")
-    async def remove(self, ctx: commands.Context, public: bool = False):
+    @app_commands.guild_only()
+    @app_commands.command(name="leave")
+    async def remove(self, interaction: discord.Interaction, public: bool = False):
         """Removes you from the list of authors"""
         
-        proper_guild = self.get_proper_guild_id(ctx)
+        await self.remove_user_plus_skip_logic(interaction.guild_id, interaction.user.id)
         
-        await self.remove_user_plus_skip_logic(proper_guild, ctx.author.id)
-        
-        await self.reply_to_message(context=ctx, content="Done!", ephemeral=not public)
+        await self.reply_to_message(interaction=interaction, content="Done!", ephemeral=not public)
 
 
     @app_commands.guild_only()
