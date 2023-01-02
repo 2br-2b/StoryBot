@@ -720,10 +720,10 @@ class dm_listener(commands.Cog):
         
         return emb
     
-    @commands.hybrid_command(name="my_turns")
-    async def my_turns(self, ctx: commands.Context, public: bool = False):
+    @app_commands.command(name="my_turns")
+    async def my_turns(self, interaction: discord.Interaction, public: bool = False):
         """Lists all of the servers where it's currently your turn"""
-        user_current_turns = await self.file_manager.get_current_turns_of_user(ctx.author.id)
+        user_current_turns = await self.file_manager.get_current_turns_of_user(interaction.user.id)
         
         if len(user_current_turns) < 1:
             text = "It's not your turn in any servers!"
@@ -734,7 +734,7 @@ class dm_listener(commands.Cog):
                 text += guild_name + "\n"
             text = text[:-1]
             
-        await self.reply_to_message(context=ctx, content=text, title=f"{ctx.author.name}'s current turns", ephemeral=not public)
+        await self.reply_to_message(interaction=interaction, content=text, title=f"{interaction.user.name}'s current turns", ephemeral=not public)
         
     async def update_status(self):
         s=f" {len(await self.file_manager.get_all_guild_ids())} stories unfold"
