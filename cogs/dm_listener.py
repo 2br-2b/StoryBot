@@ -256,7 +256,7 @@ class dm_listener(commands.Cog):
         
         s += f"{print_hours} h, {print_minutes} m"
         
-        if include_seconds:
+        if include_seconds and print_seconds != 0:
             s += f", {print_seconds} s"
         
         return s
