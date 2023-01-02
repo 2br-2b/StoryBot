@@ -65,8 +65,8 @@ class dm_listener(commands.Cog):
             user_id = await self.user_manager.get_current_user(guild_id=guild_id)
             if user_id != None:
                 print(f"Kicking {user_id} from {guild_id} because I can't DM them while running notify_people")
-                await self.user_manager.remove_user(guild_id, user_id=int(user_id))
-                await self.new_user(guild_id=guild_id)
+                self.remove_user_plus_skip_logic(guild_id, user_id=int(user_id))
+                return
                 
                 
         if await self.user_manager.get_current_user(guild_id) != None:
