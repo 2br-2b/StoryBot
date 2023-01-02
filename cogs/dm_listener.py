@@ -93,7 +93,7 @@ class dm_listener(commands.Cog):
     @app_commands.guild_only()
     @app_commands.command(name="story")
     @app_commands.checks.cooldown(1, 60) # The command can only be run once a minute
-    async def story(self, interaction: discord.Interaction, archived_story_number:int = 0, public: bool = True):
+    async def story(self, interaction: discord.Interaction, archived_story_number:int = 0, public: bool = False):
         """Sends a reply with the requested story
         If there is a number, the given story number will be returned"""
         
