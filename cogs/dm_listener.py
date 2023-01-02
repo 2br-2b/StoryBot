@@ -97,21 +97,19 @@ class dm_listener(commands.Cog):
         """Sends a reply with the requested story
         If there is a number, the given story number will be returned"""
         
-        proper_guild_id = interaction.guild_id
-        
         if archived_story_number != 0:
             try:
-                file = await self.file_manager.get_story_file(proper_guild_id, archived_story_number)
+                file = await self.file_manager.get_story_file(interaction.guild_id, archived_story_number)
                 title = "Story " + str(archived_story_number)
             except FileNotFoundError:
                 await self.reply_to_message(content='That story number couldn\'t be found!', interaction=interaction, ephemeral=not public, error=True)
                 return
         else:
-            file = await self.file_manager.get_story_file(proper_guild_id)
+            file = await self.file_manager.get_story_file(interaction.guild_id)
             title="The Current Story"
             
         await self.reply_to_message(
-            content=self.lastChars(await self.file_manager.getStory(guild_id = proper_guild_id, story_number = archived_story_number)),
+            content=self.lastChars(await self.file_manager.getStory(guild_id = interaction.guild_id, story_number = archived_story_number)),
             title=title, file = file, interaction=interaction, ephemeral=not public)
 
     @app_commands.guild_only()
@@ -193,8 +191,7 @@ class dm_listener(commands.Cog):
     async def skip(self, interaction: discord.Interaction, public: bool = False):
         """Skip your turn"""
         
-        proper_guild_id = interaction.guild_id
-        current_user_id = await self.user_manager.get_current_user(proper_guild_id)
+        current_user_id = await self.user_manager.get_current_user(interaction.guild_id)
         
         if interaction.user.id != current_user_id and not await self.is_moderator(interaction.user.id, interaction.channel):
             await self.reply_to_message(interaction=interaction, content="It's not your turn here!", error=True, ephemeral=not public)
@@ -204,11 +201,11 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(interaction=interaction, content="Skipping :(", ephemeral=not public)
             
             if current_user_id != None and interaction.user.id == current_user_id:
-                await self.file_manager.log_action(user_id=current_user_id, guild_id=proper_guild_id, XSS_WARNING_action="skip")
+                await self.file_manager.log_action(user_id=current_user_id, guild_id=interaction.guild_id, XSS_WARNING_action="skip")
             else:
-                await self.file_manager.log_action(user_id=0, guild_id=proper_guild_id, XSS_WARNING_action="skip")
+                await self.file_manager.log_action(user_id=0, guild_id=interaction.guild_id, XSS_WARNING_action="skip")
             
-            await self.new_user(proper_guild_id)
+            await self.new_user(interaction.guild_id)
             
         except ValueError:
             await self.reply_to_message(interaction=interaction, content="There are no users in the queue to skip to!", error=True, ephemeral=not public)
@@ -218,14 +215,13 @@ class dm_listener(commands.Cog):
     async def time_left_command(self, interaction: discord.Interaction, public: bool = False):
         """Says how much time the current user has remaining"""
         
-        proper_guild_id = interaction.guild_id
-        user_id = await self.user_manager.get_current_user(proper_guild_id)
+        user_id = await self.user_manager.get_current_user(interaction.guild_id)
         if user_id == None:
             await self.reply_to_message(content="There is no current user. Join the bot to become the first!", interaction=interaction, ephemeral=not public, error=True)
             return
         
         seconds_per_turn = await self.config_manager.get_timeout_days(interaction.guild_id) * 24 * 60 * 60
-        timeout_timestamp = int(await self.file_manager.load_timestamp(proper_guild_id))
+        timeout_timestamp = int(await self.file_manager.load_timestamp(interaction.guild_id))
         current_time = int(time.time())
         seconds_since_timestamp = current_time - timeout_timestamp
         seconds_remaining = seconds_per_turn - seconds_since_timestamp
@@ -280,30 +276,28 @@ class dm_listener(commands.Cog):
             if len(user_current_turns) < 1:
                 return
             elif len(user_current_turns) == 1:
-                proper_guild_id = user_current_turns[0]
+                guild_id = user_current_turns[0]
             else:
-                proper_guild_id = await self.request_guild_for_story_entry(message, user_current_turns)
-                
-            #self.get_proper_guild_id(message.channel)
+                guild_id = await self.request_guild_for_story_entry(message, user_current_turns)
             
-            if await self.user_manager.get_current_user(proper_guild_id) != message.author.id:
+            if await self.user_manager.get_current_user(guild_id) != message.author.id:
                 # This means the user had turns in multiple servers, entered input and received the prompt to choose a server, then waited until it was no longer their turn (either by answering another prompt or timing out) to respond. If unpatched, users could send messages after their turn ends.
                 await self.reply_to_message(message=message, content="Nice try :stuck_out_tongue_winking_eye:", ephemeral=True)
                 return
                 
             content_to_send = await self.format_story_addition(message.content)
             
-            if await self.config_manager.get_is_safe_mode_activated(proper_guild_id):
+            if await self.config_manager.get_is_safe_mode_activated(guild_id):
                 content_to_send = await self.file_manager.filter_profanity(content_to_send)
             
             # Add the given line to the story file
             await self.file_manager.addLine(
-                guild_id=proper_guild_id,
+                guild_id=guild_id,
                 line=content_to_send
                 )
             
             # Mirror the messages to a Discord channel
-            channel_int = await self.config_manager.get_story_output_channel(proper_guild_id)
+            channel_int = await self.config_manager.get_story_output_channel(guild_id)
             sent_message = None
             sent_message_id = None
             if channel_int != None:
@@ -319,13 +313,13 @@ class dm_listener(commands.Cog):
                         # TODO: Check for this perm properly
                         pass
                     
-            await self.file_manager.log_action(user_id=message.author.id, guild_id=proper_guild_id, XSS_WARNING_action="write", characters_sent=len(content_to_send), sent_message_id=sent_message_id)
+            await self.file_manager.log_action(user_id=message.author.id, guild_id=guild_id, XSS_WARNING_action="write", characters_sent=len(content_to_send), sent_message_id=sent_message_id)
             
             await self.reply_to_message(message, "Got it!  Thanks!")
             
-            await self.user_manager.boost_user(proper_guild_id, await self.user_manager.get_current_user(proper_guild_id))
+            await self.user_manager.boost_user(guild_id, await self.user_manager.get_current_user(guild_id))
             
-            await self.new_user(proper_guild_id)
+            await self.new_user(guild_id)
 
     def lastChars(self, story):
         """Returns the last self.CHARACTERS_TO_SHOW characters of the story"""
@@ -466,9 +460,7 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(content="We couldn't find that user. Please try again!", interaction=interaction, error=True, ephemeral=not public)
             return
         
-        proper_guild = self.get_proper_guild_id(interaction.channel)
-        
-        await self.remove_user_plus_skip_logic(proper_guild, user_id)
+        await self.remove_user_plus_skip_logic(interaction.guild_id, user_id)
         
         await self.reply_to_message(content=f"<@{user_id}> has been kicked from StoryBot on this server (if he was an author).", interaction=interaction, ephemeral=not public)
 
@@ -683,14 +675,6 @@ class dm_listener(commands.Cog):
             view = AskForPause(server_name=g_name, guild_id=guild_id, dml = self)
             view.msg = await self.dm_user(user_id=c_user_id, message=f"Hey, I've noticed you've timed missed your last few turns in {g_name}, either by skipping your turn or timing out. If you need a break, you can run `/pause` in {g_name}. Then, the I won't choose you as the current author for however long you specify, whether that be a day or a few months!\n\nI added this feature in to help out people who may not have time to write, not to pressure people into leaving stories. If you want to stay unpaused, no pressure - you're still an author in {g_name}! Just so you know, however, this bot weights the author it chooses based on how often they respond when it's their turn, so you might not be chosen as often as the author.", view=view)
             
-
-    def get_proper_guild_id(self, channel: discord.abc.Messageable) -> int:
-        if channel.guild is None:
-            # TODO: figure out how to implement get_proper_guild_id
-            return None
-        
-        return channel.guild.id
-
         
     async def request_guild_for_story_entry(self, message: discord.Message, user_current_turns: list[int]) -> int:
         server_json = []
@@ -752,12 +736,10 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
             return
         
-        proper_guild_id = self.get_proper_guild_id(interaction.channel)
-        
         match setting:
             case AvailableSettingsToModify.StoryOutputChannel:
                 if value == None:
-                    new_story_output_channel = await self.choose_a_channel_in_a_server(guild_id=proper_guild_id, interaction=interaction, message="Choose a channel to output the story in!")
+                    new_story_output_channel = await self.choose_a_channel_in_a_server(guild_id=interaction.guild_id, interaction=interaction, message="Choose a channel to output the story in!")
                     if new_story_output_channel == None: return
                     followup = True
                 else:
@@ -778,7 +760,7 @@ class dm_listener(commands.Cog):
                         return
                 
                 if new_story_output_channel != 0: #If it is 0, that means cancel was pressed
-                    await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='story_output_channel', new_value=new_story_output_channel)
+                    await self.file_manager.set_config_value(interaction.guild_id, XSS_WARNING_config_name='story_output_channel', new_value=new_story_output_channel)
                     
                     if new_story_output_channel == -1:
                         content=f"Disabled the Story Output Channel!"
@@ -790,7 +772,7 @@ class dm_listener(commands.Cog):
             
             case AvailableSettingsToModify.AnnouncementChannel:
                 if value == None:
-                    new_story_announcement_channel = await self.choose_a_channel_in_a_server(guild_id=proper_guild_id, interaction=interaction, message="Choose a channel to announce the current user in!")
+                    new_story_announcement_channel = await self.choose_a_channel_in_a_server(guild_id=interaction.guild_id, interaction=interaction, message="Choose a channel to announce the current user in!")
                     if new_story_announcement_channel == None: return
                     followup = True
                 else:
@@ -812,7 +794,7 @@ class dm_listener(commands.Cog):
                 
                 
                 if new_story_announcement_channel != 0: #If it is 0, that means cancel was pressed
-                    await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='story_announcement_channel', new_value=new_story_announcement_channel)
+                    await self.file_manager.set_config_value(interaction.guild_id, XSS_WARNING_config_name='story_announcement_channel', new_value=new_story_announcement_channel)
                     
                     if new_story_announcement_channel == -1:
                         content=f"Disabled the Story Announcement Channel!"
@@ -844,11 +826,11 @@ class dm_listener(commands.Cog):
                     await self.reply_to_message(content=f"Timeout lengths greater than {max_timeout_days} are not supported by the bot right now. If you would like a longer timeout length, join my support server and let me know!", interaction=interaction, error=True, ephemeral=not public)
                     return
                 
-                await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='timeout_days', new_value=new_timeout_days)
+                await self.file_manager.set_config_value(interaction.guild_id, XSS_WARNING_config_name='timeout_days', new_value=new_timeout_days)
                 await self.reply_to_message(content=f"Finished setting the timeout days to **{new_timeout_days}**!", interaction=interaction, ephemeral=not public)
             
             case AvailableSettingsToModify.ResetCurrentPlayerTimeRemaining:
-                await self.file_manager.reset_timestamp(proper_guild_id)
+                await self.file_manager.reset_timestamp(interaction.guild_id)
                 await self.reply_to_message(content=f"Timestamp has been reset!", interaction=interaction, followup=False, ephemeral=not public)
             
             case AvailableSettingsToModify.SafeModeEnabled:
@@ -868,7 +850,7 @@ class dm_listener(commands.Cog):
                     await self.reply_to_message(content=f"I couldn't understand that. Please try again, and this time, set the `value` to \"yes\" or \"no\". Thanks!", interaction=interaction, error=True, ephemeral=not public)
                     return
                 
-                await self.file_manager.set_config_value(proper_guild_id, XSS_WARNING_config_name='safe_mode', new_value=activate)
+                await self.file_manager.set_config_value(interaction.guild_id, XSS_WARNING_config_name='safe_mode', new_value=activate)
                 
                 if activate:
                     message = "Safe Mode has been enabled. While it is still imperfect, it will help filter out some vulgarity in messages. This may be improved on in the future."
@@ -940,9 +922,7 @@ class dm_listener(commands.Cog):
     async def list_users(self, interaction: discord.Interaction, public: bool = False):
         """Lists the active users in a guild"""
         
-        gid = self.get_proper_guild_id(interaction.channel)
-        
-        list_of_ids = await self.user_manager.get_unweighted_list(gid)
+        list_of_ids = await self.user_manager.get_unweighted_list(interaction.guild_id)
         
         if len(list_of_ids) == 0:
             response = "There are no active users in this server. Join the bot to become the first!"
@@ -952,7 +932,7 @@ class dm_listener(commands.Cog):
                 response += f"<@{id}>\n"
             response = response.rstrip()
         
-        inactive_users = await self.user_manager.get_inactive_users(gid)
+        inactive_users = await self.user_manager.get_inactive_users(interaction.guild_id)
         
         if len(inactive_users) != 0:
             response += "\n\n**Inactive/paused users:**\n"
@@ -987,10 +967,8 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=not public)
             return
         
-        proper_guild_id = self.get_proper_guild_id(interaction.channel)
-        
         try:
-            message_number = await self.file_manager.undo_last_chunk(proper_guild_id)
+            message_number = await self.file_manager.undo_last_chunk(interaction.guild_id)
             
             await self.reply_to_message(interaction=interaction, content="Deleted the last addition to the story!", ephemeral=not public)
         
@@ -1010,10 +988,8 @@ class dm_listener(commands.Cog):
         
         user_id = user.id
         
-        proper_guild = self.get_proper_guild_id(interaction.channel)
-        
         try:
-            await self.new_user(guild_id=proper_guild, user_id=user_id)
+            await self.new_user(guild_id=interaction.guild_id, user_id=user_id)
             await self.reply_to_message(interaction=interaction, content=f"Done! It is now <@{user_id}>'s turn.", ephemeral=not public)
         except storybot_exceptions.NotAnAuthorException:
             if user_id == self.bot.user.id:
