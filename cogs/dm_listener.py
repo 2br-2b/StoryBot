@@ -951,7 +951,7 @@ class dm_listener(commands.Cog):
         else:
             response = ""
             for id in list_of_ids:
-                response += f"<@!{id}>\n"
+                response += f"<@{id}>\n"
             response = response.rstrip()
         
         inactive_users = await self.user_manager.get_inactive_users(gid)
@@ -959,7 +959,7 @@ class dm_listener(commands.Cog):
         if len(inactive_users) != 0:
             response += "\n\n**Inactive/paused users:**\n"
             for id in inactive_users:
-                response += f"<@!{id}>\n"
+                response += f"<@{id}>\n"
             response = response.rstrip()
         
         
@@ -1016,12 +1016,12 @@ class dm_listener(commands.Cog):
         
         try:
             await self.new_user(guild_id=proper_guild, user_id=user_id)
-            await self.reply_to_message(interaction=interaction, content=f"Done! It is now <@!{user_id}>'s turn.", ephemeral=not public)
+            await self.reply_to_message(interaction=interaction, content=f"Done! It is now <@{user_id}>'s turn.", ephemeral=not public)
         except storybot_exceptions.NotAnAuthorException:
             if user_id == self.bot.user.id:
                 await self.reply_to_message(interaction=interaction, content=f"I'd love to, but unfortunately, I can't write (yet). Maybe try in a year or so, or keep up-to-date in our support server!", error=True, ephemeral=not public)
             else:
-                await self.reply_to_message(interaction=interaction, content=f"<@!{user_id}> is not an author in this guild. Have them run `/join`, then try again.", error=True, ephemeral=not public)
+                await self.reply_to_message(interaction=interaction, content=f"<@{user_id}> is not an author in this guild. Have them run `/join`, then try again.", error=True, ephemeral=not public)
         
     @app_commands.guild_only()
     @app_commands.command(name="pause")
