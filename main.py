@@ -61,7 +61,7 @@ async def on_guild_remove(guild_left: discord.Guild):
     
 async def on_tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if isinstance(error, app_commands.CommandOnCooldown):
-        return await interaction.response.send_message(f"Command is currently on cooldown! Try again in {int(error.retry_after)} seconds!", ephemeral=True)
+        return await interaction.response.send_message(f"Command is currently on cooldown! Try again in {dm_listener.dm_listener.print_time(int(error.retry_after))}!", ephemeral=True)
 
     elif isinstance(error, app_commands.MissingPermissions):
         return await interaction.response.send_message("Only server moderators can do this! Make sure you have the `moderate_members` permission, then try again.", ephemeral=True)
