@@ -421,24 +421,24 @@ class dm_listener(commands.Cog):
         await self.update_status()
         
 
-    @commands.guild_only()
-    @commands.hybrid_command(name="join")
-    async def add(self, ctx: commands.Context, public: bool = False):
+    @app_commands.guild_only()
+    @app_commands.command(name="join")
+    async def add(self, interaction: discord.Interaction, public: bool = False):
         """Adds you to the list of authors, or unpauses you if you're paused"""
-        guild_id = ctx.guild.id
+        guild_id = interaction.guild_id
         
         try:
-            await self.user_manager.add_user(guild_id, ctx.author.id)
-            await self.reply_to_message(context=ctx, content="Done!", ephemeral=not public)
+            await self.user_manager.add_user(guild_id, interaction.user.id)
+            await self.reply_to_message(interaction=interaction, content="Done!", ephemeral=not public)
             
             if await self.user_manager.get_current_user(guild_id) == None:
-                await self.file_manager.set_current_user_id(guild_id, ctx.author.id)
+                await self.file_manager.set_current_user_id(guild_id, interaction.user.id)
                 await self.notify_people(guild_id)
                 await self.file_manager.reset_timestamp(guild_id)
         except storybot_exceptions.UserIsBannedException:
-            await self.reply_to_message(context=ctx, content="You are currently banned in this server. If you believe this is in error, please reach out to your server's moderators.", error=True, ephemeral=not public)
+            await self.reply_to_message(interaction=interaction, content="You are currently banned in this server. If you believe this is in error, please reach out to your server's moderators.", error=True, ephemeral=not public)
         except storybot_exceptions.AlreadyAnAuthorException:
-            await self.reply_to_message(context=ctx, content="You are already an author in this server!", error=True, ephemeral=not public)
+            await self.reply_to_message(interaction=interaction, content="You are already an author in this server!", error=True, ephemeral=not public)
 
     @commands.guild_only()
     @commands.hybrid_command(name="leave")
