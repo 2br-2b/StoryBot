@@ -241,8 +241,10 @@ class dm_listener(commands.Cog):
             str: the printable string. If the amount of seconds is negative, this will return "Should time out soon..."
         """
         
-        if include_seconds:
-            print_seconds = seconds % 60
+    
+        print_seconds = seconds % 60
+        if print_seconds == seconds:
+            return f"around {print_seconds} s"
         print_minutes = int((seconds/60) % 60)
         print_hours = int((seconds/3600) % 24)
         print_days = int(seconds/(60 * 60 * 24))
