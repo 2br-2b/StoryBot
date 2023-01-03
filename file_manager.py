@@ -53,17 +53,21 @@ class file_manager():
             
     async def remove_guild(self, guild_id: int) -> None:
         print (f"leaving guild {guild_id}")
-        pool = self._get_db_connection_pool()
         
-        await pool.execute(f"delete from \"Users\" where guild_id = '{guild_id}'")
-        await pool.execute(f"delete from \"Logs\" where guild_id = '{guild_id}'")
-        await pool.execute(f"delete from \"Guilds\" where guild_id = '{guild_id}'")
+        await self.reset_users(guild_id)
+        await self._get_db_connection_pool().execute(f"delete from \"Guilds\" where guild_id = '{guild_id}'")
         try:
             for i in range(0, await self.config_manager.get_max_archived_stories(guild_id=guild_id)):
                 os.remove(_get_story_file_name(guild_id, i))
         except FileNotFoundError:
             return
         print (f"left guild {guild_id}")
+    
+    async def reset_users(self, guild_id: int):
+        print(f"resetting users in {guild_id}")
+        pool = self._get_db_connection_pool()
+        await pool.execute(f"delete from \"Users\" where guild_id = '{guild_id}'")
+        await pool.execute(f"delete from \"Logs\" where guild_id = '{guild_id}'")
     
     async def getStory(self, guild_id: int, story_number = 0) -> str:
         """Returns the story in the story.txt file"""
