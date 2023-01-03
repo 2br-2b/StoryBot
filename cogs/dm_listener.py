@@ -1156,7 +1156,16 @@ class AskForPause(discord.ui.View):
         await interaction.response.send_message(f"Confirmed! You won't be chosen as the author for the next week in {self.server_name}!\n\nIf you change your mind before then, run `/join` to unpause yourself!")
         
         await self.cleanup()
-    
+        
+        
+    @discord.ui.button(label='Leave', style=discord.ButtonStyle.danger)
+    async def leave(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.dm_listener.remove_user_plus_skip_logic(guild_id=self.guild_id, user_id=interaction.user.id)
+        await interaction.response.send_message(f"Confirmed! You have been removed as an author in {self.server_name}!\n\nIf you change your mind later, run `/join` in {self.server_name} to rejoin!")
+        
+        await self.cleanup()
+        
+        
     @discord.ui.button(label='Do nothing', style=discord.ButtonStyle.grey)
     async def do_nothing(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(f"Confirmed! You are still an author in {self.server_name}!")
