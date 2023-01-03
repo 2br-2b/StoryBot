@@ -1157,8 +1157,12 @@ class AskForPause(discord.ui.View):
     @discord.ui.button(label='Pause for 1 week', style=discord.ButtonStyle.green)
     async def pause_for_a_week(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.value = 7
-        await self.dm_listener.pause_user_with_logic(guild_id=self.guild_id, user_id=interaction.user.id, days=self.value)
-        await interaction.response.send_message(f"Confirmed! You won't be chosen as the author for the next week in {self.server_name}!\n\nIf you change your mind before then, run `/join` to unpause yourself!")
+        try:
+            await self.dm_listener.pause_user_with_logic(guild_id=self.guild_id, user_id=interaction.user.id, days=self.value)
+            await interaction.response.send_message(f"Confirmed! You won't be chosen as the author for the next week in {self.server_name}!\n\nIf you change your mind before then, run `/join` to unpause yourself!")
+        except storybot_exceptions.NotAnAuthorException:
+            await interaction.response.send_message(f"You aren't currently an author in this server, so you can't pause yourself!")
+        
         
         await self.cleanup()
         
