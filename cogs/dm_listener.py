@@ -1,3 +1,4 @@
+import random
 import discord
 import math
 import time
@@ -905,7 +906,9 @@ class dm_listener(commands.Cog):
                 if channel != None:
                     
                     try:
-                        await channel.send("--- Starting a new story! ---")
+                        new_story_message = random.choice(["Starting a new story!", "A new journey is about to unfold!", "Time to start a new story!", "Ready for a new story?", "Yaaaaah, it's new story time!", "Another adventure begins..."])
+                        
+                        await channel.send(f"--- {new_story_message} ---")
                     except discord.errors.Forbidden:
                         # TODO: Check for this perm properly
                         pass
