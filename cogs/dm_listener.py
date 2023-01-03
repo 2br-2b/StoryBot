@@ -452,9 +452,6 @@ class dm_listener(commands.Cog):
     async def kick(self, interaction: discord.Interaction, user: str, public: bool=False):
         """Admin command: kicks a user from the list of authors"""
         
-        if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=not public)
-            return
         
         try:
             user_id = await self.get_user_id_from_string(interaction.guild, user)
@@ -472,9 +469,6 @@ class dm_listener(commands.Cog):
     async def ban(self, interaction: discord.Interaction, user: str, public: bool = False):
         """Admin command: bans a user from joining the list of authors and kicks them if they're already there"""
         
-        if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=not public)
-            return
         
         try:
             user_id = await self.get_user_id_from_string(interaction.guild, user)
@@ -509,9 +503,6 @@ class dm_listener(commands.Cog):
     async def unban(self, interaction: discord.Interaction, user: str, public: bool = False):
         """Admin command: unbans a user from joining the list of authors"""
         
-        if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=not public)
-            return
         
         try:
             user_id = await self.get_user_id_from_string(interaction.guild, user)
@@ -734,9 +725,6 @@ class dm_listener(commands.Cog):
     @app_commands.checks.has_permissions(moderate_members=True)
     async def configure(self, interaction: discord.Interaction, setting: AvailableSettingsToModify, value: str = None, public: bool = False):
         """Admin command: change some of the bot's configuration"""
-        if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=True)
-            return
         
         match setting:
             case AvailableSettingsToModify.StoryOutputChannel:
@@ -907,9 +895,6 @@ class dm_listener(commands.Cog):
             await self.reply_to_message(content=f"Just to be sure no one accidentally types this command, you need to set the `confirm` parameter to True to create a new story. If that was your goal, try running this command again with that parameter changed. If not, feel free to ignore this!", interaction=interaction, ephemeral=not public)
             return
             
-        if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=not public)
-            return
         
         try:
             await self.file_manager.new_story(interaction.guild_id, forced = delete_old_story)
@@ -970,9 +955,6 @@ class dm_listener(commands.Cog):
     @app_commands.checks.has_permissions(moderate_members=True)
     async def undo(self, interaction: discord.Interaction, public: bool = False):
         """Admin command: deletes the last message added to the bot"""
-        if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=True, ephemeral=not public)
-            return
         
         try:
             message_number = await self.file_manager.undo_last_chunk(interaction.guild_id)
@@ -988,10 +970,6 @@ class dm_listener(commands.Cog):
     @app_commands.checks.has_permissions(moderate_members=True)
     async def set_turn(self, interaction: discord.Interaction, user: discord.User, public: bool = False):
         """Admin command: Sets the current user for the bot"""
-        
-        if not await self.is_moderator(interaction.user.id, interaction.channel):
-            await self.reply_to_message(content=f"Only an admin can run this command!", interaction=interaction, error=not public, ephemeral=True)
-            return
         
         user_id = user.id
         
