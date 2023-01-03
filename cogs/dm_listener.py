@@ -448,7 +448,7 @@ class dm_listener(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.command(name="kick")
-    #@app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
     async def kick(self, interaction: discord.Interaction, user: str, public: bool=False):
         """Admin command: kicks a user from the list of authors"""
         
@@ -468,7 +468,7 @@ class dm_listener(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.command(name="ban")
-    #@app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
     async def ban(self, interaction: discord.Interaction, user: str, public: bool = False):
         """Admin command: bans a user from joining the list of authors and kicks them if they're already there"""
         
@@ -505,7 +505,7 @@ class dm_listener(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.command(name="unban")
-    #@app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
     async def unban(self, interaction: discord.Interaction, user: str, public: bool = False):
         """Admin command: unbans a user from joining the list of authors"""
         
@@ -731,7 +731,7 @@ class dm_listener(commands.Cog):
         
     @app_commands.guild_only()
     @app_commands.command(name="configure")
-    #@app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
     async def configure(self, interaction: discord.Interaction, setting: AvailableSettingsToModify, value: str = None, public: bool = False):
         """Admin command: change some of the bot's configuration"""
         if not await self.is_moderator(interaction.user.id, interaction.channel):
@@ -900,7 +900,7 @@ class dm_listener(commands.Cog):
     @app_commands.guild_only()
     @app_commands.command(name="archive_story", description="Admin command: archives your current story and starts a new story")
     @app_commands.checks.cooldown(1, 24 * 60 * 60) # Makes sure this can only be run once a day
-    #@app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
     async def new_story(self, interaction: discord.Interaction, confirm: bool, delete_old_story:bool = False, reset_users: bool = False, public: bool = False):
         
         if not confirm:
@@ -967,7 +967,7 @@ class dm_listener(commands.Cog):
     
     @app_commands.guild_only()
     @app_commands.command(name="undo")
-    #@app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
     async def undo(self, interaction: discord.Interaction, public: bool = False):
         """Admin command: deletes the last message added to the bot"""
         if not await self.is_moderator(interaction.user.id, interaction.channel):
@@ -985,7 +985,7 @@ class dm_listener(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.command(name="set_turn")
-    #@app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
     async def set_turn(self, interaction: discord.Interaction, user: discord.User, public: bool = False):
         """Admin command: Sets the current user for the bot"""
         
