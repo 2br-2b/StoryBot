@@ -188,7 +188,7 @@ class dm_listener(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.command(name="skip")
-    async def skip(self, interaction: discord.Interaction, public: bool = False):
+    async def skip(self, interaction: discord.Interaction, public: bool = True):
         """Skip your turn"""
         
         current_user_id = await self.user_manager.get_current_user(interaction.guild_id)
@@ -419,7 +419,7 @@ class dm_listener(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.command(name="join")
-    async def add(self, interaction: discord.Interaction, public: bool = False):
+    async def add(self, interaction: discord.Interaction, public: bool = True):
         """Adds you to the list of authors, or unpauses you if you're paused"""
         guild_id = interaction.guild_id
         
@@ -438,7 +438,7 @@ class dm_listener(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.command(name="leave")
-    async def remove(self, interaction: discord.Interaction, public: bool = False):
+    async def remove(self, interaction: discord.Interaction, public: bool = True):
         """Removes you from the list of authors"""
         
         await self.remove_user_plus_skip_logic(interaction.guild_id, interaction.user.id)
@@ -449,7 +449,7 @@ class dm_listener(commands.Cog):
     @app_commands.guild_only()
     @app_commands.command(name="kick")
     @app_commands.checks.has_permissions(moderate_members=True)
-    async def kick(self, interaction: discord.Interaction, user: str, public: bool=False):
+    async def kick(self, interaction: discord.Interaction, user: str, public: bool = False):
         """Admin command: kicks a user from the list of authors"""
         
         
@@ -723,7 +723,7 @@ class dm_listener(commands.Cog):
     @app_commands.guild_only()
     @app_commands.command(name="configure")
     @app_commands.checks.has_permissions(moderate_members=True)
-    async def configure(self, interaction: discord.Interaction, setting: AvailableSettingsToModify, value: str = None, public: bool = False):
+    async def configure(self, interaction: discord.Interaction, setting: AvailableSettingsToModify, value: str = None, public: bool = True):
         """Admin command: change some of the bot's configuration"""
         
         match setting:
@@ -889,7 +889,7 @@ class dm_listener(commands.Cog):
     @app_commands.command(name="archive_story", description="Admin command: archives your current story and starts a new story")
     @app_commands.checks.cooldown(1, 24 * 60 * 60) # Makes sure this can only be run once a day
     @app_commands.checks.has_permissions(moderate_members=True)
-    async def new_story(self, interaction: discord.Interaction, confirm: bool, delete_old_story:bool = False, reset_users: bool = False, public: bool = False):
+    async def new_story(self, interaction: discord.Interaction, confirm: bool, delete_old_story:bool = False, reset_users: bool = False, public: bool = True):
         
         if not confirm:
             await self.reply_to_message(content=f"Just to be sure no one accidentally types this command, you need to set the `confirm` parameter to True to create a new story. If that was your goal, try running this command again with that parameter changed. If not, feel free to ignore this!", interaction=interaction, ephemeral=not public)
@@ -953,7 +953,7 @@ class dm_listener(commands.Cog):
     @app_commands.guild_only()
     @app_commands.command(name="undo")
     @app_commands.checks.has_permissions(moderate_members=True)
-    async def undo(self, interaction: discord.Interaction, public: bool = False):
+    async def undo(self, interaction: discord.Interaction, public: bool = True):
         """Admin command: deletes the last message added to the bot"""
         
         try:
@@ -968,7 +968,7 @@ class dm_listener(commands.Cog):
     @app_commands.guild_only()
     @app_commands.command(name="set_turn")
     @app_commands.checks.has_permissions(moderate_members=True)
-    async def set_turn(self, interaction: discord.Interaction, user: discord.User, public: bool = False):
+    async def set_turn(self, interaction: discord.Interaction, user: discord.User, public: bool = True):
         """Admin command: Sets the current user for the bot"""
         
         user_id = user.id
@@ -976,6 +976,7 @@ class dm_listener(commands.Cog):
         try:
             await self.new_user(guild_id=interaction.guild_id, user_id=user_id)
             await self.reply_to_message(interaction=interaction, content=f"Done! It is now <@{user_id}>'s turn.", ephemeral=not public)
+            await self.notify_people(interaction.guild_id)
         except storybot_exceptions.NotAnAuthorException:
             if user_id == self.bot.user.id:
                 await self.reply_to_message(interaction=interaction, content=f"I'd love to, but unfortunately, I can't write (yet). Maybe try in a year or so, or keep up-to-date in our support server!", error=True, ephemeral=not public)
@@ -984,7 +985,7 @@ class dm_listener(commands.Cog):
         
     @app_commands.guild_only()
     @app_commands.command(name="pause")
-    async def pause(self, interaction: discord.Interaction, days: int = 0, weeks: int = 0, public: bool = False):
+    async def pause(self, interaction: discord.Interaction, days: int = 0, weeks: int = 0, public: bool = True):
         """Pauses your turn for the length of time requested"""
         error_message = None
         
