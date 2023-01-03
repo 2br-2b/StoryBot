@@ -899,6 +899,17 @@ class dm_listener(commands.Cog):
         try:
             await self.file_manager.new_story(interaction.guild_id, forced = delete_old_story)
            
+            channel_int = await self.config_manager.get_story_output_channel(interaction.guild_id)
+            if channel_int != None:
+                channel = self.bot.get_channel(channel_int)
+                if channel != None:
+                    
+                    try:
+                        await channel.send("--- Starting a new story! ---")
+                    except discord.errors.Forbidden:
+                        # TODO: Check for this perm properly
+                        pass
+           
             if reset_users:
                 await self.file_manager.reset_users(guild_id=interaction.guild_id)
                 await self.reply_to_message(content=f"Your old story has been archived, your new story has been created, and the users signed up have been reset! Run `/story {await self.file_manager.get_archived_story_count(interaction.guild_id)}` to see your last story, and feel free to run `/join` to start working on your new story. Have fun!", interaction=interaction, ephemeral=not public)
