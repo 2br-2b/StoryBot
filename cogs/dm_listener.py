@@ -6,6 +6,7 @@ from discord.ext import tasks, commands
 from discord import app_commands
 import re
 from enum import Enum
+from discord.interactions import MISSING
 
 from config_manager import ConfigManager
 import file_manager
@@ -109,7 +110,7 @@ class dm_listener(commands.Cog):
         else:
             file = await self.file_manager.get_story_file(interaction.guild_id)
             title="The Current Story"
-            
+        
         await self.reply_to_message(
             content=self.lastChars(await self.file_manager.getStory(guild_id = interaction.guild_id, story_number = archived_story_number)),
             title=title, file = file, interaction=interaction, ephemeral=not public)
@@ -636,16 +637,18 @@ class dm_listener(commands.Cog):
             elif not message is None:
                 return await message.reply(embed = embed, file = file, mention_author = False, view=view)
             elif not interaction is None:
+                if file == None:
+                    file = MISSING
+                
                 if followup == True:
-                    eee = await interaction.followup.send(embed=embed) #, ephemeral=ephemeral)
+                    eee = await interaction.followup.send(embed=embed, file=file) #, ephemeral=ephemeral)
                 else:
                     try:
                         if view == None:
-                            eee = await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
-                        else:
-                            eee = await interaction.response.send_message(embed=embed, view=view, ephemeral=ephemeral)
+                            view = MISSING
+                        eee = await interaction.response.send_message(embed=embed, view=view, ephemeral=ephemeral, file=file)
                     except discord.errors.NotFound:
-                        await self.reply_to_message(embed=embed, view=view, ephemeral=ephemeral, interaction=interaction, followup=True)
+                        await self.reply_to_message(embed=embed, view=view, ephemeral=ephemeral, interaction=interaction, followup=True, file=file)
                 
                 # if file == None:
                 #     return await eee.send_message(embed=embed, view=view, ephemeral=True)
