@@ -20,6 +20,7 @@ class AvailableSettingsToModify(Enum):
     TimeoutDays=3
     ResetCurrentPlayerTimeRemaining=4
     SafeModeEnabled=5
+    ShowAuthorAlongWithStory=6
 
 # Listens for DMs to add to the story
 class dm_listener(commands.Cog):
@@ -850,19 +851,45 @@ class dm_listener(commands.Cog):
                 value=value.lower()
                 
                 if value in yes_options:
-                    activate = True
+                    toggle = True
                 elif value in no_options:
-                    activate = False
+                    toggle = False
                 else:
                     await self.reply_to_message(content=f"I couldn't understand that. Please try again, and this time, set the `value` to \"yes\" or \"no\". Thanks!", interaction=interaction, error=True, ephemeral=not public)
                     return
                 
-                await self.file_manager.set_config_value(interaction.guild_id, XSS_WARNING_config_name='safe_mode', new_value=activate)
+                await self.file_manager.set_config_value(interaction.guild_id, XSS_WARNING_config_name='safe_mode', new_value=toggle)
                 
-                if activate:
+                if toggle:
                     message = "Safe Mode has been enabled. While it is still imperfect, it will help filter out some vulgarity in messages. This may be improved on in the future."
                 else:
                     message = "**Warning: Safe Mode has been disabled**. Messages will *not* be filtered for vulgarity and the like."
+                    
+                await self.reply_to_message(content=message, interaction=interaction, ephemeral=not public)
+                
+            case AvailableSettingsToModify.ShowAuthorAlongWithStory:
+                yes_options = ["1", "yes", "true", "yep", "duh", "yes, please", "affirmative"]
+                no_options = ["0", "no", "nah", "false", "no, thank you", "negative"]
+
+                if value == None:
+                    await self.reply_to_message(content="To toggle this setting, please set the `value` of this command to either \"yes\" or \"no\". Thank you!", interaction=interaction, error=True, ephemeral=not public)
+                    return
+                value=value.lower()
+                
+                if value in yes_options:
+                    toggle = True
+                elif value in no_options:
+                    toggle = False
+                else:
+                    await self.reply_to_message(content=f"I couldn't understand that. Please try again, and this time, set the `value` to \"yes\" or \"no\". Thanks!", interaction=interaction, error=True, ephemeral=not public)
+                    return
+                
+                await self.file_manager.set_config_value(interaction.guild_id, XSS_WARNING_config_name='embeds', new_value=toggle)
+                
+                if toggle:
+                    message = "Success! Now, authors will be shown alongside their additions to the story."
+                else:
+                    message = "Success! Now, authors will no longer be shown alongside their additions to the story."
                     
                 await self.reply_to_message(content=message, interaction=interaction, ephemeral=not public)
                     
