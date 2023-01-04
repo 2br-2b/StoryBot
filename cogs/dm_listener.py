@@ -307,11 +307,26 @@ class dm_listener(commands.Cog):
         if channel_int != None:
             channel = self.bot.get_channel(channel_int)
             if channel != None:
+                
+                send_in_embeds = self.config_manager.get_story_output_in_embeds(guild_id)
+                member = (await self.bot.fetch_guild(guild_id)).get_member(message.author.id)
+                
                 try:
                     # Makes sure that if someone sends a longer message because they have Discord Nitro, the bot will still send the entire story
                     for story_chunk in pieMethod(content_to_send):
-                        sent_message = await channel.send(story_chunk)
-                        sent_message_id = sent_message.id
+                        
+                        if send_in_embeds:
+                            emb = self.create_embed(
+                                content=story_chunk,
+                                author_name=member.display_name,
+                                author_icon_url=member.display_icon
+                            )
+                            
+                            sent_message = await channel.send(embed=emb)
+                            sent_message_id = sent_message.id
+                        else:
+                            sent_message = await channel.send(story_chunk)
+                            sent_message_id = sent_message.id
                         
                 except discord.errors.Forbidden:
                     # TODO: Check for this perm properly
