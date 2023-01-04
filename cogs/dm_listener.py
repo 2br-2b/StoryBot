@@ -20,6 +20,7 @@ class AvailableSettingsToModify(Enum):
     TimeoutDays=3
     ResetCurrentPlayerTimeRemaining=4
     SafeModeEnabled=5
+    ShowAuthorAlongWithStory=6
 
 # Listens for DMs to add to the story
 class dm_listener(commands.Cog):
@@ -269,60 +270,76 @@ class dm_listener(commands.Cog):
     async def on_message(self, message: discord.Message):
         """Checks if the message should be added the story, and if it is, appends it"""
 
-        if message.guild is None and message.author != self.bot.user:
+        # Make sure that the message is sent in a a DM and that the message wasn't sent by the bot
+        if message.guild != None or message.author == self.bot.user: return
+        
+        # Checks if the command has a prefix
+        if message.content.startswith("/") or message.content.startswith(self.config_manager.get_prefix()): return
+        
+        user_current_turns = await self.file_manager.get_current_turns_of_user(message.author.id)
+        
+        if len(user_current_turns) < 1:
+            return
+        elif len(user_current_turns) == 1:
+            guild_id = user_current_turns[0]
+        else:
+            guild_id = await self.request_guild_for_story_entry(message, user_current_turns)
+        
+        if await self.user_manager.get_current_user(guild_id) != message.author.id:
+            # This means the user had turns in multiple servers, entered input and received the prompt to choose a server, then waited until it was no longer their turn (either by answering another prompt or timing out) to respond. If unpatched, users could send messages after their turn ends.
+            await self.reply_to_message(message=message, content="Nice try :stuck_out_tongue_winking_eye:", ephemeral=True)
+            return
             
-            if message.content.startswith("/") or message.content.startswith(self.config_manager.get_prefix()):
-                return
-            
-            user_current_turns = await self.file_manager.get_current_turns_of_user(message.author.id)
-            
-            if len(user_current_turns) < 1:
-                return
-            elif len(user_current_turns) == 1:
-                guild_id = user_current_turns[0]
-            else:
-                guild_id = await self.request_guild_for_story_entry(message, user_current_turns)
-            
-            if await self.user_manager.get_current_user(guild_id) != message.author.id:
-                # This means the user had turns in multiple servers, entered input and received the prompt to choose a server, then waited until it was no longer their turn (either by answering another prompt or timing out) to respond. If unpatched, users could send messages after their turn ends.
-                await self.reply_to_message(message=message, content="Nice try :stuck_out_tongue_winking_eye:", ephemeral=True)
-                return
+        content_to_send = await self.format_story_addition(message.content)
+        
+        if await self.config_manager.get_is_safe_mode_activated(guild_id):
+            content_to_send = await self.file_manager.filter_profanity(content_to_send)
+        
+        # Add the given line to the story file
+        await self.file_manager.addLine(
+            guild_id=guild_id,
+            line=content_to_send
+            )
+        
+        # Mirror the messages to a Discord channel
+        channel_int = await self.config_manager.get_story_output_channel(guild_id)
+        sent_message = None
+        sent_message_id = None
+        if channel_int != None:
+            channel = self.bot.get_channel(channel_int)
+            if channel != None:
                 
-            content_to_send = await self.format_story_addition(message.content)
-            
-            if await self.config_manager.get_is_safe_mode_activated(guild_id):
-                content_to_send = await self.file_manager.filter_profanity(content_to_send)
-            
-            # Add the given line to the story file
-            await self.file_manager.addLine(
-                guild_id=guild_id,
-                line=content_to_send
-                )
-            
-            # Mirror the messages to a Discord channel
-            channel_int = await self.config_manager.get_story_output_channel(guild_id)
-            sent_message = None
-            sent_message_id = None
-            if channel_int != None:
-                channel = self.bot.get_channel(channel_int)
-                if channel != None:
-                    try:
-                        # Makes sure that if someone sends a longer message because they have Discord Nitro, the bot will still send the entire story
-                        for story_chunk in pieMethod(content_to_send):
+                send_in_embeds = await self.config_manager.get_story_output_in_embeds(guild_id)
+                member = await (await self.bot.fetch_guild(guild_id)).fetch_member(message.author.id)
+                
+                try:
+                    # Makes sure that if someone sends a longer message because they have Discord Nitro, the bot will still send the entire story
+                    for story_chunk in pieMethod(content_to_send):
+                        
+                        if send_in_embeds:
+                            emb = await self.create_embed(
+                                content=story_chunk,
+                                author_name=member.display_name,
+                                author_icon_url=member.avatar.url
+                            )
+                            
+                            sent_message = await channel.send(embed=emb)
+                            sent_message_id = sent_message.id
+                        else:
                             sent_message = await channel.send(story_chunk)
                             sent_message_id = sent_message.id
-                            
-                    except discord.errors.Forbidden:
-                        # TODO: Check for this perm properly
-                        pass
-                    
-            await self.file_manager.log_action(user_id=message.author.id, guild_id=guild_id, XSS_WARNING_action="write", characters_sent=len(content_to_send), sent_message_id=sent_message_id)
-            
-            await self.reply_to_message(message, "Got it!  Thanks!")
-            
-            await self.user_manager.boost_user(guild_id, await self.user_manager.get_current_user(guild_id))
-            
-            await self.new_user(guild_id)
+                        
+                except discord.errors.Forbidden:
+                    # TODO: Check for this perm properly
+                    pass
+                
+        await self.file_manager.log_action(user_id=message.author.id, guild_id=guild_id, XSS_WARNING_action="write", characters_sent=len(content_to_send), sent_message_id=sent_message_id)
+        
+        await self.reply_to_message(message, "Got it!  Thanks!")
+        
+        await self.user_manager.boost_user(guild_id, await self.user_manager.get_current_user(guild_id))
+        
+        await self.new_user(guild_id)
 
     def lastChars(self, story):
         """Returns the last self.CHARACTERS_TO_SHOW characters of the story"""
@@ -834,19 +851,45 @@ class dm_listener(commands.Cog):
                 value=value.lower()
                 
                 if value in yes_options:
-                    activate = True
+                    toggle = True
                 elif value in no_options:
-                    activate = False
+                    toggle = False
                 else:
                     await self.reply_to_message(content=f"I couldn't understand that. Please try again, and this time, set the `value` to \"yes\" or \"no\". Thanks!", interaction=interaction, error=True, ephemeral=not public)
                     return
                 
-                await self.file_manager.set_config_value(interaction.guild_id, XSS_WARNING_config_name='safe_mode', new_value=activate)
+                await self.file_manager.set_config_value(interaction.guild_id, XSS_WARNING_config_name='safe_mode', new_value=toggle)
                 
-                if activate:
+                if toggle:
                     message = "Safe Mode has been enabled. While it is still imperfect, it will help filter out some vulgarity in messages. This may be improved on in the future."
                 else:
                     message = "**Warning: Safe Mode has been disabled**. Messages will *not* be filtered for vulgarity and the like."
+                    
+                await self.reply_to_message(content=message, interaction=interaction, ephemeral=not public)
+                
+            case AvailableSettingsToModify.ShowAuthorAlongWithStory:
+                yes_options = ["1", "yes", "true", "yep", "duh", "yes, please", "affirmative"]
+                no_options = ["0", "no", "nah", "false", "no, thank you", "negative"]
+
+                if value == None:
+                    await self.reply_to_message(content="To toggle this setting, please set the `value` of this command to either \"yes\" or \"no\". Thank you!", interaction=interaction, error=True, ephemeral=not public)
+                    return
+                value=value.lower()
+                
+                if value in yes_options:
+                    toggle = True
+                elif value in no_options:
+                    toggle = False
+                else:
+                    await self.reply_to_message(content=f"I couldn't understand that. Please try again, and this time, set the `value` to \"yes\" or \"no\". Thanks!", interaction=interaction, error=True, ephemeral=not public)
+                    return
+                
+                await self.file_manager.set_config_value(interaction.guild_id, XSS_WARNING_config_name='embeds', new_value=toggle)
+                
+                if toggle:
+                    message = "Success! Now, authors will be shown alongside their additions to the story."
+                else:
+                    message = "Success! Now, authors will no longer be shown alongside their additions to the story."
                     
                 await self.reply_to_message(content=message, interaction=interaction, ephemeral=not public)
                     

@@ -140,3 +140,7 @@ class ConfigManager():
         
     async def get_is_safe_mode_activated(self, guild_id: int) -> bool:
         return await self.file_manager.get_config_value(guild_id, "safe_mode")
+    
+    
+    async def get_story_output_in_embeds(self, guild_id: int) -> bool:
+        return await self.file_manager.get_config_value(guild_id, "embeds")
