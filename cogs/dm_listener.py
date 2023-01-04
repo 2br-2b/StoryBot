@@ -919,7 +919,7 @@ class dm_listener(commands.Cog):
                 await self.file_manager.reset_users(guild_id=interaction.guild_id)
                 await self.reply_to_message(content=f"Your old story has been archived, your new story has been created, and the users signed up have been reset! Run `/story {await self.file_manager.get_archived_story_count(interaction.guild_id)}` to see your last story, and feel free to run `/join` to start working on your new story. Have fun!", interaction=interaction, ephemeral=not public)
             else:
-                await self.reply_to_message(content=f"Your old story has been archived, and a new story has been created! Run `/story {await self.file_manager.get_archived_story_count(interaction.guild_id)}` to see your last story, and feel free to start your storywriting. Have fun!", interaction=interaction, ephemeral=not public)
+                await self.reply_to_message(content=f"Your old story has been archived, and a new story has been created with the same users! Run `/story {await self.file_manager.get_archived_story_count(interaction.guild_id)}` to see your last story, and feel free to start your storywriting. Have fun!", interaction=interaction, ephemeral=not public)
                 await self.new_user(guild_id=interaction.guild_id)
             
         except storybot_exceptions.TooManyArchivedStoriesException:
