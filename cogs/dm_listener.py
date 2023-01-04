@@ -392,7 +392,7 @@ class dm_listener(commands.Cog):
                         pass
                     await self.file_manager.set_notified(guild_id, True)
                     
-    @tasks.loop(seconds=60 * 60 * 2) # Check back every 2 hours
+    @tasks.loop(seconds=60 * 60 * 6) # Check back every 6 hours
     async def unpause_users(self):
         #Guild_id is first, then user_id
         tuples = await self.user_manager.unpause_all_necessary_users()
