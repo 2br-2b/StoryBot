@@ -653,7 +653,19 @@ class dm_listener(commands.Cog):
             if await self.file_manager.get_recent_skips(guild_id=guild_id, user_id=c_user_id, recent_actions_to_check=5) == 5:
                 send_timeout_message = True
                 
-            await self.user_manager.set_random_weighted_user(guild_id)
+            new_user_id = await self.user_manager.set_random_weighted_user(guild_id)
+            
+            # Make sure that the user is still in the guild
+            try:
+                await (await self.bot.fetch_guild(guild_id)).fetch_member(new_user_id)
+            except discord.errors.NotFound:
+                # This command, since it's skipping the current user, will automatically call new_user
+                self.remove_user_plus_skip_logic(guild_id, new_user_id)
+                return
+            except discord.errors.Forbidden:
+                # The bot was kicked from the server, doesn't have the proper permissions, etc.
+                pass
+            
         else:
             if user_id in (await self.user_manager.get_active_and_inactive_users(guild_id)):
                 await self.user_manager.set_current_user(guild_id=guild_id, user_id=user_id)
