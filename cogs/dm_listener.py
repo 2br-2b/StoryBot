@@ -906,7 +906,7 @@ class dm_listener(commands.Cog):
                 if channel != None:
                     
                     try:
-                        new_story_message = random.choice(["Starting a new story!", "A new journey is about to unfold!", "Time to start a new story!", "Ready for a new story?", "Yaaaaah, it's new story time!", "Another adventure begins..."])
+                        new_story_message = random.choice(["Starting a new story!", "A new journey is about to unfold!", "Time to start a new story!", "Time for a new story!", "Yaaaaah, it's new story time!", "Another adventure begins..."])
                         
                         emb = await self.create_embed(title=f"--- {new_story_message} ---")
                         
