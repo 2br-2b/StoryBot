@@ -908,7 +908,7 @@ class dm_listener(commands.Cog):
                     try:
                         new_story_message = random.choice(["Starting a new story!", "A new journey is about to unfold!", "Time to start a new story!", "Ready for a new story?", "Yaaaaah, it's new story time!", "Another adventure begins..."])
                         
-                        emb = self.create_embed(title=f"--- {new_story_message} ---", color=await self.config_manager.get_embed_color())
+                        emb = await self.create_embed(title=f"--- {new_story_message} ---")
                         
                         await channel.send(embed=emb)
                     except discord.errors.Forbidden:
