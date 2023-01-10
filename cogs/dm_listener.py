@@ -1238,7 +1238,7 @@ class NormalTurnMessage(discord.ui.View):
         self.umr = user_manager
         
         
-    @discord.ui.button(label='Skip me', style=discord.ButtonStyle.grey)
+    @discord.ui.button(label='Skip me', style=discord.ButtonStyle.red)
     async def leave(self, interaction: discord.Interaction, button: discord.ui.Button):
         if (await self.umr.get_current_user(guild_id=self.guild_id)) == interaction.user.id:
             await self.dm_listener.new_user(guild_id=self.guild_id)
