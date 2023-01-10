@@ -35,25 +35,22 @@ class dm_listener(commands.Cog):
         
         self.config_manager : ConfigManager = bot.config_manager
 
-    async def dm_current_user(self, guild_id: int, message, file = None, embed = None):
+    async def dm_current_user(self, guild_id: int, message, file = None, embed = None, view = MISSING):
         """Sends the given message to the current user"""
         try:
             try:
-                await self.dm_user(user_id=await self.user_manager.get_current_user(guild_id), message=message, file=file, embed=embed)
+                await self.dm_user(user_id=await self.user_manager.get_current_user(guild_id), message=message, file=file, embed=embed, view=view)
             
             except discord.ext.commands.errors.HybridCommandError: # Means the user couldn't be DMed
                 await self.remove_user_plus_skip_logic(guild_id, await self.user_manager.get_current_user(guild_id))
         except ValueError:
             pass
             
-    async def dm_user(self, user_id: int, message, file = None, embed = None, view = None):
+    async def dm_user(self, user_id: int, message, file = None, embed = None, view = MISSING):
         """Sends the given message to the current user"""
         if(user_id == None): return
         channel = await (await self.bot.fetch_user(user_id)).create_dm()
-        if view == None:
-            return await channel.send(message, embed=embed, file = file)
-        else:
-            return await channel.send(message, embed=embed, file = file, view=view)
+        return await channel.send(message, embed=embed, file = file, view=view)
 
     async def notify_people(self, guild_id: int):
         """Notifies the current user that it's their turn to add to the story"""
@@ -61,9 +58,12 @@ class dm_listener(commands.Cog):
         file = await self.file_manager.get_story_file(guild_id)
 
         try:
+            guild = await self.bot.fetch_guild(guild_id)
+            
+            view = NormalTurnMessage(server_name=guild.name, guild_id=guild_id, dml=self, user_manager=self.user_manager)
             await self.dm_current_user(guild_id,
                                    "Your turn.  Respond with a DM to continue the story!  Use a \\ to create a line break.\n\nIf you want the next user to continue your sentence, end your story segment with `...`.\n\n**MAKE SURE THE BOT IS ONLINE BEFORE RESPONDING!**  You will get a confirmation response if your story is received.\n\nHere is the story so far:",
-                                   file = file, embed = await self.create_embed(content=self.lastChars(await self.file_manager.getStory(guild_id)), author_name=None, author_icon_url=None))
+                                   file = file, embed = await self.create_embed(content=self.lastChars(await self.file_manager.getStory(guild_id)), author_name=None, author_icon_url=None), view=view)
         except discord.errors.Forbidden:
             # Can't DM the user
             user_id = await self.user_manager.get_current_user(guild_id=guild_id)
@@ -1225,4 +1225,40 @@ class AskForPause(discord.ui.View):
         
     async def cleanup(self):
         if self.msg != None: await self.msg.delete()
+        self.stop()
+        
+        
+class NormalTurnMessage(discord.ui.View):
+    def __init__(self, server_name: str, guild_id: int, dml: dm_listener, user_manager: user_manager.user_manager):
+        super().__init__()
+        self.value = None
+        self.server_name = server_name
+        self.guild_id = guild_id
+        self.dm_listener = dml
+        self.umr = user_manager
+        
+        
+    @discord.ui.button(label='Skip me', style=discord.ButtonStyle.grey)
+    async def leave(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if (await self.umr.get_current_user(guild_id=self.guild_id)) == interaction.user.id:
+            await self.dm_listener.new_user(guild_id=self.guild_id)
+            await interaction.response.send_message(f"You have been skipped in {self.server_name}!")
+        else:
+            await interaction.response.send_message(f"It's not currently your turn in {self.server_name}!")
+        
+        await self.cleanup()
+
+    @discord.ui.button(label='Pause for a week', style=discord.ButtonStyle.grey)
+    async def pause_for_a_week(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = 7
+        try:
+            await self.dm_listener.pause_user_with_logic(guild_id=self.guild_id, user_id=interaction.user.id, days=self.value)
+            await interaction.response.send_message(f"Confirmed! You won't be chosen as the author for the next week in {self.server_name}!\n\nIf you change your mind before then, run `/join` to unpause yourself!")
+        except storybot_exceptions.NotAnAuthorException:
+            await interaction.response.send_message(f"You aren't currently an author in {self.server_name}, so you can't pause yourself!")
+        
+        
+        await self.cleanup()
+        
+    async def cleanup(self):
         self.stop()
